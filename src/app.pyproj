@@ -1,0 +1,108 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{9966053f-1e84-4dcd-8082-382c68598649}</ProjectGuid>
+    <ProjectHome />
+    <StartupFile>gui.py</StartupFile>
+    <SearchPath />
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
+    <LaunchProvider>Standard Python launcher</LaunchProvider>
+    <InterpreterId>{9a7a9026-48c1-4688-9d5d-e5699d47d074}</InterpreterId>
+    <InterpreterVersion>3.5</InterpreterVersion>
+    <CommandLineArguments>-p data_16.310921_50.116340_16.356668_50.126136_2016-05-09-19-40-29 30385955 359142925</CommandLineArguments>
+    <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
+  <PropertyGroup>
+    <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
+    <PtvsTargetsFile>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets</PtvsTargetsFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="ddr\.gitignore" />
+    <Content Include="graph\.gitignore" />
+    <Content Include="requirements.txt" />
+    <Content Include="web\static\css\bootstrap.min.css" />
+    <Content Include="web\static\css\custom.css" />
+    <Content Include="web\static\css\leaflet.css" />
+    <Content Include="web\static\css\MarkerCluster.css" />
+    <Content Include="web\static\css\MarkerCluster.Default.css" />
+    <Content Include="web\static\fonts\glyphicons-halflings-regular.eot" />
+    <Content Include="web\static\fonts\glyphicons-halflings-regular.svg" />
+    <Content Include="web\static\fonts\glyphicons-halflings-regular.ttf" />
+    <Content Include="web\static\fonts\glyphicons-halflings-regular.woff" />
+    <Content Include="web\static\fonts\glyphicons-halflings-regular.woff2" />
+    <Content Include="web\static\images\measle.png" />
+    <Content Include="web\static\js\bootstrap.min.js" />
+    <Content Include="web\static\js\Edit.Rectangle.js" />
+    <Content Include="web\static\js\Edit.SimpleShape.js" />
+    <Content Include="web\static\js\jquery.min.js" />
+    <Content Include="web\static\js\leaflet.js" />
+    <Content Include="web\static\js\leaflet.markercluster-src.js" />
+    <Content Include="web\static\js\leaflet.markercluster.js" />
+    <Content Include="web\static\js\utils.js">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="web\templates\layout.html" />
+    <Content Include="web\templates\navigation.html" />
+    <Content Include="web\templates\pages\app.html" />
+    <Content Include="web\templates\pages\contact.html" />
+    <Content Include="web\templates\pages\graphDetail.html" />
+    <Content Include="web\templates\pages\graphList.html" />
+    <Content Include="web\templates\pages\settings.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="common\alertc.py" />
+    <Compile Include="common\config.py" />
+    <Compile Include="common\utils.py" />
+    <Compile Include="common\__init__.py" />
+    <Compile Include="db_visualizer.py" />
+    <Compile Include="ddr\database.py" />
+    <Compile Include="ddr\ddr_models.py" />
+    <Compile Include="ddr\main.py" />
+    <Compile Include="ddr\TMP\ddr_comments.py" />
+    <Compile Include="ddr\TMP\ddr_old.py" />
+    <Compile Include="ddr\__init__.py" />
+    <Compile Include="graph\api.py" />
+    <Compile Include="graph\bounding_box.py" />
+    <Compile Include="graph\graph_network.py" />
+    <Compile Include="graph\main.py" />
+    <Compile Include="graph\osm\elements.py" />
+    <Compile Include="graph\osm\osm_parser.py" />
+    <Compile Include="graph\osm\__init__.py" />
+    <Compile Include="graph\routing.py" />
+    <Compile Include="graph\statistics.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="graph\__init__.py" />
+    <Compile Include="gui.py" />
+    <Compile Include="main.py" />
+    <Compile Include="web\long_task_threads.py" />
+    <Compile Include="web\__init__.py" />
+    <Compile Include="__init__.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <InterpreterReference Include="{9a7a9026-48c1-4688-9d5d-e5699d47d074}\3.5" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="common\" />
+    <Folder Include="ddr\" />
+    <Folder Include="ddr\TMP\" />
+    <Folder Include="graph\" />
+    <Folder Include="graph\osm\" />
+    <Folder Include="web\" />
+    <Folder Include="web\static\" />
+    <Folder Include="web\static\css\" />
+    <Folder Include="web\static\fonts\" />
+    <Folder Include="web\static\images\" />
+    <Folder Include="web\static\js\" />
+    <Folder Include="web\templates\" />
+    <Folder Include="web\templates\pages\" />
+  </ItemGroup>
+  <Import Project="$(PtvsTargetsFile)" Condition="Exists($(PtvsTargetsFile))" />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" Condition="!Exists($(PtvsTargetsFile))" />
+</Project>

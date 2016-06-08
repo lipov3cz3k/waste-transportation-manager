@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script>
+$(document).ready(function(){
+
+  var xmlData = "";
+  // Load the xml file using ajax 
+  $.ajax({
+    type: "GET",
+    url: "ukazka_TL_Brno.xml",
+    dataType: "xml",
+    success: function (xml) {
+        xmlData = new XMLSerializer().serializeToString(xml);
+    }
+  });
+
+  $("button").click(function(){
+    if(xmlData == "")
+      return;
+
+    $.ajax({
+    url: '/import.php',
+    data: xmlData,
+    type: 'POST',
+    contentType: "text/xml",
+    dataType: "text",
+    success : function(xml) {
+        alert("it works");
+      },
+    error : function (xhr, ajaxOptions, thrownError){  
+        console.log(xhr.status);          
+        console.log(thrownError);
+      } 
+    });
+  });
+});
+</script>
+</head>
+<body>
+
+<button>Send an HTTP POST request to a page</button>
+
+</body>
+</html>

@@ -1,0 +1,68 @@
+{% extends "layout.html" %}
+{% set active_page = "settings" %}
+
+{% block head_title %}{% endblock %}
+{% block head_css %}{% endblock %}
+{% block head_js %}{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-12">
+            <p>This is only settings overview . For edit, please go to file common/config.py</p>
+        </div><!-- /.col -->
+    </div><!-- /.row -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">local_config</h3>
+                </div>
+                <div class="panel-body">
+                    <table class="table table-hover">
+                        <tr>
+                            <th>Variable</th>
+                            <th>Value</th>
+                        </tr>
+                        {% if local_config_members %}
+                            {% for key, value in local_config_members.items() %}
+                                <tr>
+                                    <td>{{ key }}</td>
+                                    <td>{{ value }}</td>
+                                </tr>
+                            {% else %}
+                            {% endfor %}
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div><!-- /.col -->
+        <div class="col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">ftp_config</h3>
+                </div>
+                <div class="panel-body">
+                    <table class="table table-hover">
+                        <tr>
+                            <th>Variable</th>
+                            <th>Value</th>
+                        </tr>
+                        {% if local_config_members %}
+                            {% for key, value in ftp_config_members.items() %}
+                                <tr>
+                                    <td>{{ key }}</td>
+                                    <td>{{ value }}</td>
+                                </tr>
+                            {% else %}
+                            {% endfor %}
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div><!-- /.col -->
+    </div><!-- /.row -->
+{% endblock %}
+
+
+{% block body_js_src %}{% endblock %}
+{% block body_js_script %}{% endblock %}

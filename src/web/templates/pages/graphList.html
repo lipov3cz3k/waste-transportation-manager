@@ -1,0 +1,54 @@
+{% extends "layout.html" %}
+{% set active_page = "graphs" %}
+
+{% block head_title %}{% endblock %}
+{% block head_css %}
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/leaflet.css') }}" />
+{% endblock %}
+{% block head_js %}
+    <script type="application/javascript" src="{{ url_for('static', filename='js/leaflet.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        {% for item in graphList %}
+        <div class="col-md-4">
+            <div id="{{ item.id }}" class="map-graphList"></div>
+            <div><a href="{{ url_for('graphDetail', graphID=item.id) }}">{{ item.timestamp }} (GMT)</a></div>
+        </div>
+        {% endfor %}
+    </div>
+{% endblock %}
+
+{% block body_js_src %}{% endblock %}
+
+{% block body_js_script %}
+    var map_options = {
+        dragging: false,
+        touchZoom: false,
+        scrollWheelZoom: false,
+        doubleClickZoom: false,
+        boxZoom: false,
+        tap: false,
+        zoomControl: false,
+        attributionControl: false
+    }
+    {% for item in graphList %}
+    // MAP {{ loop.index }}
+    var bounds_{{ loop.index }} = [[{{ item.coords[3] }}, {{ item.coords[0] }}], [{{ item.coords[1] }}, {{ item.coords[2] }}]];
+    var map_{{ loop.index }} = L.map('{{ item.id }}', map_options);
+    map_{{ loop.index }}.fitBounds(bounds_{{ loop.index }});
+
+    L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors, Points &copy 2012 LINZ'
+                }).addTo(map_{{ loop.index }});
+    var rect_{{ loop.index }} = L.rectangle(bounds_{{ loop.index }});
+    map_{{ loop.index }}.addLayer(rect_{{ loop.index }});
+    map_{{ loop.index }}.fitBounds(bounds_{{ loop.index }}, {'padding':[30,30]});
+
+    map_{{ loop.index }}.on('click', function(e) {
+        window.location.href = "{{ url_for('graphDetail', graphID=item.id) }}"
+    });
+    
+    {% endfor %}
+{% endblock %}

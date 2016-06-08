@@ -1,0 +1,88 @@
+body {
+    padding-top: 70px;
+    /* Required padding for .navbar-fixed-top. Remove if using .navbar-static-top. Change if height of navigation changes. */
+}
+
+.contact-map {
+    min-width: 300px;
+    min-height: 300px;
+    width: 100%;
+    height: 100%;
+}
+
+.contact-header {
+    background-color: #F5F5F5;
+    color: #36A0FF;
+    height: 70px;
+    font-size: 27px;
+    padding: 10px;
+}
+
+
+.progress {
+    background: rgba(207, 207, 207, 1);
+    border: 1px solid rgba(0, 0, 0, 1);
+    border-radius: 4px; height: 20px;
+}
+
+.progress span{
+    display: block;
+    position: absolute;
+    width: 90%;
+    color: #000;
+}
+
+.progress-bar-custom {
+    background: rgba(66, 139, 202, 1);
+}
+
+.progress-striped .progress-bar-custom {
+    background-color: rgba(66, 139, 202, 1);
+    background-image: -webkit-gradient(linear,0 100%,100% 0,color-stop(0.25,rgba(255, 255, 255, 0.15),color-stop(0.25,transparent),color-stop(0.5,transparent),color-stop(0.5,rgba(255, 255, 255, 0.15)),color-stop(0.75,rgba(255, 255, 255, 0.15)),color-stop(0.75,transparent),to(transparent)));
+    background-image: -webkit-linear-gradient(45deg,rgba(255, 255, 255, 0.15) 25%,transparent 25%,transparent 50%,rgba(255, 255, 255, 0.15) 50%,rgba(255, 255, 255, 0.15) 75%,transparent 75%,transparent);
+    background-image: linear-gradient(45deg,rgba(255, 255, 255, 0.15) 25%,transparent 25%,transparent 50%,rgba(255, 255, 255, 0.15) 50%,rgba(255, 255, 255, 0.15) 75%,transparent 75%,transparent);
+    background-size: 19px 19px;
+}
+
+.map-popup ul
+{
+    list-style-type: none;
+    padding: 0px;
+}
+
+.map-small {
+    height: 400px;
+}
+.map-large {
+    height: 600px;
+}
+
+.map-graphList {
+    height: 400px;
+}
+
+.map-graphList.leaflet-container {
+    cursor: pointer
+}
+
+.map-osmList {
+    height: 100px;
+}
+
+.map-osmList.leaflet-container {
+    cursor: pointer
+}
+
+@media (min-width: 992px) {
+    .h-scroll {
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    .h-scroll [class*="col"], /* TWBS v3 */
+    .h-scroll [class*="span"] {  /* TWBS v2 */
+        display: inline-block;
+        float: none;
+        padding: 0px;
+    }
+}

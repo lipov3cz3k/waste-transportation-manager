@@ -1,0 +1,235 @@
+{% extends "layout.html" %}
+{% set active_page = "app" %}
+
+{% block head_title %}{% endblock %}
+{% block head_css %}
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/leaflet.css') }}" />
+{% endblock %}
+{% block head_js %}
+    <script type="application/javascript" src="{{ url_for('static', filename='js/leaflet.js') }}"></script>
+    <script type="application/javascript" src="{{ url_for('static', filename='js/Edit.SimpleShape.js') }}"></script>
+    <script type="application/javascript" src="{{ url_for('static', filename='js/Edit.Rectangle.js') }}"></script>
+{% endblock %}
+
+
+{% block content %}
+<div class="row">
+    <div class="col-md-11">
+        <div class="progress">
+            <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width:0%">
+                <span>0%</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-1">
+        <a href="{{url_for('stop') }}">stop</a>
+    </div>
+</div>
+<!-- /.row -->
+<div class="row">
+    <div class="col-md-12">
+        <table class="table">
+            <tr>
+                <td>Application</td>
+                <td><div class="data-application"></div></td>
+            </tr>
+            <tr>
+                <td>Action</td>
+                <td><div class="data-action"></div></td>
+            </tr>
+        </table>
+    </div>
+</div>
+<!-- /.row -->
+<div class="row">
+    <div class="col-md-12">
+        <div id="map" class="map-small"></div>
+    </div>
+</div>
+<!-- /.row -->
+<div class="row">
+    <div class="col-md-12 form-horizontal hidden">
+        <div class="form-group">
+            <div class="col-sm-6">
+                <input id="longitude-min" name="longitude-min" class="form-control" placeholder="longitude min">
+            </div>
+            <div class="col-sm-6">
+                <input id="latitude-max" name="latitude-max" class="form-control" placeholder="latitude max">
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-sm-6">
+                <input id="longitude-max" name="longitude-max" class="form-control" placeholder="longitude max">
+            </div>
+            <div class="col-sm-6">
+                <input id="latitude-min" name="latitude-min" class="form-control" placeholder="latitude min">
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /.row -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-primary">
+            <div class="panel-heading">Downloaded maps</div>
+            <div class="panel-body h-scroll">
+                <div class="row">
+                    {% for item in osmList %}
+                        <div class="col-md-2">
+                            <div id="{{ item.id }}" class="map-osmList"></div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /.row -->
+<div class="row">
+    <div class="col-md-2">
+        <input id="start-ddr" type="button" class="btn btn-default" value="Update DDR data" onclick="start_ddr_task();" />
+    </div>
+    <div class="col-md-2 col-md-offset-6">
+        <input type="button" class="btn btn-default" value="Create new graph" onclick="start_graph_task('longitude-min', 'latitude-max', 'longitude-max', 'latitude-min');">
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block body_js_src %}{% endblock %}
+{% block body_js_script %}
+
+	////// Small OSM map list
+    var list_map_options = {
+        dragging: false,
+        touchZoom: false,
+        scrollWheelZoom: false,
+        doubleClickZoom: false,
+        boxZoom: false,
+        tap: false,
+        zoomControl: false,
+        attributionControl: false
+    }
+    {% for item in osmList %}
+        // MAP {{ loop.index }}
+        var bounds_{{ loop.index }} = [[{{ item.coords[3] }}, {{ item.coords[0] }}], [{{ item.coords[1] }}, {{ item.coords[2] }}]];
+        var map_{{ loop.index }} = L.map('{{ item.id }}', list_map_options);
+        map_{{ loop.index }}.fitBounds(bounds_{{ loop.index }});
+
+        L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors, Points &copy 2012 LINZ'
+                    }).addTo(map_{{ loop.index }});
+        var rect_{{ loop.index }} = L.rectangle(bounds_{{ loop.index }});
+        map_{{ loop.index }}.addLayer(rect_{{ loop.index }});
+        map_{{ loop.index }}.fitBounds(bounds_{{ loop.index }});
+
+        map_{{ loop.index }}.on('click', function(e) {
+            setEditableRectangle(bounds_{{ loop.index }});
+        });
+    {% endfor %}
+
+
+	////// Map Selector
+    var progressRect = null;
+    var tiles = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors, Points &copy 2012 LINZ'
+        });
+    var map = L.map('map', {layers: [tiles]});
+    
+    var default_bbox = [[49.206383, 16.583862], [49.178785, 16.638107]];
+    
+    function updateBboxInput() {
+        var ne = rect.getBounds()._northEast;
+        var sw = rect.getBounds()._southWest;
+
+        $("#longitude-min").val(sw.lng);
+        $("#longitude-max").val(ne.lng);
+        $("#latitude-min").val(sw.lat);
+        $("#latitude-max").val(ne.lat);
+    }
+
+    function setEditableRectangle(bounds)
+    {
+        rect.editing.disable();
+        map.fitBounds(bounds);
+        rect.setBounds(bounds);
+        updateBboxInput();
+        rect.editing.enable();
+    }
+
+    //selector
+    var rect = L.rectangle(default_bbox);
+    map.addLayer(rect);
+    rect.on('edit', updateBboxInput);
+    setEditableRectangle(default_bbox);
+
+
+    // button
+    function start_graph_task(lngMinInput, latMaxInput, lngMaxInput, latMinInput)
+    {
+        lngMin = $("#"+lngMinInput).val();
+        latMax = $("#"+latMaxInput).val();
+        lngMax = $("#"+lngMaxInput).val();
+        latMin = $("#"+latMinInput).val();
+        $.ajax({
+            type: 'POST',
+            data: {'longitude-min': lngMin, 'latitude-max': latMax, 'longitude-max': lngMax, 'latitude-min': latMin, 'submit' : 'start'},
+            url: '{{ url_for('run_graph') }}',
+            success: function() {
+            },
+            error: function(e) {
+                alert('Unexpected error! Cannot get create graph');
+            }
+        });
+    }
+
+    // button
+    function start_ddr_task() {
+        // send ajax POST request to start background job
+        $.ajax({
+            type: 'POST',
+            url: '{{ url_for('run_ddr') }}',
+            success: function() {
+            },
+            error: function() {
+                alert('Unexpected error');
+            }
+        });
+    }
+
+    function updateRectInProgress(bounds)
+    {
+        if(typeof bounds !== 'undefined' && progressRect == null)
+        {
+            progressRect = L.rectangle(bounds, { color: "#ff7800", weight: 1, clickable: false });
+            map.addLayer(progressRect);
+        }
+        else if(typeof bounds === 'undefined' && progressRect != null)
+        {
+            map.removeLayer(progressRect);
+            progressRect = null;
+        }
+    }
+    
+    // periodic
+    function update_progress() {
+        // send GET request to status URL
+        $.getJSON('{{ url_for('status') }}', function(data) {
+            // update UI
+            updateRectInProgress(data.bbox);
+
+            percent = parseInt(data.percentage);
+
+            $('.progress-bar').css('width', percent+'%').attr('aria-valuenow', percent).children().html( percent+'%');
+            $('.data-action').html( data.action );
+            $('.data-application').html( data.thread_name );
+            setTimeout(function() {
+                update_progress();
+            }, 2000);
+        });
+    }
+
+    update_progress();
+{% endblock %}

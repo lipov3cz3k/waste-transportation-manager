@@ -1,0 +1,5 @@
+data_all/
+.idea
+.vs
+data_objects/
+__pycache__
