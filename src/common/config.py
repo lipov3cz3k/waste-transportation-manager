@@ -31,6 +31,7 @@ class local_config:
     log_file_maxsize = 10000000 # 10mb
     folder_osm_data_root = normpath(join(root_folder, "osm_data"))
     folder_graphs_root = normpath(join(root_folder, "graphs"))
+    folder_export_root = normpath(join(root_folder, "export"))
     allowed_tags_node = []
     allowed_tags_way = ['oneway', 'highway']
     not_allowed_evi = [TMCUpdateClass.parking]

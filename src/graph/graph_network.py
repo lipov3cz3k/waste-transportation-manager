@@ -1,5 +1,7 @@
 from pickle import dump as pickle_dump, load as pickle_load
 import networkx as nx
+import numpy as np
+import csv
 from random import random
 from os.path import join, isfile, exists
 from os import unlink
@@ -141,40 +143,12 @@ class Network:
         if percentage != None:
             self.state['percentage'] = int(percentage)
 
-    def ExportFusionTables(self, fileName):
-        f = fileName
-        header = 'edge_id,length,n1,n1_lat,n1_lon,n2,n2_lat,n2_lon,line,color,msgs'
-        _print(header,file=f)
-        from ddr.database import db_session
-        local_db_session = db_session()
-        try:
-            for n1, n2, e in get_tqdm(self.G.edges(data=True), self.SetState, desc="Exporting csv", total=None):
-                msgs = '"['
-                color = "ff0000"
-                if len(e['msgs']) > 0:
-                    color = "0000ff"
-                    for m in e['msgs']:
-                        m = local_db_session.merge(m)
-                        msgs += '{""id"":""'+m.id+'"", ""mtxt\"":""'+ m.MTXT.value + '""},'
-                    msgs = msgs[:-1]
-                msgs += ']"'
-                kmlLine = '"<LineString><coordinates>'+self.G.node[n1]['lon']+','+self.G.node[n1]['lat']+' '+self.G.node[n2]['lon']+','+self.G.node[n2]['lat']+'</coordinates></LineString>"' 
-                _print(e['id'], e['length'],
-                      n1, self.G.node[n1]['lat'], self.G.node[n1]['lon'], 
-                      n2, self.G.node[n2]['lat'], self.G.node[n2]['lon'],
-                      kmlLine,color,msgs,
-                      sep=',', file=f)
-            f.close() 
-        except Exception as e:
-            print(str(e), log_type=LogType.error)
-            local_db_session.close()
-            raise e
-        local_db_session.close()
-
     def GetNodes(self):
         return self.G.nodes()
+
     def GetEdges(self):
         return self.G.edges()
+
     def GetNodesGeoJSON(self):
         features = []
         for n_id in self.G.nodes_iter():
@@ -205,6 +179,56 @@ class Network:
 
         details = {'id' : edge['id'], 'length': edge['length'], 'multiplicator' : edge['penalty_multiplicator'], 'msgs' : msgs}
         return details
+
+############# Export functions ################
+    def ExportSimple(self):
+        
+        file_path = join(local_config.folder_export_root, '%s' % self.graphID)
+
+        #return nx.adjacency_matrix(self.G, weight='length')
+        matrix = nx.to_numpy_matrix(self.G, weight='length')
+        np.savetxt(file_path+"_d.csv", matrix, fmt="%i", delimiter=",")
+        
+        with open(file_path+"_n.csv", 'w') as f:
+            writer = csv.writer(f)
+            writer.writerows([self.GetNodes()])
+
+        
+        return self.GetNodes()
+
+
+############## Depricated #####################
+
+    def ExportFusionTables(self, fileName):
+        f = fileName
+        header = 'edge_id,length,n1,n1_lat,n1_lon,n2,n2_lat,n2_lon,line,color,msgs'
+        _print(header,file=f)
+        from ddr.database import db_session
+        local_db_session = db_session()
+        try:
+            for n1, n2, e in get_tqdm(self.G.edges(data=True), self.SetState, desc="Exporting csv", total=None):
+                msgs = '"['
+                color = "ff0000"
+                if len(e['msgs']) > 0:
+                    color = "0000ff"
+                    for m in e['msgs']:
+                        m = local_db_session.merge(m)
+                        msgs += '{""id"":""'+m.id+'"", ""mtxt\"":""'+ m.MTXT.value + '""},'
+                    msgs = msgs[:-1]
+                msgs += ']"'
+                kmlLine = '"<LineString><coordinates>'+self.G.node[n1]['lon']+','+self.G.node[n1]['lat']+' '+self.G.node[n2]['lon']+','+self.G.node[n2]['lat']+'</coordinates></LineString>"' 
+                _print(e['id'], e['length'],
+                      n1, self.G.node[n1]['lat'], self.G.node[n1]['lon'], 
+                      n2, self.G.node[n2]['lat'], self.G.node[n2]['lon'],
+                      kmlLine,color,msgs,
+                      sep=',', file=f)
+            f.close() 
+        except Exception as e:
+            print(str(e), log_type=LogType.error)
+            local_db_session.close()
+            raise e
+        local_db_session.close()
+
 
     def DijkstraPath(self, startNode, endNode, routingType = RoutingType.stochasticWS, simulatedSeason = Season(datetime.now()), simulatedDayTime = DayTime(datetime.now())):
         if not startNode or not endNode:

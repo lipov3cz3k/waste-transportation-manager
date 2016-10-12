@@ -119,6 +119,8 @@ def CheckFolders():
         makedirs(local_config.folder_osm_data_root)
     if not exists(local_config.folder_graphs_root):
         makedirs(local_config.folder_graphs_root)
+    if not exists(local_config.folder_export_root):
+        makedirs(local_config.folder_export_root)
 
 def get_float_coord(coord):
     try:

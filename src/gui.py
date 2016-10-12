@@ -3,7 +3,7 @@ from flask import Flask, request, redirect, url_for, render_template, jsonify
 from common.config import ftp_config, local_config
 from graph.api import getOSMList, getGraphList, loadGraph
 from graph.bounding_box import BoundingBox
-from common.utils import get_float_coord
+from common.utils import get_float_coord, CheckFolders
 from web.long_task_threads import DDR_thread, GRAPH_thread, GRAPH_update_thread
 
 
@@ -16,6 +16,7 @@ class WebApplication(Flask):
             self.thread = None
             self.thread_name = ""
             self.graph_pool = []
+            CheckFolders()
 
 app = WebApplication(__name__, static_folder="web/static", template_folder="web/templates")
 
@@ -158,7 +159,14 @@ def graphGetEdgeDetails(graphID):
         return jsonify(**details)
 
     return redirect(url_for('graphDetail', graphID=graphID))
+############################ Export ################
 
+@app.route('/graph/<graphID>/export/simple')
+def graphExportSimple(graphID):
+    graph = loadGraph(app.graph_pool, graphID)
+    return str(graph.ExportSimple())
+
+############################
 @app.route('/graph/<graphID>/affected')
 def graphGetAffectedEdges(graphID):
     graph = loadGraph(app.graph_pool, graphID)
