@@ -29,14 +29,14 @@
                     <div class="col-md-12">
                         <label for="routingType" class="control-label input-group">Routing type</label>
                         <div class="btn-group" id="routingType" data-toggle="buttons">
-                            <label class="btn btn-default">
-                                <input type="radio" name="routingType" value="0">Basic
+                            <label class="btn btn-default active">
+                                <input type="radio" name="routingType" value="0" checked="">Basic
                             </label>
                             <label class="btn btn-default">
                                 <input type="radio" name="routingType" value="1">Low risk / worst-case
                             </label>
-                            <label class="btn btn-default active">
-                                <input type="radio" name="routingType" value="2" checked="">Wait-and-See
+                            <label class="btn btn-default">
+                                <input type="radio" name="routingType" value="2">Wait-and-See
                             </label>
                             <label class="btn btn-default">
                                 <input type="radio" name="routingType" value="3">Scenario Wait-and-See
@@ -106,6 +106,7 @@
                 <div class="col-md-6">
                     <label for="removeAll" class="control-label input-group">Controls:</label>
                     <input type="button" name="removeAll" class="btn btn-default" value="Remove all paths" onclick="removeAllPaths();">
+                    <input type="button" name="removeAll" class="btn btn-default" value="Export to CSV (simple)" onclick="exportSimple();">
                 </div>
             </div>
         </div>
@@ -327,5 +328,20 @@
         }
         pathsLayer.length = 0;
         $("#foundPaths tbody").empty();
+    }
+    
+    function exportSimple()
+    {
+        // send ajax POST request to start background job
+        $.ajax({
+            type: 'POST',
+            url: '{{ url_for('graphExportSimple', graphID=graphID) }}',
+            success: function() {
+                alert('DONE! Look to export folder.');
+            },
+            error: function() {
+                alert('Unexpected error');
+            }
+        });
     }
 {% endblock %}

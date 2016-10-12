@@ -86,9 +86,6 @@
 </div>
 <!-- /.row -->
 <div class="row">
-    <div class="col-md-2">
-        <input id="start-ddr" type="button" class="btn btn-default" value="Update DDR data" onclick="start_ddr_task();" />
-    </div>
     <div class="col-md-2 col-md-offset-6">
         <input type="button" class="btn btn-default" value="Create new graph" onclick="start_graph_task('longitude-min', 'latitude-max', 'longitude-max', 'latitude-min');">
     </div>
@@ -186,19 +183,6 @@
     }
 
     // button
-    function start_ddr_task() {
-        // send ajax POST request to start background job
-        $.ajax({
-            type: 'POST',
-            url: '{{ url_for('run_ddr') }}',
-            success: function() {
-            },
-            error: function() {
-                alert('Unexpected error');
-            }
-        });
-    }
-
     function updateRectInProgress(bounds)
     {
         if(typeof bounds !== 'undefined' && progressRect == null)
