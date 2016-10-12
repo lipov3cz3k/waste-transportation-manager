@@ -9,7 +9,7 @@ if __name__ == '__main__':
 
     local_config.tqdm_console_disabled = False
     
-    parser = ArgumentParser(description='Master\'s Thesis ....')
+    parser = ArgumentParser(description='Waste transportation manager ...')
     parser.add_argument("-d", "--download",
                         action="store_true", dest="download", default=False,
                         help="Download new traffic messages and store them to the DB")

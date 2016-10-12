@@ -5,7 +5,6 @@ from common.alertc import TMCUpdateClass
 
 
 ############################ CONFIGURATION ############################
-
 class ftp_config:
     host = 'FTP HOST NAME'
     username = 'FTP USERNAME'
@@ -13,12 +12,10 @@ class ftp_config:
     data_folder_root = 'data'
 
 class local_config:
-    if system() == "Windows" :
-        root_folder = normpath("C:\\ProgramData\\MasterThesis")
-    elif system() == "Linux":
-        root_folder = normpath(join(environ['HOME'], "Documents/MasterThesis"))
+    if system() == "Linux":
+        root_folder = normpath(join(environ['HOME'], "Documents/WTM"))
     else:
-        root_folder = normpath("C:\\ProgramData\\MasterThesis")
+        root_folder = normpath("C:\\ProgramData\\WTM")
 
     folder_data_root = normpath(join(root_folder, "data"))
     folder_log_files = normpath(join(root_folder, "logs"))
