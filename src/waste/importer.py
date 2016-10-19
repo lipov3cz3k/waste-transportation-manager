@@ -51,8 +51,38 @@ class Importer:
     def GetAddressesWithoutLocation(self):
         from models.location import Address
 
-        addresses_obj = self.db_session.query(Address).filter(Address.Location == None).all()
-        return coords_obj
+        addresses_obj = self.db_session.query(Address).filter(Address.location == None).all()
+        return addresses_obj
+
+    def GetLocationsForAddresses(self, addresses_array):
+        from time import sleep
+        from geopy.geocoders import Nominatim
+        from models.location import Location
+        print("Getting locations for Addresses <%d> (use Nominatim)" % len(addresses_array))#, LogType.trace)
+
+        geolocator = Nominatim()
+        for addr_obj in get_tqdm(addresses_array, self.SetState, desc="getting locations", total=None):
+            #print("getting new by nominatim ...", LogType.trace, only_Message=True)
+            successful = False
+            while not successful:
+                try:
+                    location = geolocator.geocode({'street':addr_obj.house_number + ' ' + addr_obj.street,'city':addr_obj.city},
+                                                  addressdetails=True)
+                except Exception as e:
+                    raise e
+                else:
+                    successful = True
+                address = location.raw['address']
+                osm_id = location.raw['osm_id']
+                location_obj = Location.as_unique(self.db_session,
+                                                  address=address, 
+                                                  osm_id=osm_id, 
+                                                  latitude=location.latitude, 
+                                                  longitude=location.longitude)
+                addr_obj.set_location(location_obj)
+                self.db_session.commit()
+                sleep(1)
+
 
 class Cheb(Importer):
     def __init__(self):
@@ -108,4 +138,4 @@ class Cheb(Importer):
         #get location
         print("Start reversing Addresses.")#, LogType.info)
         addresses_without_location = self.GetAddressesWithoutLocation()
-        #self.GetLocationsForCoordsAndMsg(coords_without_location)
+        self.GetLocationsForAddresses(addresses_without_location)

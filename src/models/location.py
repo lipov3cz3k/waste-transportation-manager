@@ -21,6 +21,9 @@ class Address(UniqueMixin, Base) :
         self.hash = sha1(json.dumps(kwargs, sort_keys=True).encode("UTF-8")).hexdigest()
         return super().__init__(**kwargs)
 
+    def set_location(self, location):
+        self.location = location
+
     @classmethod
     def unique_hash(cls, **kwargs):
         return sha1(json.dumps(kwargs, sort_keys=True).encode("UTF-8")).hexdigest()
@@ -41,11 +44,15 @@ class Location(UniqueMixin, Base) :
     country = Column(Text)
     postcode = Column(Text)
     road = Column(Text)
+    latitude = Column(Text)
+    longitude = Column(Text)
     osm_id = Column(Text)
 
-    def __init__(self, address=None, osm_id=None):
-        self.osm_id = osm_id
-
+    def __init__(self, **kwargs):
+        self.osm_id = kwargs['osm_id']
+        self.latitude = kwargs['latitude']
+        self.longitude = kwargs['longitude']
+        address = kwargs['address']
         if 'city' in address:
             self.city = address['city']
         if 'village' in address:
@@ -64,11 +71,11 @@ class Location(UniqueMixin, Base) :
             self.road = address['road']
 
     @classmethod
-    def unique_hash(cls, osm_id):
-        return osm_id
+    def unique_hash(cls, **kwargs):
+        return kwargs['osm_id']
 
     @classmethod
-    def unique_filter(cls, query, osm_id):
-        return query.filter(Location.osm_id == osm_id)
+    def unique_filter(cls, query, **kwargs):
+        return query.filter(Location.osm_id == kwargs['osm_id'])
 
 location_osm_id_index = Index('Location_osm_id_index', Location.osm_id)
