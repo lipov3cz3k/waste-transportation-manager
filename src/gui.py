@@ -161,7 +161,7 @@ def graphGetEdgeDetails(graphID):
     return redirect(url_for('graphDetail', graphID=graphID))
 ############################ Export ################
 
-@app.route('/graph/<graphID>/export/simple')
+@app.route('/graph/<graphID>/export/simple', methods=['POST', 'GET'])
 def graphExportSimple(graphID):
     graph = loadGraph(app.graph_pool, graphID)
     return str(graph.ExportSimple())
