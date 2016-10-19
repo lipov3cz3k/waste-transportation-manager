@@ -31,7 +31,7 @@ class Network:
             raise Exception("Service not running")
 
     def ConstructGraph(self, graphID, osm_path_xml_data):
-        from ddr.database import init_db, db_session
+        from database import init_db, db_session
         init_db()
         self.graphID = graphID
 

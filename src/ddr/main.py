@@ -390,7 +390,7 @@ class DDRManager:
         return docs_tuple
 
     def GetLocationsForCoordsAndMsg(self, coords_array):
-        from ddr.ddr_models import Location
+        from models.location import Location
         print("Getting locations for COORDS <%d> (use Nominatim)" % len(coords_array), LogType.trace)
         nominatim = NominatimReverse()
         for coord_obj in get_tqdm(coords_array, self.SetState, desc="getting locations", total=None):
