@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{9966053f-1e84-4dcd-8082-382c68598649}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>gui.py</StartupFile>
+    <StartupFile>test.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
@@ -60,8 +60,8 @@
     <Compile Include="common\config.py" />
     <Compile Include="common\utils.py" />
     <Compile Include="common\__init__.py" />
+    <Compile Include="database.py" />
     <Compile Include="db_visualizer.py" />
-    <Compile Include="ddr\database.py" />
     <Compile Include="ddr\ddr_models.py" />
     <Compile Include="ddr\main.py" />
     <Compile Include="ddr\TMP\ddr_comments.py" />
@@ -81,6 +81,24 @@
     <Compile Include="graph\__init__.py" />
     <Compile Include="gui.py" />
     <Compile Include="main.py" />
+    <Compile Include="models\location.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="models\waste.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="models\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="test.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="waste\importer.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="waste\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="web\long_task_threads.py" />
     <Compile Include="web\__init__.py" />
     <Compile Include="__init__.py" />
@@ -94,6 +112,8 @@
     <Folder Include="ddr\TMP\" />
     <Folder Include="graph\" />
     <Folder Include="graph\osm\" />
+    <Folder Include="models\" />
+    <Folder Include="waste\" />
     <Folder Include="web\" />
     <Folder Include="web\static\" />
     <Folder Include="web\static\css\" />
