@@ -145,6 +145,29 @@ def graphGetNodes(graphID):
     graph = loadGraph(app.graph_pool, graphID)
     return str(graph.GetNodesGeoJSON())
 
+@app.route('/graph/<graphID>/edges-containers')
+def graphGetEdgesWithContainers(graphID):
+    graph = loadGraph(app.graph_pool, graphID)
+    return str(graph.GetEdgesWithContainers())
+
+@app.route('/graph/<graphID>/containers', methods=['POST'])
+def graphGetContainers(graphID):
+    graph = loadGraph(app.graph_pool, graphID)
+    n1 = n2 = None
+    if request.method == 'POST':
+        n1 = request.form['n1']
+        n2 =  request.form['n2']
+    return str(graph.GetContainersGeoJSON(n1, n2))
+
+@app.route('/graph/<graphID>/container/details', methods=['POST'])
+def graphGetContainerDetails(graphID):
+    if request.method == 'POST':
+        id = request.form['id']
+        graph = loadGraph(app.graph_pool, graphID)
+        details = graph.GetContainerDetails(id)
+        return jsonify(**details)
+    return redirect(url_for('graphDetail', graphID=graphID))
+
 @app.route('/graph/<graphID>/edges')
 def graphGetEdges(graphID):
     return "not implemented"

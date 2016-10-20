@@ -156,6 +156,54 @@ class Network:
             features.append( Feature(id=n_id, geometry=Point((float(self.G.node[n_id]['lon']), float(self.G.node[n_id]['lat'])))) )
         return FeatureCollection(features)
 
+    def GetContainersGeoJSON(self, n1=None, n2=None):
+        from graph.bounding_box import BoundingBox
+        features = []
+
+        if n1 and n2:
+            e = self.G[n1][n2]
+            containers = e.get('containers')
+            for container in containers:
+                features.append( Feature(id=container.get('id'), geometry=Point((float(container.get('lon')), float(container.get('lat')))), properties=container) )
+        else:
+            for n1, n2, e in self.G.edges_iter(data=True):
+                containers = e.get('containers')
+                for container in containers:
+                    features.append( Feature(id=container.get('id'), geometry=Point((float(container.get('lon')), float(container.get('lat')))), properties=container) )
+        return FeatureCollection(features)    
+
+    def GetContainerDetails(self, id):
+        from database import db_session
+        from models.waste import Cheb
+
+        containers_details = []
+        containers = db_session.query(Cheb).filter(Cheb.obj_id == id).all()
+        for container in containers:
+            containers_details.append({ 'id' : container.obj_id, 
+                                        'container_type' : container.container_type,
+                                        'waste_type' : container.waste_type,
+                                        'waste_name' : container.waste_name,
+                                        'interval' : container.interval,
+                                        'days' : container.days,
+                                        'city' : container.address.city,
+                                        'street' : container.address.street,
+                                        'house_number' : container.address.house_number
+                                        })
+
+        db_session.remove()
+        return {'containers' : containers_details}
+
+    def GetEdgesWithContainers(self):
+        edges = []
+        for n1, n2, e in self.G.edges_iter(data=True):
+            containers = e.get('containers')
+            if len(containers) >= 1:
+                start = (float(self.G.node[n1]['lon']), float(self.G.node[n1]['lat']))
+                end = (float(self.G.node[n2]['lon']), float(self.G.node[n2]['lat']))
+                f = Feature(geometry=LineString([start, end]), properties={'n1' : n1, 'n2' : n2})
+                edges.append(f)
+        return FeatureCollection(edges)
+
     def GetAffectedEdges(self):
         edges = []
         denominator = (self.max_penalty - 1)
@@ -170,7 +218,7 @@ class Network:
         return FeatureCollection(edges)
 
     def GetEdgeDetails(self, n1, n2):
-        from ddr.database import db_session
+        from database import db_session
         edge = self.G[n1][n2]
         msgs = []
         for m in edge['msgs']:

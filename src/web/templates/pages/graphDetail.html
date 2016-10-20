@@ -177,6 +177,93 @@
         }
     });
 
+///////// Containers loader ///////////
+    var containers = L.markerClusterGroup();
+    map.addLayer( containers );
+
+
+    function containerPopup(feature, layer) {
+        if (feature.properties){
+            l = layer.bindPopup("Loading...", {maxWidth: 600, maxHeight: 400, className: 'map-popup'});
+            l.on('click', function(e) {
+                var popup = e.target._popup;
+                popup.setContent("Loading...");
+                popup.update();
+                var container_id = e.target.feature.id;
+                $.ajax({
+                    type: 'POST',
+                    data: {'id': container_id},
+                    dataType: 'json',
+                    url: '{{ url_for('graphGetContainerDetails', graphID=graphID) }}',
+                    success: function(data) {
+
+                        var containersHTML = ""
+                        for (container of data.containers)
+                           containersHTML += parse('<li><b>%s %s, %s</b>, %s, %s, %s, %s</li>', container.street, container.house_number, container.city, container.waste_name, container.container_type, container.interval, container.days);
+
+
+                        var contentHTML = parse('<ul>%s</ul>', containersHTML);
+                        popup.setContent(contentHTML);
+                        popup.update();
+                    },
+                    error: function(e) {
+                        alert('Unexpected error! Cannot load edge detail ' . e);
+                    }
+                });
+            });
+        }
+        
+    }
+
+    function loadEdgeContainers(feature, layer) {
+            layer.on('click', function(e) {
+                var n1 = e.target.feature.properties.n1;
+                var n2 = e.target.feature.properties.n2;
+                $.ajax({
+                    type: 'POST',
+                    data: {'n1': n1, 'n2': n2},
+                    dataType: 'json',
+                    url: '{{ url_for('graphGetContainers', graphID=graphID) }}',
+                    success: function(data) {
+                        var iconUrl = L.icon({ iconUrl: '{{ url_for('static', filename='images/trash.png') }}' })
+                        map.removeLayer(containers)
+                        containers = L.geoJson(data, {
+                            pointToLayer : function(feature, latlng) {
+                                return L.marker(latlng, {icon: iconUrl});
+                            },
+                            onEachFeature: containerPopup
+                        }).addTo(map);
+                        map.spin(false);
+                    },
+                    error: function(e) {
+                        alert('Unexpected error! Cannot load edge detail ' . e);
+                    }
+                });
+            });
+    }
+
+    map.spin(true);
+    $.ajax({
+        type: 'GET',
+        dataType: 'json',
+        url: '{{ url_for('graphGetEdgesWithContainers', graphID=graphID) }}',
+        success: function(data) {
+            var iconUrl = L.icon({ iconUrl: '{{ url_for('static', filename='images/trash.png') }}' })
+            edgesWithContainers = L.geoJson(data, {
+                pointToLayer : function(feature, latlng) {
+                    return L.marker(latlng, {icon: iconUrl});
+                },
+                onEachFeature: loadEdgeContainers
+            }).addTo(map);
+            map.spin(false);
+        },
+        error: function(e) {
+            alert('Unexpected error! Cannot load street with containers');
+            map.spin(false);
+        }
+    });
+
+
 ///////// Affected edges loader ///////////
     function affectedEdgesPopup(feature, layer) {
         // does this feature have a property named popupContent?

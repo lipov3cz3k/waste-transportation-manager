@@ -73,6 +73,6 @@ class Cheb(Base) :
 
 
     def __repr__(self):
-        return '%r' % (self.waste_type)
+        return '%s %s %r' % (self.obj_id, self.internal_key, self.waste_type)
 
         
