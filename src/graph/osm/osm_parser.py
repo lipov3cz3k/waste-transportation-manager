@@ -15,6 +15,7 @@ class OSMParser:
     def __init__(self, graphID, state, run = {0: False}):
         print("Initialize OSM Parser", LogType.info)
         self.ways = {}
+        self.streetNames = {}
         self.graphID = graphID
         self.node_histogram = {}
 
@@ -86,7 +87,8 @@ class OSMParser:
             self.TestIsRun()
             split_ways = way.reductive_split(self.node_histogram)
             new_ways[way.id] = []
-
+            if 'name' in way.tags:
+                self.streetNames.setdefault(way.tags.get('name'), []).append(way.id)
             for split_way in split_ways:
 
                 first, last = split_way.GetFirstLastNodeId()
@@ -99,6 +101,11 @@ class OSMParser:
                 new_ways[way.id].append(split_way)
 
         return new_ways
+
+
+
+
+    ################## DDR traffic info #####################
 
     def ConnectDDRDataWithWays(self, db_session):
         from ddr.ddr_models import Location, MSG, COORD
@@ -216,4 +223,60 @@ class OSMParser:
 
         thread_results[iteration] = {'msgs_count': msgs_count, 'last_location_obj_id': last_location_obj_id}
         print("[%d] Mapping finished" % (iteration))
+        local_db_session.close()
+
+
+    ################## Waste management #####################
+
+    def ConnectContainersWithWays(self, db_session):
+        print("Connect waste containers with ways")
+
+        from models.waste import Cheb
+        from database import db_session
+        local_db_session = db_session()
+        
+        containers_obj = local_db_session.query(Cheb).all()
+        try:
+            #print("[%d] Mapping %s containers" % (iteration, len(containers_obj)))
+            #self.SetState(action="Mapping containers", percentage=int((iteration/iteration_total)*100))
+            for container in get_tqdm(containers_obj, self.SetState, desc="Connecting containers to streets", total=None):
+            #for container in containers_obj:
+                self.TestIsRun()
+                location = container.address.location
+                if location is None:
+                    print("Address %s %s, %s has no OSM equivalent, skipping." % (container.address.street, container.address.house_number, container.address.city))
+                    #break
+                    continue
+                wanted_keys = self.streetNames.get(location.road)
+                ways = [self.ways[x] for x in wanted_keys]
+                ways = [item for sublist in ways for item in sublist]
+                if len(ways) == 1:
+                    ways[0].containers.append(container)
+                elif len(ways) > 1:
+                    ways_min_distance = {}
+                    for way in ways:
+                        min_distance = None
+
+                        for node in way.nodes:
+                            distance = vincenty((location.longitude, location.latitude), (node.lon, node.lat)).meters
+                            if min_distance is None or min_distance > distance:
+                                min_distance = distance
+
+                        ways_min_distance[way] = min_distance
+
+                    min_value = min(ways_min_distance.values())
+                    min_keys = [k for k in ways_min_distance if ways_min_distance[k] == min_value]
+                    if len(min_keys) == 1:
+                        min_keys[0].containers.append(container)
+                    elif len(min_keys) > 1:
+                        # TODO: decide which way!!!!
+                        #for way in min_keys:
+                        #    way.containers.append(container)
+                        print("Container [%s] on street %s has %d possible street segments, adding to first one" % (container.obj_id, container.address.street, len(min_keys)))
+                        min_keys[0].containers.append(container)
+                
+        except Exception as e:
+            print(str(e), log_type=LogType.error)
+            local_db_session.close()
+            raise e
         local_db_session.close()

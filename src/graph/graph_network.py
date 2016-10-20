@@ -38,7 +38,8 @@ class Network:
         try:
             osm = OSMParser(self.graphID, state=self.state, run=self.run)
             osm.ParseFromXMLFile(osm_path_xml_data)
-            osm.ConnectDDRDataWithWays(db_session)
+#            osm.ConnectDDRDataWithWays(db_session)
+            osm.ConnectContainersWithWays(db_session)
             self.SetState(action="Saving parsed osm to file", percentage=0)
             osm.SaveToFile()
             self.SetState(action="Saving parsed osm to file", percentage=100)
@@ -106,7 +107,7 @@ class Network:
                 penalty_multiplicator = GetPenaltyMul(incidents)
                 if penalty_multiplicator > self.max_penalty:
                     self.max_penalty = penalty_multiplicator
-                params = {'id':w.id, 'length':w.length, 'msgs':w.msgs, 'incidents':incidents, 'penalty_multiplicator':penalty_multiplicator}
+                params = {'id':w.id, 'length':w.length, 'msgs':w.msgs, 'incidents':incidents, 'penalty_multiplicator':penalty_multiplicator, 'containers' : w.GetContainers(db_session)}
                 node_first, node_last = w.GetFirstLastNodeId()
                 self.G.add_path((node_first.id, node_last.id), **params)
 

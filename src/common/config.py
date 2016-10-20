@@ -33,7 +33,7 @@ class local_config:
     folder_graphs_root = normpath(join(root_folder, "graphs"))
     folder_export_root = normpath(join(root_folder, "export"))
     allowed_tags_node = []
-    allowed_tags_way = ['oneway', 'highway']
+    allowed_tags_way = ['oneway', 'highway', 'name']
     not_allowed_evi = [TMCUpdateClass.parking]
     thread_pool_size_for_mapping = 10
     number_of_stochastic_experiments = 100

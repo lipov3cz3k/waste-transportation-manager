@@ -20,6 +20,7 @@ class Way:
         self.nodes = nodes
         self.tags = tags
         self.msgs = []
+        self.containers = []
         self.length = 0
 
     def GetFirstLastNodeId(self):
@@ -53,6 +54,14 @@ class Way:
                     tsto = tsto.value
                     incidents.append({'class' : worstTMCclass, 'TSTA' : tsta, 'TSTO' : tsto, 'season' : Season(daytime), 'daytime' : DayTime(daytime)})
         return incidents
+
+    def GetContainers(self, db_session):
+        containers = []
+        for container in self.containers:
+            if inspect(container).detached:
+                container = db_session.merge(container)
+            containers.append({'container_type' : container.container_type, 'waste_code' : container.waste_code, 'lat' : container.address.location.latitude, 'lon' : container.address.location.longitude})
+        return containers
 
     def reductive_split(self, dividers):
         def slice_array(ar, dividers):

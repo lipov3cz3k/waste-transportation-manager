@@ -20,6 +20,10 @@ class Importer:
         if percentage != None:
             self.state['percentage'] = int(percentage)
 
+    def TestIsRun(self):
+        if not self.run:
+            raise Exception("Service not running")
+
     def Import(self, filename):
         from database import init_db, db_session
         init_db()
@@ -38,15 +42,9 @@ class Importer:
 
     def SaveAllRecordsToDatabase(self, records):
         print("Saving records to database")#), LogType.trace)
-        #for record in get_tqdm(records, self.SetState, desc="saving records to db", total=None):
-        #    self.TestIsRun()
-        #    #self.SaveRecordToDatabase(record)
         self.db_session.add_all(records)
         self.db_session.commit()
 
-    def TestIsRun(self):
-        if not self.run:
-            raise Exception("Service not running")
 
     def GetAddressesWithoutLocation(self):
         from models.location import Address
@@ -72,6 +70,8 @@ class Importer:
                     raise e
                 else:
                     successful = True
+                if location == None:
+                    continue
                 address = location.raw['address']
                 osm_id = location.raw['osm_id']
                 location_obj = Location.as_unique(self.db_session,
@@ -136,6 +136,6 @@ class Cheb(Importer):
             data.clear()
 
         #get location
-        print("Start reversing Addresses.")#, LogType.info)
-        addresses_without_location = self.GetAddressesWithoutLocation()
-        self.GetLocationsForAddresses(addresses_without_location)
+        #print("Start reversing Addresses.")#, LogType.info)
+        #addresses_without_location = self.GetAddressesWithoutLocation()
+        #self.GetLocationsForAddresses(addresses_without_location)
