@@ -248,6 +248,9 @@ class OSMParser:
                     #break
                     continue
                 wanted_keys = self.streetNames.get(location.road)
+                if wanted_keys is None:
+                    print("Address %s %s, %s has no road loading all roads." % (container.address.street, container.address.house_number, container.address.city))
+                    wanted_keys = [item for sublist in self.streetNames.values() for item in sublist]
                 ways = [self.ways[x] for x in wanted_keys]
                 ways = [item for sublist in ways for item in sublist]
                 if len(ways) == 1:
