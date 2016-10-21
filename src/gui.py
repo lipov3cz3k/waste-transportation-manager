@@ -150,7 +150,7 @@ def graphGetEdgesWithContainers(graphID):
     graph = loadGraph(app.graph_pool, graphID)
     return str(graph.GetEdgesWithContainers())
 
-@app.route('/graph/<graphID>/containers', methods=['POST'])
+@app.route('/graph/<graphID>/containers', methods=['GET','POST'])
 def graphGetContainers(graphID):
     graph = loadGraph(app.graph_pool, graphID)
     n1 = n2 = None

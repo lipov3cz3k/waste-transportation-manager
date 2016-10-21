@@ -238,12 +238,12 @@ class Network:
         matrix = nx.to_numpy_matrix(self.G, weight='length')
         np.savetxt(file_path+"_d.csv", matrix, fmt="%i", delimiter=",")
         
-        with open(file_path+"_n.csv", 'w') as f:
+        with open(file_path+"_n.csv", 'w',newline="\n", encoding="utf-8") as f:
             writer = csv.writer(f)
-            writer.writerows([self.GetNodes()])
-
-        
-        return self.GetNodes()
+            writer.writerow(['node','lat', 'lon'])
+            for n, d in self.G.nodes_iter(data=True):
+                writer.writerow([n, d.get('lat'), d.get('lon')])
+        return self.G.nodes(data=True)
 
 
 ############## Depricated #####################
