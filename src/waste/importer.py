@@ -31,25 +31,23 @@ class Importer:
         print("start import %s" % self.source)
         self.run = True # TODO: Move to run method
         
-    def SaveRecordToDatabase(self, rec_obj):
-        #print("Save DOC object to database (%s)" % basename(rec_obj.file_name), LogType.trace)
-
-        self.db_session.add(rec_obj)
-        self.db_session.commit()       
-
     def SaveAllRecordsToDatabase(self, records):
         print("Saving records to database")#), LogType.trace)
         self.db_session.add_all(records)
         self.db_session.commit()
 
+    def LoadOSMLocation(self):
+        print("Start reversing Addresses.")#, LogType.info)
+        addresses_without_location = self._GetAddressesWithoutLocation()
+        self._GetLocationsForAddresses(addresses_without_location)
 
-    def GetAddressesWithoutLocation(self):
+    def _GetAddressesWithoutLocation(self):
         from models.location import Address
 
         addresses_obj = self.db_session.query(Address).filter(Address.location == None).all()
         return addresses_obj
 
-    def GetLocationsForAddresses(self, addresses_array):
+    def _GetLocationsForAddresses(self, addresses_array):
         from time import sleep
         from geopy.geocoders import Nominatim
         from models.location import OSMLocation
@@ -127,16 +125,15 @@ class Cheb(Importer):
                         record[normalize.get(key, key)] = cell.value.strip()
                     else:
                         record[normalize.get(key, key)] = cell.value
-                data.append(Cheb(self.db_session, record))
+                data.append(Cheb(db_session=self.db_session, data=record))
 
             #save to database
             self.SaveAllRecordsToDatabase(data)
             data.clear()
 
         #get location
-        #print("Start reversing Addresses.")#, LogType.info)
-        #addresses_without_location = self.GetAddressesWithoutLocation()
-        #self.GetLocationsForAddresses(addresses_without_location)
+        self.LoadOSMLocation()
+
 
 class Jihlava(Importer):
     def __init__(self):
@@ -149,6 +146,8 @@ class Jihlava(Importer):
             self.ImportMunicipal(filename) 
         elif "separ_hnizda" in filename:
             self.ImportSepar(filename)
+        #get location
+        self.LoadOSMLocation()
 
     def ImportMunicipal(self, filename):
         from dbfread import DBF
@@ -162,11 +161,12 @@ class Jihlava(Importer):
             if not row.get('ADRESA'):
                 continue
             record = {}
+            record['object_id'] = int(row.get('OBJECTID', -1))
             adresa = row.get('ADRESA').rsplit(' ', 1)
-            if len(adresa) > 1:
-                record['street'], record['house_number'] = adresa
+            if len(adresa) > 1 and adresa[1][0].isdigit():
+                    record['street'], record['house_number'] = adresa
             else:
-                record['street'] = adresa[0]
+                record['street'] = row.get('ADRESA')
                 record['house_number'] = ''
             record['city'] = 'Jihlava'
             record['longitude'], record['latitude'] = sjtsk(row.get('X'), row.get('Y'), inverse=True)
@@ -188,13 +188,11 @@ class Jihlava(Importer):
             record['note'] = row.get('POZNAMKA')
 
             record['ownership'] = row.get('TYP_VLASTN')
-            record['optimum'] = row.get('OPTIMUM')
-            record['coefficient'] = row.get('KOEFICIENT')
-            record['ratio'] = row.get('POMER')
-            #POCET1
-            #NADOBA1
-            #CETN_SVOZ1
-            data.append(Jihlava(self.db_session, record))
+            record['optimum'] = int(row.get('OPTIMUM', -1))
+            record['coefficient'] = int(row.get('KOEFICIENT', -1))
+            record['ratio'] = int(row.get('POMER', -1))
+            #TODO: POCET1, NADOBA1, CETN_SVOZ1
+            data.append(Jihlava.as_unique(self.db_session, db_session=self.db_session, data=record))
 
         self.SaveAllRecordsToDatabase(data)
 
@@ -205,5 +203,4 @@ class Jihlava(Importer):
         data = []
         for row in get_tqdm(table, self.SetState, desc="loading separ_hnizda", total=None):
             record = {}
-            
             data.append(record)

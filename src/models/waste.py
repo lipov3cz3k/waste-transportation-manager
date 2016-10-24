@@ -1,7 +1,7 @@
 from inspect import isclass
 from sqlalchemy import Column, Integer, ForeignKey, Text, Index, Boolean, String
 from sqlalchemy.orm import relationship, backref
-from database import Base
+from database import Base, UniqueMixin
 from models.location import Address
 
 class Container(Base) : 
@@ -35,8 +35,9 @@ class Container(Base) :
         'with_polymorphic':'*'
     }
 
-    def __init__(self, session, data):
-        self.address = Address.as_unique(session, 
+    def __init__(self, **kwargs):
+        data = kwargs['data']
+        self.address = Address.as_unique(kwargs['db_session'], 
                                          city=str(data['city']),
                                          street=str(data['street']),
                                          house_number=str(data['house_number']), 
@@ -62,10 +63,10 @@ class Container(Base) :
 
         self.note = data['note']
 
-class Cheb(Container) :
+class Cheb(UniqueMixin, Container) :
     __tablename__ = 'Cheb'
     id = Column(Integer, ForeignKey('Container.id'), primary_key=True)
-    internal_key = Column(Text)
+    internal_key = Column(Text, unique=True)
     tech_grp = Column(Text)
     state = Column(Boolean)
     invoicing = Column(Boolean)
@@ -78,10 +79,11 @@ class Cheb(Container) :
     order = Column(Integer)
     __mapper_args__ = {'polymorphic_identity':'Cheb'}
 
-    def __init__(self, session, data):
+    def __init__(self, **kwargs):
+        data = kwargs['data']
         if data == None :
             return
-        super().__init__(session, data)
+        super().__init__(**kwargs)
         self.internal_key = '{}-{}'.format(data['waste_type'], data['row'])
         self.tech_grp = data['tech_grp']
         self.state = data['state'] in ['T']
@@ -97,21 +99,34 @@ class Cheb(Container) :
         return '%s %s %r' % (self.obj_id, self.internal_key, self.waste_type)
 
 
-class Jihlava(Container) :
+class Jihlava(UniqueMixin, Container) :
     __tablename__ = 'Jihlava'
     id = Column(Integer, ForeignKey('Container.id'), primary_key=True)
+    object_id = Column(Integer, unique=True)
     ownership = Column(Text)
     optimum = Column(Integer)
     coefficient = Column(Integer)
     ratio = Column(Integer)
     __mapper_args__ = {'polymorphic_identity':'Jihlava'}
 
-    def __init__(self, session, data):
+    def __init__(self, **kwargs):
+        data = kwargs['data']
         if data == None :
             return
-        super().__init__(session, data)
+        super().__init__(**kwargs)
 
+        self.object_id = data.get('object_id')
         self.ownership = data.get('ownership')
-        self.optimum = int(data.get('optimum', -1))
-        self.coefficient = int(data.get('coefficient', -1))
-        self.ratio = int(data.get('ratio', -1))
+        self.optimum = data.get('optimum')
+        self.coefficient = data.get('coefficient')
+        self.ratio = data.get('ratio')
+
+    @classmethod
+    def unique_hash(cls, **kwargs):
+        return kwargs['data']['object_id']
+
+    @classmethod
+    def unique_filter(cls, query, **kwargs):
+        return query.filter(Jihlava.object_id == kwargs['data']['object_id'])
+
+jihlava_object_id_index = Index('Jihlava_object_id_index', Jihlava.object_id)
