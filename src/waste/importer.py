@@ -137,3 +137,73 @@ class Cheb(Importer):
         #print("Start reversing Addresses.")#, LogType.info)
         #addresses_without_location = self.GetAddressesWithoutLocation()
         #self.GetLocationsForAddresses(addresses_without_location)
+
+class Jihlava(Importer):
+    def __init__(self):
+        super().__init__()
+        self.source = "Jihlava"
+
+    def Import(self, filename):
+        super().Import()
+        if "komunal" in filename:
+            self.ImportMunicipal(filename) 
+        elif "separ_hnizda" in filename:
+            self.ImportSepar(filename)
+
+    def ImportMunicipal(self, filename):
+        from dbfread import DBF
+        from pyproj import Proj
+        from models.waste import Jihlava
+        table = DBF(filename, encoding="cp1250")
+        sjtsk = Proj("+init=epsg:5514")
+
+        data = []
+        for row in get_tqdm(table, self.SetState, desc="loading komunal", total=None):
+            if not row.get('ADRESA'):
+                continue
+            record = {}
+            adresa = row.get('ADRESA').rsplit(' ', 1)
+            if len(adresa) > 1:
+                record['street'], record['house_number'] = adresa
+            else:
+                record['street'] = adresa[0]
+                record['house_number'] = ''
+            record['city'] = 'Jihlava'
+            record['longitude'], record['latitude'] = sjtsk(row.get('X'), row.get('Y'), inverse=True)
+            record['population'] = row.get('OBYVATEL')
+            record['name'] = row.get('NAZEV')
+            record['waste_type'] = 'TKO'
+            record['waste_code'] = '200301'
+            record['waste_name'] = 'Směsný komunální odpad'
+
+            record['quantity'] = row.get('POCET')
+            record['quantity_unit'] = 'ks'
+            record['capacity'] = row.get('NADOBA')
+
+            record['start'] = row.get('OD_DATUM')
+            record['end'] = row.get('DO_DATUM')
+            record['interval'] = row.get('CETNO_SVOZ')
+            record['days'] = None
+
+            record['note'] = row.get('POZNAMKA')
+
+            record['ownership'] = row.get('TYP_VLASTN')
+            record['optimum'] = row.get('OPTIMUM')
+            record['coefficient'] = row.get('KOEFICIENT')
+            record['ratio'] = row.get('POMER')
+            #POCET1
+            #NADOBA1
+            #CETN_SVOZ1
+            data.append(Jihlava(self.db_session, record))
+
+        self.SaveAllRecordsToDatabase(data)
+
+    def ImportSepar(self, filename):
+        from dbfread import DBF
+        table = DBF(filename, encoding="cp1250")
+
+        data = []
+        for row in get_tqdm(table, self.SetState, desc="loading separ_hnizda", total=None):
+            record = {}
+            
+            data.append(record)

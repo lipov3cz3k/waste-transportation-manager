@@ -95,3 +95,23 @@ class Cheb(Container) :
 
     def __repr__(self):
         return '%s %s %r' % (self.obj_id, self.internal_key, self.waste_type)
+
+
+class Jihlava(Container) :
+    __tablename__ = 'Jihlava'
+    id = Column(Integer, ForeignKey('Container.id'), primary_key=True)
+    ownership = Column(Text)
+    optimum = Column(Integer)
+    coefficient = Column(Integer)
+    ratio = Column(Integer)
+    __mapper_args__ = {'polymorphic_identity':'Jihlava'}
+
+    def __init__(self, session, data):
+        if data == None :
+            return
+        super().__init__(session, data)
+
+        self.ownership = data.get('ownership')
+        self.optimum = int(data.get('optimum', -1))
+        self.coefficient = int(data.get('coefficient', -1))
+        self.ratio = int(data.get('ratio', -1))
