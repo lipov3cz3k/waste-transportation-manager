@@ -24,15 +24,12 @@ class Importer:
         if not self.run:
             raise Exception("Service not running")
 
-    def Import(self, filename):
+    def Import(self):
         from database import init_db, db_session
         init_db()
         self.db_session = db_session
-
+        print("start import %s" % self.source)
         self.run = True # TODO: Move to run method
-
-        print("start import from xlsx")
-        self.workbook = load_workbook(filename, read_only = True)
         
     def SaveRecordToDatabase(self, rec_obj):
         #print("Save DOC object to database (%s)" % basename(rec_obj.file_name), LogType.trace)
@@ -55,7 +52,7 @@ class Importer:
     def GetLocationsForAddresses(self, addresses_array):
         from time import sleep
         from geopy.geocoders import Nominatim
-        from models.location import Location
+        from models.location import OSMLocation
         print("Getting locations for Addresses <%d> (use Nominatim)" % len(addresses_array))#, LogType.trace)
 
         geolocator = Nominatim()
@@ -74,7 +71,7 @@ class Importer:
                     continue
                 address = location.raw['address']
                 osm_id = location.raw['osm_id']
-                location_obj = Location.as_unique(self.db_session,
+                location_obj = OSMLocation.as_unique(self.db_session,
                                                   address=address, 
                                                   osm_id=osm_id, 
                                                   latitude=location.latitude, 
@@ -91,9 +88,10 @@ class Cheb(Importer):
 
     def Import(self, filename):
         from models.waste import Cheb
-        super().Import(filename)
+        super().Import()
 
-        normalize = {'Typ kontejneru' : 'container_type',
+        self.workbook = load_workbook(filename, read_only = True)
+        normalize = {'Typ kontejneru' : 'capacity',
                      'Interval' : 'interval',
                      'Kód odpadu' : 'waste_code',
                      'Název odpadu' : 'waste_name',
@@ -109,9 +107,9 @@ class Cheb(Importer):
                      'Ulice' : 'street',
                      'č. p.' : 'house_number',
                      'Jméno a příjmení' : 'name',
-                     'Poznámka pro dispečera' : 'dispatcher_note',
+                     'Poznámka pro dispečera' : 'note',
                      'Poznámka do faktury' : 'invoice_note',
-                     'Poznámka' : 'note',
+                     'Poznámka' : 'dispatcher_note',
                      'Den svozu' : 'days',
                      'POZNÁMKY PRO OPRAVY' : 'fix_note',
                      'Řádek' : 'row',

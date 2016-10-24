@@ -1,5 +1,5 @@
 from inspect import isclass
-from sqlalchemy import Column, Integer, ForeignKey, Text, Index, UniqueConstraint
+from sqlalchemy import Column, Integer, ForeignKey, Text, Index, UniqueConstraint, Float
 from sqlalchemy.orm import relationship, backref
 from database import Base, UniqueMixin
 from hashlib import sha1
@@ -14,8 +14,12 @@ class Address(UniqueMixin, Base) :
     house_number = Column(Text)
     hash = Column(Integer, unique=True, nullable=False)
 
-    location_id = Column(Integer, ForeignKey('Location.obj_id'))
-    location = relationship("Location")
+    #coords from original source
+    latitude = Column(Float)
+    longitude = Column(Float)
+
+    location_id = Column(Integer, ForeignKey('OSMLocation.obj_id'))
+    location = relationship("OSMLocation")
 
     def __init__(self, **kwargs):
         self.hash = sha1(json.dumps(kwargs, sort_keys=True).encode("UTF-8")).hexdigest()
@@ -32,8 +36,8 @@ class Address(UniqueMixin, Base) :
     def unique_filter(cls, query, **kwargs):
         return query.filter(Address.hash == sha1(json.dumps(kwargs, sort_keys=True).encode("UTF-8")).hexdigest())
 
-class Location(UniqueMixin, Base) :
-    __tablename__ = 'Location'
+class OSMLocation(UniqueMixin, Base) :
+    __tablename__ = 'OSMLocation'
     obj_id = Column(Integer, primary_key=True)
 
     city = Column(Text)
@@ -76,6 +80,6 @@ class Location(UniqueMixin, Base) :
 
     @classmethod
     def unique_filter(cls, query, **kwargs):
-        return query.filter(Location.osm_id == kwargs['osm_id'])
+        return query.filter(OSMLocation.osm_id == kwargs['osm_id'])
 
-location_osm_id_index = Index('Location_osm_id_index', Location.osm_id)
+location_osm_id_index = Index('Location_osm_id_index', OSMLocation.osm_id)
