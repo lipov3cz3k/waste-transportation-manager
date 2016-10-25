@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, ForeignKey, Text, Index, Boolean, String
 from sqlalchemy.orm import relationship, backref
 from database import Base, UniqueMixin
 from models.location import Address
+from hashlib import sha1
 
 class Container(Base) : 
     __tablename__ = 'Container'
@@ -66,7 +67,8 @@ class Container(Base) :
 class Cheb(UniqueMixin, Container) :
     __tablename__ = 'Cheb'
     id = Column(Integer, ForeignKey('Container.id'), primary_key=True)
-    internal_key = Column(Text, unique=True)
+    internal_key = Column(Text)
+    hash = Column(Integer, unique=True, nullable=False)
     tech_grp = Column(Text)
     state = Column(Boolean)
     invoicing = Column(Boolean)
@@ -85,6 +87,13 @@ class Cheb(UniqueMixin, Container) :
             return
         super().__init__(**kwargs)
         self.internal_key = '{}-{}'.format(data['waste_type'], data['row'])
+        unique_id_raw =  (data['tech_grp']+
+                         data['city']+
+                         data['street']+
+                         data['house_number']+
+                         str(data['row'])+
+                         data['start'].date().isoformat())
+        self.hash = sha1(unique_id_raw.encode("UTF-8")).hexdigest()
         self.tech_grp = data['tech_grp']
         self.state = data['state'] in ['T']
         self.invoicing = data['invoicing']
@@ -95,9 +104,31 @@ class Cheb(UniqueMixin, Container) :
         self.row = data['row']
         self.order = data['order']
 
+    @classmethod
+    def unique_hash(cls, **kwargs):
+        data = kwargs['data']
+        unique_id_raw =  (data['tech_grp']+
+                         data['city']+
+                         data['street']+
+                         data['house_number']+
+                         str(data['row'])+
+                         data['start'].date().isoformat())
+        return sha1(unique_id_raw.encode("UTF-8")).hexdigest()
+
+    @classmethod
+    def unique_filter(cls, query, **kwargs):
+        data = kwargs['data']
+        unique_id_raw =  (data['tech_grp']+
+                         data['city']+
+                         data['street']+
+                         data['house_number']+
+                         str(data['row'])+
+                         data['start'].date().isoformat())
+        return query.filter(Cheb.hash == sha1(unique_id_raw.encode("UTF-8")).hexdigest())
+
     def __repr__(self):
         return '%s %s %r' % (self.obj_id, self.internal_key, self.waste_type)
-
+cheb_hash_index = Index('Cheb_hash_index', Cheb.hash)
 
 class Jihlava(UniqueMixin, Container) :
     __tablename__ = 'Jihlava'

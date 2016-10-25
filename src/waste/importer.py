@@ -125,14 +125,14 @@ class Cheb(Importer):
                         record[normalize.get(key, key)] = cell.value.strip()
                     else:
                         record[normalize.get(key, key)] = cell.value
-                data.append(Cheb(db_session=self.db_session, data=record))
+                data.append(Cheb.as_unique(self.db_session, db_session=self.db_session, data=record))
 
             #save to database
             self.SaveAllRecordsToDatabase(data)
             data.clear()
 
         #get location
-        self.LoadOSMLocation()
+        #self.LoadOSMLocation()
 
 
 class Jihlava(Importer):
@@ -147,7 +147,7 @@ class Jihlava(Importer):
         elif "separ_hnizda" in filename:
             self.ImportSepar(filename)
         #get location
-        self.LoadOSMLocation()
+        #self.LoadOSMLocation()
 
     def ImportMunicipal(self, filename):
         from dbfread import DBF
