@@ -2,6 +2,7 @@ from _socket import error
 from pickle import dump as pickle_dump, load as pickle_load
 from geopy.distance import vincenty
 from os.path import join, exists, getsize
+from shapely.geometry import LineString, Point
 from common.config import local_config
 from common.utils import LogType, print, TRACE_FN_CALL, DECORATE_ALL, get_tqdm
 from .elements import SimpleHandler
@@ -231,8 +232,9 @@ class OSMParser:
     def ConnectContainersWithWays(self, db_session):
         print("Connect waste containers with ways")
 
-        from models.waste import Cheb
+        from models.waste import Cheb, Jihlava
         from database import db_session
+        dist = lambda way: point.distance(LineString([(float(node.lon), float(node.lat)) for node in way.nodes]))
         local_db_session = db_session()
         
         containers_obj = local_db_session.query(Cheb).all()
@@ -242,41 +244,32 @@ class OSMParser:
             for container in get_tqdm(containers_obj, self.SetState, desc="Connecting containers to streets", total=None):
             #for container in containers_obj:
                 self.TestIsRun()
-                location = container.address.location
-                if location is None:
-                    print("Address %s %s, %s has no OSM equivalent, skipping." % (container.address.street, container.address.house_number, container.address.city))
-                    #break
-                    continue
-                wanted_keys = self.streetNames.get(location.road)
+
+                street = '' 
+                if container.address.latitude > 0:
+                    street = container.address.street
+                    point = Point(container.address.longitude, container.address.latitude)
+                else:
+                    location = container.address.location
+                    if location is None:
+                        print("Address %s %s, %s has no OSM equivalent, skipping." % (container.address.street, container.address.house_number, container.address.city))
+                        break
+                        #continue
+                    street = container.address.location.road
+                    point = Point(float(location.longitude), float(location.latitude))
+
+                wanted_keys = self.streetNames.get(street)
                 if wanted_keys is None:
                     print("Address %s %s, %s has no road loading all roads." % (container.address.street, container.address.house_number, container.address.city))
                     wanted_keys = [item for sublist in self.streetNames.values() for item in sublist]
                 ways = [self.ways[x] for x in wanted_keys]
                 ways = [item for sublist in ways for item in sublist]
+
                 if len(ways) == 1:
                     ways[0].containers.append(container)
                 elif len(ways) > 1:
-                    ways_min_distance = {}
-                    for way in ways:
-                        min_distance = None
-
-                        for node in way.nodes:
-                            distance = vincenty((location.longitude, location.latitude), (node.lon, node.lat)).meters
-                            if min_distance is None or min_distance > distance:
-                                min_distance = distance
-
-                        ways_min_distance[way] = min_distance
-
-                    min_value = min(ways_min_distance.values())
-                    min_keys = [k for k in ways_min_distance if ways_min_distance[k] == min_value]
-                    if len(min_keys) == 1:
-                        min_keys[0].containers.append(container)
-                    elif len(min_keys) > 1:
-                        # TODO: decide which way!!!!
-                        #for way in min_keys:
-                        #    way.containers.append(container)
-                        print("Container [%s] on street %s has %d possible street segments, adding to first one" % (container.obj_id, container.address.street, len(min_keys)))
-                        min_keys[0].containers.append(container)
+                    near_way = min(ways, key=dist)
+                    near_way.containers.append(container)
                 
         except Exception as e:
             print(str(e), log_type=LogType.error)
