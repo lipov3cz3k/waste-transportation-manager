@@ -35,6 +35,7 @@ class Address(UniqueMixin, Base) :
     @classmethod
     def unique_filter(cls, query, **kwargs):
         return query.filter(Address.hash == sha1(json.dumps(kwargs, sort_keys=True).encode("UTF-8")).hexdigest())
+address_coords_index = Index('Address_coords_index', Address.latitude, Address.longitude)
 
 class OSMLocation(UniqueMixin, Base) :
     __tablename__ = 'OSMLocation'

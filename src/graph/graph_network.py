@@ -16,9 +16,10 @@ from .statistics import createCorrelation, correlationVisualize
 
 @DECORATE_ALL(TRACE_FN_CALL)
 class Network:
-    def __init__(self, state = None, run = {0: False}):
+    def __init__(self, bbox = None, state = None, run = {0: False}):
         self.state = state
         self.graphID = None
+        self.bbox = bbox
         self.max_penalty = 0
         self.G = nx.DiGraph()
         self.season_correlation = None
@@ -36,7 +37,7 @@ class Network:
         self.graphID = graphID
 
         try:
-            osm = OSMParser(self.graphID, state=self.state, run=self.run)
+            osm = OSMParser(self.graphID, bbox=self.bbox, state=self.state, run=self.run)
             osm.ParseFromXMLFile(osm_path_xml_data)
 #            osm.ConnectDDRDataWithWays(db_session)
             osm.ConnectContainersWithWays(db_session)

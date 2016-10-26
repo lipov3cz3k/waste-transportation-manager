@@ -24,3 +24,10 @@ class BoundingBox:
 
         if self.min_longitude >= self.max_longitude or self.min_latitude >= self.max_latitude:
             raise Exception("Bounding box is not valid: invalid coords")
+
+    def InBoundingBox(self, lon, lat):
+        if self.min_longitude > float(lon) or self.max_longitude < float(lon):
+            return False
+        if self.min_latitude > float(lat) or self.max_latitude < float(lat):
+            return False
+        return True

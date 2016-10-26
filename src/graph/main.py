@@ -74,7 +74,7 @@ class GraphManager:
 
         graphID = "%s_%s" % (self.BBox.ToName(), strftime("%Y-%m-%d-%H-%M-%S", gmtime()))
         print("New graph id: %s" % (graphID), LogType.trace)
-        self.graph = Network(state=self.state, run=self.run)
+        self.graph = Network(bbox = self.BBox, state=self.state, run=self.run)
         try:
             self.graph.ConstructGraph(graphID, osm_data_path)
         except Exception as e:

@@ -13,13 +13,13 @@ from multiprocessing.pool import ThreadPool
 #@DECORATE_ALL(TRACE_FN_CALL)
 class OSMParser:
 
-    def __init__(self, graphID, state, run = {0: False}):
+    def __init__(self, graphID, bbox, state, run = {0: False}):
         print("Initialize OSM Parser", LogType.info)
         self.ways = {}
         self.streetNames = {}
         self.graphID = graphID
         self.node_histogram = {}
-
+        self.bbox = bbox
         self.state = state
 
         self.run = run
@@ -237,18 +237,23 @@ class OSMParser:
     def ConnectContainersWithWays(self, db_session):
         print("Connect waste containers with ways")
 
-        from models.waste import Cheb, Jihlava
+        from models.waste import Cheb, Jihlava, Container, Address
         from database import db_session
         dist = lambda way: point.distance(self._LineString(way))
         local_db_session = db_session()
         all_ways = [item for sublist in [self.ways[x] for x in [item for sublist in self.streetNames.values() for item in sublist]] for item in sublist]
 
-        containers_obj = local_db_session.query(Jihlava).all()
+        containers_obj = local_db_session.query(Container, Address).filter(((Address.latitude == -1) | ((Address.latitude > self.bbox.min_latitude) & (Address.latitude < self.bbox.max_latitude))),
+                                                                          ((Address.longitude == -1) | ((Address.longitude > self.bbox.min_longitude) & (Address.longitude < self.bbox.max_longitude))),
+                                                                          Container.address_id == Address.id
+                                                                          ).all()
+
         try:
             #print("[%d] Mapping %s containers" % (iteration, len(containers_obj)))
             #self.SetState(action="Mapping containers", percentage=int((iteration/iteration_total)*100))
             for container in get_tqdm(containers_obj, self.SetState, desc="Connecting containers to streets", total=None):
             #for container in containers_obj:
+                container = container.Container
                 self.TestIsRun()
                 location = container.address.location
                 if container.address.latitude > 0:
@@ -261,12 +266,16 @@ class OSMParser:
                     street = container.address.location.road
                     point = Point(float(location.longitude), float(location.latitude))
                 else:
-                    print("Address %s %s, %s has no OSM equivalent, skipping." % (container.address.street, container.address.house_number, container.address.city))
+                    print("Address %s %s, %s has no OSM equivalent, skipping." % (container.address.street, container.address.house_number, container.address.city), LogType.warning)
+                    continue
+
+                if not self.bbox.InBoundingBox(point.x, point.y):
+                    print("Address %s %s, %s is out of mapping area, skipping." % (container.address.street, container.address.house_number, container.address.city), LogType.info)
                     continue
 
                 wanted_keys = self.streetNames.get(street)
                 if wanted_keys is None:
-                    print("Address %s %s, %s has no road loading all roads." % (container.address.street, container.address.house_number, container.address.city))
+                    print("Address %s %s, %s has no road loading all roads." % (container.address.street, container.address.house_number, container.address.city), LogType.info)
                     ways = all_ways
                 else:
                     ways = [self.ways[x] for x in wanted_keys]
