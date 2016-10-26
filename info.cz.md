@@ -1,22 +1,20 @@
-#MODELOVÁNÍ RIZIK V DOPRAVĚ#
+#Správce svozu odpadu#
 ###Adresářová struktura###
 ```
 /src	- zdrojový kód navržené aplikace
 /jsdi-api		- skript pro ukládání dopravních informací přes rozhraní DDR
-===Příloha DP navíc obsahuje===
-/DB				- ukázková databáze (pouze na DVD)
-/Latex			- zdrojové soubory textu diplomové práce (pouze na DVD)
-readme.txt		- informace o spuštění aplikace
-DP-Lipovsky.pdf	- diplomová práce
+/tools -
+database_structure.cz.md - struktura databáze
+info.cz.md - tento soubor
+README.md		- informace o spuštění aplikace
 ```
 
-###Aplikace pro hledání nejkratší cesty###
-Aplikace umožňuje zpracovat a analyzovat historická data o dopravě pomocí JSDI.
-Součástí je konzolové a grafické uživatelské prostředí.
+### Import a export dat přihlášených odběrných míst/kontejnerů z růných ORP ###
 Pro spuštění je nutné mít nainstalován Python ve verzi 3.5 
 (https://www.python.org/downloads/release/python-351/) 
-a dále externí knihovny sqlalchemy, geopy, flask, networkx, pandas, tqdm,
-nominatim, iso8601, geojson.
+a dále externí knihovny sqlalchemy, geopy, flask, networkx, tqdm, 
+nominatim, iso8601, geojson, shapepy, openpyxl, dbfread, pyproj. (pandas)
+
 K instalaci lze použít nástroj pip zadáním příkazu pip install nazev_knihovny.
 
 Grafické rozhraní aplikace se spustí příkazem:
@@ -30,6 +28,6 @@ po spuštění konzolové verze bez zadání parametrů je vypsána nápověda.
 
 Pro testovací účely je přibalena také vzorová databáze incidentů,
 nakopírujte tedy soubor /DB/data.db do lokálního adresáře aplikace 
-(defaultně tedy do c:\ProgramData\MasterThesis\db\ , lze změnit v konfiguraci)
+(defaultně tedy do c:\ProgramData\WTM\db\ , lze změnit v konfiguraci)
 
 Konfigurace aplikace se provádí v souboru common/config.py.
