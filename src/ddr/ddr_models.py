@@ -2,7 +2,7 @@ from inspect import isclass
 from sqlalchemy import Column, Integer, ForeignKey, Text, Index
 from sqlalchemy.orm import relationship, backref
 from database import Base
-from models.location import Location
+from models.location import OSMLocation
 
 def get_attribute(root, key, repeatable = False) :
     if isinstance(key, str) :
@@ -227,8 +227,8 @@ class MSG(Base) :
     DIVLOC_id = Column(Integer, ForeignKey('DIVLOC.obj_id'))
     DIVLOC = relationship("DIVLOC", backref=backref('MSG', order_by=obj_id), cascade="all, delete-orphan", single_parent=True)
 
-    Location_id = Column(Integer, ForeignKey('Location.obj_id'))
-    Location = relationship("Location", backref=backref('MSG', order_by=obj_id), cascade="all, delete-orphan", single_parent=True)
+    Location_id = Column(Integer, ForeignKey('OSMLocation.obj_id'))
+    Location = relationship("OSMLocation", backref=backref('MSG', order_by=obj_id), cascade="all, delete-orphan", single_parent=True)
 
     def __init__(self, root_xml):
         if root_xml == None :
@@ -1022,8 +1022,8 @@ class COORD(Base) :
     x = Column(Text)
     y = Column(Text)
 
-    Location_id = Column(Integer, ForeignKey('Location.obj_id'))
-    Location = relationship("Location", backref=backref('COORD', order_by=obj_id), cascade="all, delete-orphan", single_parent=True)
+    Location_id = Column(Integer, ForeignKey('OSMLocation.obj_id'))
+    Location = relationship("OSMLocation", backref=backref('COORD', order_by=obj_id), cascade="all, delete-orphan", single_parent=True)
     
     def __init__(self, root_xml, Location=None):
         if root_xml == None :
