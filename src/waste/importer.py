@@ -61,6 +61,9 @@ class Importer:
                 try:
                     location = geolocator.geocode({'street':addr_obj.house_number + ' ' + addr_obj.street,'city':addr_obj.city},
                                                   addressdetails=True)
+                except GeocoderTimedOut as e:
+                    print("Service timed out, waiting a little bit")
+                    sleep(10)
                 except Exception as e:
                     raise e
                 else:
@@ -132,7 +135,7 @@ class Cheb(Importer):
             data.clear()
 
         #get location
-        #self.LoadOSMLocation()
+        self.LoadOSMLocation()
 
 
 class Jihlava(Importer):
@@ -147,7 +150,7 @@ class Jihlava(Importer):
         elif "separ_hnizda" in filename:
             self.ImportSepar(filename)
         #get location
-        #self.LoadOSMLocation()
+        self.LoadOSMLocation()
 
     def ImportMunicipal(self, filename):
         from dbfread import DBF
