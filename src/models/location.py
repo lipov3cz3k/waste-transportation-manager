@@ -83,3 +83,4 @@ class OSMLocation(UniqueMixin, Base) :
         return query.filter(OSMLocation.osm_id == kwargs['osm_id'])
 
 location_osm_id_index = Index('Location_osm_id_index', OSMLocation.osm_id)
+location_road_index = Index('Location_road_index', OSMLocation.road)

@@ -58,20 +58,29 @@ class Importer:
             #print("getting new by nominatim ...", LogType.trace, only_Message=True)
             successful = False
             while not successful:
-                try:
-                    location = geolocator.geocode({'street':addr_obj.house_number + ' ' + addr_obj.street,'city':addr_obj.city},
-                                                  addressdetails=True)
-                except GeocoderTimedOut as e:
-                    print("Service timed out, waiting a little bit")
-                    sleep(10)
-                except Exception as e:
-                    raise e
-                else:
+                location = self.db_session.query(OSMLocation).filter(OSMLocation.road == addr_obj.street,
+                                                                     OSMLocation.house_number == addr_obj.house_number,
+                                                                     ((OSMLocation.city == addr_obj.city) | (OSMLocation.town == addr_obj.city))).first()
+                if location:
+                    osm_id=location.osm_id
+                    address = []
                     successful = True
-                if location == None:
-                    continue
-                address = location.raw['address']
-                osm_id = location.raw['osm_id']
+                else:
+                    try:
+                        location = geolocator.geocode({'street':addr_obj.house_number + ' ' + addr_obj.street,'city':addr_obj.city},
+                                                      addressdetails=True)
+                    except GeocoderTimedOut as e:
+                        print("Service timed out, waiting a little bit")
+                        sleep(10)
+                    except Exception as e:
+                        raise e
+                    else:
+                        successful = True
+                    if location == None:
+                        continue
+                    address = location.raw['address']
+                    osm_id = location.raw['osm_id']
+                    sleep(1)
                 location_obj = OSMLocation.as_unique(self.db_session,
                                                   address=address, 
                                                   osm_id=osm_id, 
@@ -79,7 +88,6 @@ class Importer:
                                                   longitude=location.longitude)
                 addr_obj.set_location(location_obj)
                 self.db_session.commit()
-                sleep(1)
 
 
 class Cheb(Importer):
