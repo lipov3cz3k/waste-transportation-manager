@@ -102,7 +102,7 @@ class Network:
         for id, uniq_w in get_tqdm(osm.ways.items(), self.SetState, desc="Add edges to graph, compute evaluation", total=None):
             for w in uniq_w:
                 self.TestIsRun()
-                incidents = w.GetIncidents(db_session)
+                incidents = []# w.GetIncidents(db_session)
                 self.total_incidents += len(incidents)
                 penalty_multiplicator = GetPenaltyMul(incidents)
                 if penalty_multiplicator > self.max_penalty:
@@ -177,9 +177,9 @@ class Network:
         from models.waste import Cheb
 
         containers_details = []
-        containers = db_session.query(Cheb).filter(Cheb.obj_id == id).all()
+        containers = db_session.query(Cheb).filter(Cheb.id == id).all()
         for container in containers:
-            containers_details.append({ 'id' : container.obj_id, 
+            containers_details.append({ 'id' : container.id, 
                                         'container_type' : container.container_type,
                                         'waste_type' : container.waste_type,
                                         'waste_name' : container.waste_name,
