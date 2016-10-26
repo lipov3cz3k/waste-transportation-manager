@@ -50,6 +50,7 @@ class Importer:
     def _GetLocationsForAddresses(self, addresses_array):
         from time import sleep
         from geopy.geocoders import Nominatim
+        from geopy.exc import GeocoderTimedOut
         from models.location import OSMLocation
         print("Getting locations for Addresses <%d> (use Nominatim)" % len(addresses_array))#, LogType.trace)
 

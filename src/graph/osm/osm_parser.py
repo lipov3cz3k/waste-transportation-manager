@@ -226,44 +226,51 @@ class OSMParser:
         print("[%d] Mapping finished" % (iteration))
         local_db_session.close()
 
+    def _LineString(self, way):
+        x = [(float(node.lon), float(node.lat)) for node in way.nodes]
+        if len(x) >= 2:
+            return LineString(x)
+        else:
+            return LineString(x.extend(x))
 
     ################## Waste management #####################
-
     def ConnectContainersWithWays(self, db_session):
         print("Connect waste containers with ways")
 
         from models.waste import Cheb, Jihlava
         from database import db_session
-        dist = lambda way: point.distance(LineString([(float(node.lon), float(node.lat)) for node in way.nodes]))
+        dist = lambda way: point.distance(self._LineString(way))
         local_db_session = db_session()
-        
-        containers_obj = local_db_session.query(Cheb).all()
+        all_ways = [item for sublist in [self.ways[x] for x in [item for sublist in self.streetNames.values() for item in sublist]] for item in sublist]
+
+        containers_obj = local_db_session.query(Jihlava).all()
         try:
             #print("[%d] Mapping %s containers" % (iteration, len(containers_obj)))
             #self.SetState(action="Mapping containers", percentage=int((iteration/iteration_total)*100))
             for container in get_tqdm(containers_obj, self.SetState, desc="Connecting containers to streets", total=None):
             #for container in containers_obj:
                 self.TestIsRun()
-
-                street = '' 
+                location = container.address.location
                 if container.address.latitude > 0:
-                    street = container.address.street
+                    if location:
+                        street = container.address.location.road
+                    else:
+                        street = container.address.street
                     point = Point(container.address.longitude, container.address.latitude)
-                else:
-                    location = container.address.location
-                    if location is None:
-                        print("Address %s %s, %s has no OSM equivalent, skipping." % (container.address.street, container.address.house_number, container.address.city))
-                        break
-                        #continue
+                elif location:
                     street = container.address.location.road
                     point = Point(float(location.longitude), float(location.latitude))
+                else:
+                    print("Address %s %s, %s has no OSM equivalent, skipping." % (container.address.street, container.address.house_number, container.address.city))
+                    continue
 
                 wanted_keys = self.streetNames.get(street)
                 if wanted_keys is None:
                     print("Address %s %s, %s has no road loading all roads." % (container.address.street, container.address.house_number, container.address.city))
-                    wanted_keys = [item for sublist in self.streetNames.values() for item in sublist]
-                ways = [self.ways[x] for x in wanted_keys]
-                ways = [item for sublist in ways for item in sublist]
+                    ways = all_ways
+                else:
+                    ways = [self.ways[x] for x in wanted_keys]
+                    ways = [item for sublist in ways for item in sublist]
 
                 if len(ways) == 1:
                     ways[0].containers.append(container)
