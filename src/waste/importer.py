@@ -163,10 +163,11 @@ class Jihlava(Importer):
 
     def ImportMunicipal(self, filename):
         from dbfread import DBF
-        from pyproj import Proj
+        from pyproj import Proj, transform
         from models.waste import Jihlava
         table = DBF(filename, encoding="cp1250")
         sjtsk = Proj("+init=epsg:5514")
+        wgs84= Proj("+init=EPSG:4326")
 
         data = []
         for row in get_tqdm(table, self.SetState, desc="loading komunal", total=None):
@@ -181,7 +182,7 @@ class Jihlava(Importer):
                 record['street'] = row.get('ADRESA')
                 record['house_number'] = ''
             record['city'] = 'Jihlava'
-            record['longitude'], record['latitude'] = sjtsk(row.get('X'), row.get('Y'), inverse=True)
+            record['latitude'], record['longitude'] = transform(sjtsk, wgs84, row.get('X'), row.get('Y'))
             record['population'] = row.get('OBYVATEL')
             record['name'] = row.get('NAZEV')
             record['waste_type'] = 'TKO'
