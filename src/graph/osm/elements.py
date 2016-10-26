@@ -60,7 +60,13 @@ class Way:
         for container in self.containers:
             if inspect(container).detached:
                 container = db_session.merge(container)
-            containers.append({'id' : container.id, 'container_type' : container.container_type, 'waste_code' : container.waste_code, 'lat' : container.address.location.latitude, 'lon' : container.address.location.longitude})
+            if container.address.latitude > 0:
+                coords = (container.address.latitude, container.address.longitude)
+            elif container.address.location:
+                coords = (container.address.location.latitude, container.address.location.longitude)
+            else:
+                continue
+            containers.append({'id' : container.id, 'container_type' : container.container_type, 'waste_code' : container.waste_code, 'lat' : coords[0], 'lon' : coords[1]})
         return containers
 
     def reductive_split(self, dividers):
