@@ -175,10 +175,10 @@ class Network:
 
     def GetContainerDetails(self, id):
         from database import db_session
-        from models.waste import Cheb
+        from models.waste import Container
 
         containers_details = []
-        containers = db_session.query(Cheb).filter(Cheb.id == id).all()
+        containers = db_session.query(Container).filter(Container.id == id).all()
         for container in containers:
             containers_details.append({ 'id' : container.id, 
                                         'container_type' : container.container_type,
