@@ -237,23 +237,26 @@ class OSMParser:
     def ConnectContainersWithWays(self, db_session):
         print("Connect waste containers with ways")
 
-        from models.waste import Cheb, Jihlava, Container, Address
+        from models.waste import Container
+        from models.location import Address, OSMLocation
         from database import db_session
-        dist = lambda way: point.distance(self._LineString(way))
         local_db_session = db_session()
+        dist = lambda way: point.distance(self._LineString(way))
         all_ways = [item for sublist in [self.ways[x] for x in [item for sublist in self.streetNames.values() for item in sublist]] for item in sublist]
 
-        containers_obj = local_db_session.query(Container, Address).filter(((Address.latitude == -1) | ((Address.latitude > self.bbox.min_latitude) & (Address.latitude < self.bbox.max_latitude))),
-                                                                          ((Address.longitude == -1) | ((Address.longitude > self.bbox.min_longitude) & (Address.longitude < self.bbox.max_longitude))),
-                                                                          Container.address_id == Address.id
-                                                                          ).all()
+        containers_obj = local_db_session.query(Container).join(Address) \
+                                                          .join(Address.location) \
+                                                          .filter((Address.latitude > self.bbox.min_latitude) | (OSMLocation.latitude > self.bbox.min_latitude)) \
+                                                          .filter((Address.latitude < self.bbox.max_latitude) | (OSMLocation.latitude < self.bbox.max_latitude)) \
+                                                          .filter((Address.longitude > self.bbox.min_longitude) | (OSMLocation.longitude > self.bbox.min_longitude)) \
+                                                          .filter((Address.longitude < self.bbox.max_longitude) | (OSMLocation.longitude < self.bbox.max_longitude)) \
+                                                          .all()
 
         try:
             #print("[%d] Mapping %s containers" % (iteration, len(containers_obj)))
             #self.SetState(action="Mapping containers", percentage=int((iteration/iteration_total)*100))
             for container in get_tqdm(containers_obj, self.SetState, desc="Connecting containers to streets", total=None):
             #for container in containers_obj:
-                container = container.Container
                 self.TestIsRun()
                 location = container.address.location
                 if container.address.latitude > 0:
