@@ -241,9 +241,9 @@ class OSMParser:
         from models.location import Address, OSMLocation
         from database import db_session
         local_db_session = db_session()
+        optimalization = True
         dist = lambda way: point.distance(self._LineString(way))
-        all_ways = [item for sublist in [self.ways[x] for x in [item for sublist in self.streetNames.values() for item in sublist]] for item in sublist]
-
+        all_ways = [item for sublist in self.ways.values() for item in sublist]
         containers_obj = local_db_session.query(Container).join(Address) \
                                                           .join(Address.location) \
                                                           .filter((Address.latitude > self.bbox.min_latitude) | (OSMLocation.latitude > self.bbox.min_latitude)) \
@@ -277,8 +277,9 @@ class OSMParser:
                     continue
 
                 wanted_keys = self.streetNames.get(street)
-                if wanted_keys is None:
-                    print("Address %s %s, %s has no road loading all roads." % (container.address.street, container.address.house_number, container.address.city), LogType.info)
+                if wanted_keys is None or not optimalization:
+                    if not optimalization:
+                        print("Address %s %s, %s has no road loading all roads." % (container.address.street, container.address.house_number, container.address.city), LogType.info)
                     ways = all_ways
                 else:
                     ways = [self.ways[x] for x in wanted_keys]
