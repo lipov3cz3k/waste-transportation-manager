@@ -115,8 +115,8 @@ class Network:
                 if ('oneway' not in w.tags and w.tags['highway'] != 'motorway') or ('oneway' in w.tags and w.tags['oneway'] != 'yes' and w.tags['oneway'] != '-1' and w.tags['highway'] != 'motorway'):
                     self.G.add_path((node_last.id, node_first.id), **params)
 
-                self.G.node[node_first.id] = dict(lon=node_first.lon, lat=node_first.lat)
-                self.G.node[node_last.id] = dict(lon=node_last.lon, lat=node_last.lat)
+                self.G.node[node_first.id] = dict(lon=node_first.lon, lat=node_first.lat, traffic_lights=node_first.tags.get('highway') == 'traffic_signals')
+                self.G.node[node_last.id] = dict(lon=node_last.lon, lat=node_last.lat, traffic_lights=node_last.tags.get('highway') == 'traffic_signals')
 
             osm.ways[id] = None
         
@@ -241,9 +241,9 @@ class Network:
         
         with open(file_path+"_n.csv", 'w',newline="\n", encoding="utf-8") as f:
             writer = csv.writer(f)
-            writer.writerow(['node','lat', 'lon'])
+            writer.writerow(['node','lat', 'lon','traffic_lights'])
             for n, d in self.G.nodes_iter(data=True):
-                writer.writerow([n, d.get('lat'), d.get('lon')])
+                writer.writerow([n, d.get('lat'), d.get('lon'), 'T' if d.get('traffic_lights') else 'F'])
         return self.G.nodes(data=True)
 
 
