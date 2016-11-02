@@ -1,6 +1,34 @@
 from openpyxl import load_workbook
 from common.utils import get_tqdm
 
+interval_types = {'unknown' : -10, 
+                  'on_request' : -11}
+
+def DayStringToNumber(day):
+    day_codes = {'po' : 1,
+            'út' : 2,
+            'st' : 4,
+            'čt' : 8,
+            'pá' : 16,
+            'so' : 32,
+            'ne' : 64
+           }
+
+    tmp = day.split()
+    if(len(tmp) == 1):
+        d = tmp[0].strip()[:2].lower()
+        return day_codes.get(d, None), day_codes.get(d, None)
+    else:
+        parity = tmp[0].strip()[:2].lower()
+        d = tmp[1].strip()[:2].lower()
+        if parity == 'su':
+            return day_codes.get(d, 0), 0
+        elif parity == 'li':
+            return 0, day_codes.get(d, 0)
+        else:
+            return None, None
+
+
 class Importer:
     def __init__(self):
         self.state = {}
@@ -120,7 +148,7 @@ class Cheb(Importer):
                      'Poznámka pro dispečera' : 'note',
                      'Poznámka do faktury' : 'invoice_note',
                      'Poznámka' : 'dispatcher_note',
-                     'Den svozu' : 'days',
+                     'Den svozu' : 'days_orig',
                      'POZNÁMKY PRO OPRAVY' : 'fix_note',
                      'Řádek' : 'row',
                      'Pořadí' : 'order'}
@@ -137,6 +165,31 @@ class Cheb(Importer):
                         record[normalize.get(key, key)] = cell.value.strip()
                     else:
                         record[normalize.get(key, key)] = cell.value
+
+                #Interval
+                if record.get('interval'):
+                    tmp = record.get('interval').split('x')
+                    if record.get('interval') == 'komplex':
+                        record['interval'] = interval_types['unknown']
+                    elif record.get('interval') == 'na výzvu':
+                        record ['interval'] = interval_types['on_request']
+                    elif len(tmp) == 2:
+                        record['interval'] = int(tmp[0]) * (7/int(tmp[1]))
+                    else:
+                        record['interval'] = interval_types['unknown']
+
+                #Days
+                if record.get('days_orig'):
+                    even = odd = 0
+                    tmp = record.get('days_orig').split(',')
+                    for day in tmp:
+                        e, o = DayStringToNumber(day)
+                        if e: even += e 
+                        if o: odd += o
+                    record['days_even'] = even
+                    record['days_odd'] = odd
+                            
+
                 data.append(Cheb.as_unique(self.db_session, db_session=self.db_session, data=record))
 
             #save to database
@@ -196,7 +249,13 @@ class Jihlava(Importer):
             record['start'] = row.get('OD_DATUM')
             record['end'] = row.get('DO_DATUM')
             record['interval'] = row.get('CETNO_SVOZ')
-            record['days'] = None
+            record['days_orig'] = None
+            record['days_odd'] = row.get('SVOZ_PO')
+            record['days_odd'] = record['days_even'] = row.get('SVOZ_PO') * 1 + \
+                                                       row.get('SVOZ_UT') * 2 + \
+                                                       row.get('SVOZ_ST') * 4 + \
+                                                       row.get('SVOZ_CT') * 8 + \
+                                                       row.get('SVOZ_PA') * 16 
 
             record['note'] = row.get('POZNAMKA')
 

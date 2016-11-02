@@ -1,5 +1,5 @@
 from inspect import isclass
-from sqlalchemy import Column, Integer, ForeignKey, Text, Index, Boolean, String
+from sqlalchemy import Column, Integer, ForeignKey, Text, Index, Boolean, String, Float
 from sqlalchemy.orm import relationship, backref
 from database import Base, UniqueMixin
 from models.location import Address
@@ -25,8 +25,10 @@ class Container(Base) :
     quantity_unit = Column(Text)
     start = Column(Text)
     end = Column(Text)
-    interval = Column(Text)
-    days = Column(Text)
+    interval = Column(Float)
+    days_odd = Column(Integer)
+    days_even = Column(Integer)
+    days_orig = Column(Text)
     note = Column(Text)
     details = Column(Text)
 
@@ -59,7 +61,9 @@ class Container(Base) :
         self.start = data['start']
         self.end = data['end']
         self.interval = data['interval']
-        self.days = data['days']
+        self.days_odd = data['days_odd']
+        self.days_even = data['days_even']
+        self.days_orig = data['days_orig']
 
         self.note = data['note']
 
