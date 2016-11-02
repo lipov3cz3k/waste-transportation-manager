@@ -226,12 +226,12 @@ class OSMParser:
         print("[%d] Mapping finished" % (iteration))
         local_db_session.close()
 
-    def _LineString(self, way):
+    def _Geometry(self, way):
         x = [(float(node.lon), float(node.lat)) for node in way.nodes]
         if len(x) >= 2:
             return LineString(x)
         else:
-            return LineString(x.extend(x))
+            return Point(x[0])
 
     ################## Waste management #####################
     def ConnectContainersWithWays(self, db_session):
@@ -242,7 +242,7 @@ class OSMParser:
         from database import db_session
         local_db_session = db_session()
         optimalization = True
-        dist = lambda way: point.distance(self._LineString(way))
+        dist = lambda way: point.distance(self._Geometry(way))
         all_ways = [item for sublist in self.ways.values() for item in sublist]
         containers_obj = local_db_session.query(Container).join(Address) \
                                                           .join(Address.location) \
