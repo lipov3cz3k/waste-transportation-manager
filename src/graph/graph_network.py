@@ -149,7 +149,7 @@ class Network:
         return self.G.nodes()
 
     def GetEdges(self):
-        return self.G.edges()
+        return self.G.edges(data=True)
 
     def GetNodesGeoJSON(self):
         features = []

@@ -170,7 +170,8 @@ def graphGetContainerDetails(graphID):
 
 @app.route('/graph/<graphID>/edges')
 def graphGetEdges(graphID):
-    return "not implemented"
+    graph = loadGraph(app.graph_pool, graphID)
+    return str(graph.GetEdges())
 
 @app.route('/graph/<graphID>/edge/details', methods=['POST'])
 def graphGetEdgeDetails(graphID):
