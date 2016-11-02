@@ -60,7 +60,7 @@ class Way:
         for container in self.containers:
             if inspect(container).detached:
                 container = db_session.merge(container)
-            if container.address.latitude > 0:
+            if container.address.latitude:
                 coords = (container.address.latitude, container.address.longitude)
             elif container.address.location:
                 coords = (container.address.location.latitude, container.address.location.longitude)

@@ -42,10 +42,10 @@ class Container(Base) :
                                          city=str(data['city']),
                                          street=str(data['street']),
                                          house_number=str(data['house_number']), 
-                                         longitude=float(data.get('latitude', -1)), 
-                                         latitude=float(data.get('longitude', -1))
+                                         longitude=float(data.get('latitude')) if data.get('latitude') else None, 
+                                         latitude=float(data.get('longitude')) if data.get('longitude') else None
                                          )
-        self.population = int(data.get('population', -1))
+        self.population = int(data.get('population')) if data.get('population') else None
         self.name = data['name']
         self.waste_type = data['waste_type']
         self.waste_code = data['waste_code']
@@ -53,10 +53,9 @@ class Container(Base) :
         self.quantity = data['quantity']
         self.quantity_unit = data['quantity_unit']
         try:
-            self.capacity = int(data.get('capacity', -1))
+            self.capacity = int(data.get('capacity')) if data.get('capacity') else None
         except ValueError:
             print("Can't  covert capacity %s to number" % data.get('capacity'))
-            self.capacity = -1
         self.start = data['start']
         self.end = data['end']
         self.interval = data['interval']
@@ -127,7 +126,7 @@ class Cheb(UniqueMixin, Container) :
         return query.filter(Cheb.hash == sha1(unique_id_raw.encode("UTF-8")).hexdigest())
 
     def __repr__(self):
-        return '%s %s %r' % (self.obj_id, self.internal_key, self.waste_type)
+        return '%s %s %r' % (self.id, self.internal_key, self.waste_type)
 cheb_hash_index = Index('Cheb_hash_index', Cheb.hash)
 
 class Jihlava(UniqueMixin, Container) :

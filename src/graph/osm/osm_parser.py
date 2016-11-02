@@ -259,7 +259,7 @@ class OSMParser:
             #for container in containers_obj:
                 self.TestIsRun()
                 location = container.address.location
-                if container.address.latitude > 0:
+                if container.address.latitude:
                     if location:
                         street = container.address.location.road
                     else:
