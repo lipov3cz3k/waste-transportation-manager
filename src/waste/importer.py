@@ -179,6 +179,7 @@ class Cheb(Importer):
                         record['interval'] = interval_types['unknown']
 
                 #Days
+                record['days_even'] = record['days_odd'] = None
                 if record.get('days_orig'):
                     even = odd = 0
                     tmp = record.get('days_orig').split(',')
@@ -250,7 +251,6 @@ class Jihlava(Importer):
             record['end'] = row.get('DO_DATUM')
             record['interval'] = row.get('CETNO_SVOZ')
             record['days_orig'] = None
-            record['days_odd'] = row.get('SVOZ_PO')
             record['days_odd'] = record['days_even'] = row.get('SVOZ_PO') * 1 + \
                                                        row.get('SVOZ_UT') * 2 + \
                                                        row.get('SVOZ_ST') * 4 + \
