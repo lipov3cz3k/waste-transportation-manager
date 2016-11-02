@@ -185,7 +185,7 @@ class Network:
                                         'waste_type' : container.waste_type,
                                         'waste_name' : container.waste_name,
                                         'interval' : container.interval,
-                                        'days' : container.days,
+                                        'days' : container.days_orig,
                                         'city' : container.address.city,
                                         'street' : container.address.street,
                                         'house_number' : container.address.house_number
