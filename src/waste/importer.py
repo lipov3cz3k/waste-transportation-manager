@@ -1,5 +1,5 @@
 from openpyxl import load_workbook
-from common.utils import get_tqdm
+from common.utils import LogType, print, get_tqdm
 
 interval_types = {'unknown' : -10, 
                   'on_request' : -11}
@@ -124,74 +124,22 @@ class Cheb(Importer):
         self.source = "Cheb"
 
     def Import(self, file):
-        from models.waste import Cheb
         super().Import()
 
         self.workbook = load_workbook(file, read_only = True)
-        normalize = {'Typ kontejneru' : 'capacity',
-                     'Interval' : 'interval',
-                     'Kód odpadu' : 'waste_code',
-                     'Název odpadu' : 'waste_name',
-                     '#TECH_GRP#' : 'tech_grp',
-                     'Počet ks' : 'quantity',
-                     'MJ' : 'quantity_unit',
-                     'Zahájení' : 'start',
-                     'Ukončení' : 'end',
-                     'Stav' : 'state',
-                     'Fakturovat' : 'invoicing',
-                     'V trase' : 'in_route',
-                     'Město' : 'city',
-                     'Ulice' : 'street',
-                     'č. p.' : 'house_number',
-                     'Jméno a příjmení' : 'name',
-                     'Poznámka pro dispečera' : 'note',
-                     'Poznámka do faktury' : 'invoice_note',
-                     'Poznámka' : 'dispatcher_note',
-                     'Den svozu' : 'days_orig',
-                     'POZNÁMKY PRO OPRAVY' : 'fix_note',
-                     'Řádek' : 'row',
-                     'Pořadí' : 'order'}
 
         #load values from xls
-        data = []
-        for sheet in self.workbook:            
-            rows = sheet.rows
-            first_row = [cell.value for cell in next(rows)]
-            for row in get_tqdm(rows, self.SetState, desc="loading " + sheet.title, total=sheet.max_row):
-                record = { 'waste_type': sheet.title }
-                for key, cell in zip(first_row, row):
-                    if cell.data_type == 's':
-                        record[normalize.get(key, key)] = cell.value.strip()
-                    else:
-                        record[normalize.get(key, key)] = cell.value
-
-                #Interval
-                if record.get('interval'):
-                    tmp = record.get('interval').split('x')
-                    if record.get('interval') == 'komplex':
-                        record['interval'] = interval_types['unknown']
-                    elif record.get('interval') == 'na výzvu':
-                        record ['interval'] = interval_types['on_request']
-                    elif len(tmp) == 2:
-                        record['interval'] = int(tmp[0]) * (7/int(tmp[1]))
-                    else:
-                        record['interval'] = interval_types['unknown']
-
-                #Days
-                record['days_even'] = record['days_odd'] = None
-                if record.get('days_orig'):
-                    even = odd = 0
-                    tmp = record.get('days_orig').split(',')
-                    for day in tmp:
-                        e, o = DayStringToNumber(day)
-                        if e: even += e 
-                        if o: odd += o
-                    record['days_even'] = even
-                    record['days_odd'] = odd
-                            
-
-                data.append(Cheb.as_unique(self.db_session, db_session=self.db_session, data=record))
-
+        for sheet in self.workbook:
+            try:          
+                data = self._ParseSheet(sheet)
+            except KeyboardInterrupt:
+                self.RemoveDBSession()
+                print("KeyboardInterrupt", LogType.error)
+                raise KeyboardInterrupt
+            except e:
+                self.RemoveDBSession()
+                print("Exception reading source data: %s" % str(e), LogType.error)
+                return
             #save to database
             self.SaveAllRecordsToDatabase(data)
             data.clear()
@@ -199,6 +147,69 @@ class Cheb(Importer):
         #get location
         self.LoadOSMLocation()
 
+    def _ParseSheet(self, sheet):
+        from models.waste import Cheb
+        normalize = {'Typ kontejneru' : 'capacity',
+                'Interval' : 'interval',
+                'Kód odpadu' : 'waste_code',
+                'Název odpadu' : 'waste_name',
+                '#TECH_GRP#' : 'tech_grp',
+                'Počet ks' : 'quantity',
+                'MJ' : 'quantity_unit',
+                'Zahájení' : 'start',
+                'Ukončení' : 'end',
+                'Stav' : 'state',
+                'Fakturovat' : 'invoicing',
+                'V trase' : 'in_route',
+                'Město' : 'city',
+                'Ulice' : 'street',
+                'č. p.' : 'house_number',
+                'Jméno a příjmení' : 'name',
+                'Poznámka pro dispečera' : 'note',
+                'Poznámka do faktury' : 'invoice_note',
+                'Poznámka' : 'dispatcher_note',
+                'Den svozu' : 'days_orig',
+                'POZNÁMKY PRO OPRAVY' : 'fix_note',
+                'Řádek' : 'row',
+                'Pořadí' : 'order'}
+        data = []
+        rows = sheet.rows
+        first_row = [cell.value for cell in next(rows)]
+        for row in get_tqdm(rows, self.SetState, desc="loading " + sheet.title, total=sheet.max_row):
+            record = { 'waste_type': sheet.title }
+            for key, cell in zip(first_row, row):
+                if cell.data_type == 's':
+                    record[normalize.get(key, key)] = cell.value.strip()
+                else:
+                    record[normalize.get(key, key)] = cell.value
+
+            #Interval
+            if record.get('interval'):
+                tmp = record.get('interval').split('x')
+                if record.get('interval') == 'komplex':
+                    record['interval'] = interval_types['unknown']
+                elif record.get('interval') == 'na výzvu':
+                    record ['interval'] = interval_types['on_request']
+                elif len(tmp) == 2:
+                    record['interval'] = int(tmp[0]) * (7/int(tmp[1]))
+                else:
+                    record['interval'] = interval_types['unknown']
+
+            #Days
+            record['days_even'] = record['days_odd'] = None
+            if record.get('days_orig'):
+                even = odd = 0
+                tmp = record.get('days_orig').split(',')
+                for day in tmp:
+                    e, o = DayStringToNumber(day)
+                    if e: even += e 
+                    if o: odd += o
+                record['days_even'] = even
+                record['days_odd'] = odd
+                            
+
+            data.append(Cheb.as_unique(self.db_session, db_session=self.db_session, data=record))
+        return data
 
 class Jihlava(Importer):
     def __init__(self):
@@ -212,14 +223,27 @@ class Jihlava(Importer):
             file.close()
         else:
             filename = file
-        if "komunal" in filename:
-            self.ImportMunicipal(filename) 
-        elif "separ_hnizda" in filename:
-            self.ImportSepar(filename)
+
+        data = None
+        try:
+            if "komunal" in filename:
+                data = self._ParseMunicipal(filename)
+            elif "separ_hnizda" in filename:
+                data = self._ParseSepar(filename)
+        except KeyboardInterrupt:
+            self.RemoveDBSession()
+            print("KeyboardInterrupt", LogType.error)
+            raise KeyboardInterrupt
+        except Exception as e:
+            self.RemoveDBSession()
+            print("Exception reading source data: %s" % str(e), LogType.error)
+            return
+
+        self.SaveAllRecordsToDatabase(data)
         #get location
         self.LoadOSMLocation()
 
-    def ImportMunicipal(self, filename):
+    def _ParseMunicipal(self, filename):
         from dbfread import DBF
         from pyproj import Proj, transform
         from models.waste import Jihlava
@@ -270,9 +294,11 @@ class Jihlava(Importer):
             #TODO: POCET1, NADOBA1, CETN_SVOZ1
             data.append(Jihlava.as_unique(self.db_session, db_session=self.db_session, data=record))
 
-        self.SaveAllRecordsToDatabase(data)
+        return data
 
-    def ImportSepar(self, filename):
+    def _ParseSepar(self, filename):
+        raise Exception("Separ is not implemented")
+
         from dbfread import DBF
         table = DBF(filename, encoding="cp1250")
 
