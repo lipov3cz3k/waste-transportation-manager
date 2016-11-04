@@ -1,18 +1,22 @@
 from argparse import ArgumentParser, FileType
-from ddr.main import Run as DDRRun
-from graph.main import Run as GraphRun
+from graph.main import Run as run_graph
+from waste.main import Run as run_import
 from graph.bounding_box import BoundingBox
 from common.config import local_config
-from graph.api import dijkstraPath
 
 if __name__ == '__main__':
 
     local_config.tqdm_console_disabled = False
     
     parser = ArgumentParser(description='Waste transportation manager ...')
-    parser.add_argument("-d", "--download",
-                        action="store_true", dest="download", default=False,
-                        help="Download new traffic messages and store them to the DB")
+
+    parser.add_argument("-i", "--import",
+                         type=FileType('rb'), dest="import_containers", default=False,
+                         help="Import container data from various source")
+    parser.add_argument("-c", "--city",
+                        action="store_true", dest="import_city", default=None,
+                        help="Specify importing city")
+
     #Default is Brno - okolo ulice Drobného
     parser.add_argument("-bbox", type=float,
                         nargs=4, dest="bbox", default=[16.606296, 49.203635, 16.618806, 49.210056],
@@ -23,19 +27,15 @@ if __name__ == '__main__':
     parser.add_argument("-exportCSV",
                         type=FileType('w', encoding='utf-8'), dest="exportCSV",
                         help="If parameter present, program exports graph to CSV file ready to import to Google Fusion tables")
-    parser.add_argument("-p", "--path",
-                        nargs=3 , dest="path", default=False,
-                        help="Compute shortest path between two nodes")
 
     args = parser.parse_args()
 
     bbox = BoundingBox(args.bbox[0], args.bbox[1], args.bbox[2], args.bbox[3])
 
-    if(args.download == True):
-        DDRRun()
+
+    if args.import_containers:
+        run_import(args.import_containers, args.import_city)
     elif(args.graph == True):
-        GraphRun(bbox, args.exportCSV)
-    elif(args.path):
-        dijkstraPath(str(args.path[0]),str(args.path[1]),str(args.path[2]))
+        run_graph(bbox, args.exportCSV)
     else:
         parser.print_help()

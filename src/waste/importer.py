@@ -57,7 +57,6 @@ class Importer:
         init_db()
         self.db_session = db_session
         print("start import %s" % self.source)
-        self.run = True # TODO: Move to run method
         
     def SaveAllRecordsToDatabase(self, records):
         print("Saving records to database")#), LogType.trace)
@@ -124,11 +123,11 @@ class Cheb(Importer):
         super().__init__()
         self.source = "Cheb"
 
-    def Import(self, filename):
+    def Import(self, file):
         from models.waste import Cheb
         super().Import()
 
-        self.workbook = load_workbook(filename, read_only = True)
+        self.workbook = load_workbook(file, read_only = True)
         normalize = {'Typ kontejneru' : 'capacity',
                      'Interval' : 'interval',
                      'Kód odpadu' : 'waste_code',
@@ -206,8 +205,13 @@ class Jihlava(Importer):
         super().__init__()
         self.source = "Jihlava"
 
-    def Import(self, filename):
+    def Import(self, file):
         super().Import()
+        if hasattr(file, 'read'):
+            filename = file.name
+            file.close()
+        else:
+            filename = file
         if "komunal" in filename:
             self.ImportMunicipal(filename) 
         elif "separ_hnizda" in filename:

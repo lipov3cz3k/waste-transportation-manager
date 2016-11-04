@@ -96,6 +96,9 @@
     <Compile Include="waste\importer.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="waste\main.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="waste\__init__.py">
       <SubType>Code</SubType>
     </Compile>
