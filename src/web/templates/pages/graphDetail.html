@@ -106,7 +106,8 @@
                 <div class="col-md-6">
                     <label for="removeAll" class="control-label input-group">Controls:</label>
                     <input type="button" name="removeAll" class="btn btn-default" value="Remove all paths" onclick="removeAllPaths();">
-                    <input type="button" name="removeAll" class="btn btn-default" value="Export to CSV (simple)" onclick="exportSimple();">
+                    <input type="button" name="removeAll" class="btn btn-default" value="Export to CSV (simple graph)" onclick="exportGraph('{{ url_for('graphExportSimple', graphID=graphID) }}');">
+                    <input type="button" name="removeAll" class="btn btn-default" value="Export to CSV (containers)" onclick="exportGraph('{{ url_for('graphExportContainers', graphID=graphID) }}');">
                 </div>
             </div>
         </div>
@@ -417,12 +418,12 @@
         $("#foundPaths tbody").empty();
     }
     
-    function exportSimple()
+    function exportGraph(type)
     {
         // send ajax POST request to start background job
         $.ajax({
             type: 'POST',
-            url: '{{ url_for('graphExportSimple', graphID=graphID) }}',
+            url: type,
             success: function() {
                 alert('DONE! Look to export folder.');
             },

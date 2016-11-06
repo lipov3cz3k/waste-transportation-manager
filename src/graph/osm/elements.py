@@ -66,7 +66,14 @@ class Way:
                 coords = (container.address.location.latitude, container.address.location.longitude)
             else:
                 continue
-            containers.append({'id' : container.id, 'container_type' : container.container_type, 'waste_code' : container.waste_code, 'lat' : coords[0], 'lon' : coords[1]})
+            containers.append({'id' : container.id, 
+                               'container_type' : container.container_type, 
+                               'waste_code' : container.waste_code, 
+                               'lat' : coords[0], 
+                               'lon' : coords[1],
+                               'quantity' : container.quantity,
+                               'capacity' : container.capacity,
+                               'interval' : container.interval })
         return containers
 
     def reductive_split(self, dividers):

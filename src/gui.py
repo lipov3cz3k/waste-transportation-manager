@@ -190,6 +190,11 @@ def graphExportSimple(graphID):
     graph = loadGraph(app.graph_pool, graphID)
     return str(graph.ExportSimple())
 
+@app.route('/graph/<graphID>/export/containers', methods=['POST', 'GET'])
+def graphExportContainers(graphID):
+    graph = loadGraph(app.graph_pool, graphID)
+    return str(graph.ExportConainers())
+
 ############################
 @app.route('/graph/<graphID>/affected')
 def graphGetAffectedEdges(graphID):

@@ -108,7 +108,7 @@ class Network:
                 penalty_multiplicator = GetPenaltyMul(incidents)
                 if penalty_multiplicator > self.max_penalty:
                     self.max_penalty = penalty_multiplicator
-                params = {'id':w.id, 'length':w.length, 'msgs':w.msgs, 'incidents':incidents, 'penalty_multiplicator':penalty_multiplicator, 'containers' : w.GetContainers(db_session)}
+                params = {'id':w.id, 'length':w.length, 'highway':w.tags['highway'], 'msgs':w.msgs, 'incidents':incidents, 'penalty_multiplicator':penalty_multiplicator, 'containers' : w.GetContainers(db_session)}
                 node_first, node_last = w.GetFirstLastNodeId()
                 self.G.add_path((node_first.id, node_last.id), **params)
 
@@ -246,6 +246,14 @@ class Network:
                 writer.writerow([n, d.get('lat'), d.get('lon'), 'T' if d.get('traffic_lights') else 'F'])
         return self.G.nodes(data=True)
 
+    def ExportConainers(self):
+        file_path = join(local_config.folder_export_root, '%s' % self.graphID)
+        with open(file_path+"_containers.csv", 'w',newline="\n", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(['edge','n1', 'n2','length','highway','contaniners'])
+            for n1, n2, e in self.G.edges(data=True):
+                writer.writerow([e['id'], n1, n2, e['length'], e['highway'], e['containers']])
+        return self.G.nodes(data=True)
 
 ############## Depricated #####################
 
