@@ -32,6 +32,7 @@ class local_config:
     folder_osm_data_root = normpath(join(root_folder, "osm_data"))
     folder_graphs_root = normpath(join(root_folder, "graphs"))
     folder_export_root = normpath(join(root_folder, "export"))
+    folder_paths_root = normpath(join(root_folder, "paths"))
     allowed_tags_node = ['highway']
     allowed_tags_way = ['oneway', 'highway', 'name']
     not_allowed_evi = [TMCUpdateClass.parking]

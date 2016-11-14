@@ -1,7 +1,7 @@
 from flask import Flask, request, redirect, url_for, render_template, jsonify
 
 from common.config import ftp_config, local_config
-from graph.api import getOSMList, getGraphList, loadGraph
+from graph.api import getOSMList, getGraphList, loadGraph, getPathsList
 from graph.bounding_box import BoundingBox
 from common.utils import get_float_coord, CheckFolders
 from web.long_task_threads import DDR_thread, GRAPH_thread, GRAPH_update_thread
@@ -145,6 +145,10 @@ def graphGetNodes(graphID):
     graph = loadGraph(app.graph_pool, graphID)
     return str(graph.GetNodesGeoJSON())
 
+@app.route('/graph/<graphID>/path/list')
+def graphGetPaths(graphID):
+    return jsonify(paths=getPathsList(graphID))
+
 @app.route('/graph/<graphID>/edges-containers')
 def graphGetEdgesWithContainers(graphID):
     graph = loadGraph(app.graph_pool, graphID)
@@ -181,8 +185,16 @@ def graphGetEdgeDetails(graphID):
         graph = loadGraph(app.graph_pool, graphID)
         details = graph.GetEdgeDetails(n1, n2)
         return jsonify(**details)
-
     return redirect(url_for('graphDetail', graphID=graphID))
+
+@app.route('/graph/<graphID>/pathFromFile', methods=['POST'])
+def graphGetPathFromFile(graphID):
+    if request.method == 'POST':
+        pathID = request.form['pathID']
+        graph = loadGraph(app.graph_pool, graphID)
+        return jsonify(graph.LoadPath(pathID))
+    return redirect(url_for('graphDetail', graphID=graphID))
+
 ############################ Export ################
 
 @app.route('/graph/<graphID>/export/simple', methods=['POST', 'GET'])
@@ -202,7 +214,7 @@ def graphGetAffectedEdges(graphID):
     return str(graph.GetAffectedEdges())
 
 @app.route('/graph/<graphID>/path', methods=['POST', 'GET'])
-def graphGetPath(graphID):
+def graphGetSortestPath(graphID):
     if request.method == 'POST':
         if request.form['submit'] == 'start':
             startId = request.form['start']
@@ -229,7 +241,7 @@ def graphList():
 @app.route('/graph/<graphID>')
 def graphDetail(graphID):
     coords = graphID.split("_")[1:-1]
-    return render_template('pages/graphDetail.html', graphID=graphID, bbox=coords)
+    return render_template('pages/graphDetail.html', graphID=graphID, bbox=coords, paths=getPathsList(graphID))
 
 @app.route('/contact', methods=['POST', 'GET'])
 def contact():

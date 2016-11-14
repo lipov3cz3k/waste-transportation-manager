@@ -255,6 +255,23 @@ class Network:
                 writer.writerow([e['id'], n1, n2, e['length'], e['highway'], e['containers']])
         return self.G.nodes(data=True)
 
+############# Import functions ################
+
+    def LoadPath(self, pathID):
+        import json
+        with open(join(local_config.folder_paths_root, '%s.path' % pathID), "r") as myfile:
+            paths_pool = {}
+            source = json.load(myfile)
+            for path in source:
+                points = []
+                _print(path.get('id'))
+                for n in path.get('path'):
+                    n = str(n)
+                    points.append(((float(self.G.node[n]['lon']), float(self.G.node[n]['lat']))))                    
+                paths_pool[path.get('id')] = Feature(geometry=LineString(points))
+            fc = FeatureCollection([ v for v in paths_pool.values() ])
+            return {'succeded' : True, 'paths' : fc}
+
 ############## Depricated #####################
 
     def ExportFusionTables(self, fileName):
