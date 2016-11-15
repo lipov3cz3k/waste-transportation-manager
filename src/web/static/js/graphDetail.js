@@ -58,7 +58,7 @@ function loadCrossroads(apiURL, iconURL) {
 }
 
 ///////// Containers loader ///////////
-function loadContainers(containersAPIUrl, containerAPIUrl, containerDetailApi, iconURL) {
+function loadContainers(containersAPIUrl, containerAPIUrl, containerDetailApi, iconURLs) {
     containers = L.markerClusterGroup();
     map.addLayer(containers);
 
@@ -67,15 +67,23 @@ function loadContainers(containersAPIUrl, containerAPIUrl, containerDetailApi, i
         type: 'GET',
         dataType: 'json',
         url: containersAPIUrl,
-        success: function(data) {
-            var iconUrl = L.icon({ iconUrl: iconURL})
+        success: function (data) {
+            var iconDefaultUrl = iconURLs[0]
+            var iconSkoUrl = iconURLs[1]
+            var iconBioUrl = iconURLs[2]
+            var iconPlastUrl = iconURLs[3]
+            var iconSkloUrl = iconURLs[4]
+            var iconPapirUrl = iconURLs[5]
             edgesWithContainers = L.geoJson(data, {
-                pointToLayer : function(feature, latlng) {
-                    return L.marker(latlng, {icon: iconUrl});
-                },
                 onEachFeature: loadEdgeContainers,
                 containerApi: containerAPIUrl,
-                containerDetailApi: containerDetailApi
+                containerDetailApi: containerDetailApi,
+                iconDefault: L.icon({ iconUrl: iconDefaultUrl }),
+                iconSko: L.icon({ iconUrl: iconSkoUrl }),
+                iconBio: L.icon({ iconUrl: iconBioUrl }),
+                iconPlast:  L.icon({ iconUrl: iconPlastUrl }),
+                iconSklo: L.icon({ iconUrl: iconSkloUrl }),
+                iconPapir: L.icon({ iconUrl: iconPapirUrl }),
             }).addTo(map);
             map.spin(false);
         },
@@ -98,7 +106,22 @@ function loadEdgeContainers(feature, layer) {
                 success: function(data) {
                     map.removeLayer(containers)
                     containers = L.geoJson(data, {
-                        pointToLayer: layer.options.pointToLayer,
+                        pointToLayer: function (feature, latlng) {
+                            switch (feature.properties.waste_code) {
+                                case 200101: // Papír a lepenka
+                                    return L.marker(latlng, { icon: e.target.options.iconPapir });
+                                case 200102: // Sklo
+                                    return L.marker(latlng, { icon: e.target.options.iconSklo });
+                                case 200139: // Plasty
+                                    return L.marker(latlng, { icon: e.target.options.iconPlast });
+                                case 200201: // Biologicky rozložitelný odpad
+                                    return L.marker(latlng, { icon: e.target.options.iconBio });
+                                case 200301: //Smìsný komunální odpad
+                                    return L.marker(latlng, { icon: e.target.options.iconSko });
+                                default:
+                                    return L.marker(latlng, { icon: e.target.options.iconDefault });
+                            }
+                        },
                         onEachFeature: containerPopup,
                         containerDetailApi: layer.options.containerDetailApi
                     }).addTo(map);

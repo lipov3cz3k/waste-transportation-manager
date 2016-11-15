@@ -155,7 +155,12 @@
     loadContainers('{{ url_for('graphGetEdgesWithContainers', graphID=graphID) }}',
                    '{{ url_for('graphGetContainers', graphID=graphID) }}',
                    '{{ url_for('graphGetContainerDetails', graphID=graphID) }}',
-                   '{{ url_for('static', filename='images/trash.png') }}' )
+                   ['{{ url_for('static', filename='images/trashDefault.png') }}',
+                    '{{ url_for('static', filename='images/trashSko.png') }}',
+                    '{{ url_for('static', filename='images/trashBio.png') }}',
+                    '{{ url_for('static', filename='images/trashPlast.png') }}',
+                    '{{ url_for('static', filename='images/trashSklo.png') }}',
+                    '{{ url_for('static', filename='images/trashPapir.png') }}',] )
     loadAffectedEdges('{{ url_for('graphGetAffectedEdges', graphID=graphID) }}',
                       '{{ url_for('graphGetEdgeDetails', graphID=graphID) }}')
 
