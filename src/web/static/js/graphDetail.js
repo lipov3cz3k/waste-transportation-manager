@@ -57,7 +57,6 @@ function loadCrossroads(apiURL, iconURL) {
     });
 }
 
-
 ///////// Containers loader ///////////
 function loadContainers(containersAPIUrl, containerAPIUrl, containerDetailApi, iconURL) {
     containers = L.markerClusterGroup();
@@ -146,8 +145,77 @@ function containerPopup(feature, layer) {
         
 }
 
+///////// Traffic history loader ///////////
+function loadAffectedEdges(apiUrl, edgeDetailAPIUrl) {
+    map.spin(true);
+    $.ajax({
+        type: 'GET',
+        dataType: 'json',
+        url: apiUrl,
+        success: function(data) {
+            affectedEdges = L.geoJson(data, {
+                style: function(feature) { return {opacity: feature.properties.opacity, color: 'red'};}, 
+                onEachFeature: affectedEdgesPopup,
+                smoothFactor: 2,
+                edgeDetailApiURL: edgeDetailAPIUrl
+            }).addTo(map);
+            map.spin(false);
+        },
+        error: function(e) {
+            alert('Unexpected error! Cannot load affected edges');
+            map.spin(false);
+        }
+    });
+}
+
+function affectedEdgesPopup(feature, layer) {
+    // does this feature have a property named popupContent?
+    if (feature.properties && feature.properties.opacity) {
+        l = layer.bindPopup("Loading...", {maxWidth: 600, maxHeight: 400, className: 'map-popup'});
+
+        l.on('click', function(e) {
+            var popup = e.target._popup;
+            popup.setContent("Loading...");
+            popup.update();
+            var n1 = e.target.feature.properties.n1;
+            var n2 = e.target.feature.properties.n2;
+            $.ajax({
+                type: 'POST',
+                data: {'n1': n1, 'n2': n2},
+                dataType: 'json',
+                url: edgeDetailApiURL,
+                success: function(data) {
+                    var msgsHTML = ""
+                    for (msg of data.msgs)
+                       msgsHTML += parse('<li><b>MSG:</b> %s</li>', msg.txt);
+                        
+                    var contentHTML = parse('<ul><li><b>ID:</b> %s</li><li><b>length:</b> %s m</li><li><b>penalization:</b> %s</li>%s</ul>', data.id.toString(), data.length.toString(), data.multiplicator.toString(), msgsHTML);
+                    popup.setContent(contentHTML);
+                    popup.update();
+                },
+            error: function(e) {
+                alert('Unexpected error! Cannot load edge detail ' . e);
+            }
+        });
+    });
+}
+}
+
 
 ///////// Path loader ///////////
+var blueLineColors = ["#00001A", "#00004D", "#000080", "#0000CC", "#001AE6", "#0033FF", "#3366FF", "#7FB2FF", "#B3E6FF", "#E5FFFF"];
+var yellowLineColors = ["#E3EE68", "#FCFF81", "#FFFF9B", "#FFFFB5", "#000900", "#172200", "#313C00", "#646F00", "#B0BB35", "#CAD54F"];
+var greenLineColors = ["#03B00B", "#1DCA25", "#36E33E", "#50FD58", "#69FF71", "#82FF8A", "#9CFFA4", "#B6FFBE", "#CFFFD7", "#E8FFF0"];
+
+function removeAllPaths() {
+    for (path of pathsLayer)
+    {
+        map.removeLayer(path);
+    }
+    pathsLayer.length = 0;
+    $("#foundPaths tbody").empty();
+}
+
 function wastePath(apiURL, pathID)
 {
         $.ajax({
@@ -177,15 +245,74 @@ function wastePath(apiURL, pathID)
         });    
 }
 
-function removeAllPaths() {
-    for (path of pathsLayer)
-    {
-        map.removeLayer(path);
-    }
-    pathsLayer.length = 0;
-    $("#foundPaths tbody").empty();
+function dijkstraPath(apiUrl, startInputID, endInputID, routingTypeInputID, seasonInputID, dayTimeInputID) {
+    start = $("#" + startInputID).val();
+    end = $("#" + endInputID).val();
+    routingType = $('#' + routingTypeInputID + ' input:radio:checked').val();
+    season = $('#' + seasonInputID + ' input:radio:checked').val();
+    dayTime = $('#' + dayTimeInputID + ' input:radio:checked').val();
+    GetShortestPath(apiUrl, start, end, routingType, season, dayTime);
 }
 
+function GetShortestPath(apiUrl, start, end, routingType, season, dayTime) {
+    map.spin(true);
+    switch (routingType) {
+        case "0":
+            typeColor = greenLineColors;
+            break;
+        case "1":
+            typeColor = yellowLineColors;
+            break;
+        default:
+            typeColor = blueLineColors;
+    }
+    $.ajax({
+        type: 'POST',
+        data: { 'start': start, 'end': end, 'routingType': routingType, 'season': season, 'dayTime': dayTime, 'submit': 'start' },
+        dataType: 'json',
+        url: apiUrl,
+        success: function (data) {
+            if (data.succeded) {
+                experiments = data.number_of_experiments;
+                paths_pool = data.paths;
+                paths_pool.features.sort(function (a, b) {
+                    return b.properties.weight - a.properties.weight
+                });
+                counter = 0;
+                path = L.geoJson(paths_pool, {
+                    onEachFeature: function (feature, layer) {
+                        percentil = (feature.properties.count / experiments) * 100;
+                        var tableRow = parse('<tr><td bgcolor=%s>%s.</td><td>%s m</td><td>%s %</td></tr>',
+                                                    typeColor[counter % 10],
+                                                    (counter + 1).toString(),
+                                                    feature.properties.length.toString(),
+                                                    percentil.toString());
+                        $("#foundPaths tbody").append(tableRow);
+
+                        var contentHTML = parse('real length: %s</br>evaluation: %s</br> Frequency: %s </br> Frequency: %s %',
+                                                     feature.properties.length.toString(),
+                                                     feature.properties.eval.toString(),
+                                                    feature.properties.count.toString(),
+                                                    percentil.toString());
+                        layer.bindPopup(contentHTML);
+                        layer.setStyle({ weight: feature.properties.weight.toString(), color: typeColor[counter % 10] });
+                        counter++;
+                    }
+                }).addTo(map);
+                pathsLayer.push(path);
+                affectedEdges.bringToFront();
+            }
+            else {
+                alert(data.message.toString());
+            }
+            map.spin(false);
+        },
+        error: function (e) {
+            alert('Unexpected error! Cannot get path');
+            map.spin(false);
+        }
+    });
+}
 
 ///////// Export ///////////
 function exportGraph(type) {
