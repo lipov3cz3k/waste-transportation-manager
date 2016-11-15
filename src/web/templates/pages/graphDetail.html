@@ -13,6 +13,7 @@
     <script type="application/javascript" src="{{ url_for('static', filename='js/leaflet.spin.js') }}"></script>
     <script type="application/javascript" src="{{ url_for('static', filename='js/leaflet.markercluster.js') }}"></script>
     <script type="application/javascript" src="{{ url_for('static', filename='js/utils.js') }}"></script>
+    <script type="application/javascript" src="{{ url_for('static', filename='js/graphDetail.js') }}"></script>
 {% endblock %}
 
 {% block content %}
@@ -41,7 +42,7 @@
                 <tbody>
                     {% for item in paths %}
                     <tr>
-                        <td><a href="#" onclick="wastePath('{{ item.id }}');">{{ item.id }}</a></td><td></td>
+                        <td><a href="#" onclick="wastePath('{{ url_for('graphGetPathFromFile', graphID=graphID) }}', '{{ item.id }}');">{{ item.id }}</a></td><td></td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -72,7 +73,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="row" id="periodSelect">
+                <div class="row hidden" id="periodSelect">
                     <div class="col-md-5">
                         <label for="season" class="control-label input-group">Season</label>
                         <div class="btn-group" id="season" data-toggle="buttons">
@@ -148,139 +149,23 @@
 
 {% block body_js_script %}
 
-///////// Map box ///////////
-	// More maps can be found here: http://leaflet-extras.github.io/leaflet-providers/preview/
-    var tiles = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-                    maxZoom: 19,
-                    attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors, Points &copy 2012 LINZ'
-                });
-    var map = L.map('map', {layers: [tiles]});
-    var bounds = [[{{ bbox[3] }}, {{ bbox[0] }}], [{{ bbox[1] }}, {{ bbox[2] }}]];
-    var affectedEdges = null;
+    init([[{{ bbox[3] }}, {{ bbox[0] }}], [{{ bbox[1] }}, {{ bbox[2] }}]]);
 
-///////// Crossroads loader ///////////
-    var markers = L.markerClusterGroup({ spiderfyOnMaxZoom: false, disableClusteringAtZoom: 17 });
-    map.addLayer( markers );
+    loadCrossroads('{{ url_for('graphGetNodes', graphID=graphID) }}', '{{ url_for('static', filename='images/measle.png') }}');
+    loadContainers('{{ url_for('graphGetEdgesWithContainers', graphID=graphID) }}',
+                   '{{ url_for('graphGetContainers', graphID=graphID) }}',
+                   '{{ url_for('graphGetContainerDetails', graphID=graphID) }}',
+                   '{{ url_for('static', filename='images/trash.png') }}' )
 
-    map.spin(true);
-    $.ajax({
-        type: 'GET',
-        dataType: 'json',
-        url: '{{ url_for('graphGetNodes', graphID=graphID) }}',
-        success: function(data) {
-            var iconUrl = L.icon({ iconUrl: '{{ url_for('static', filename='images/measle.png') }}' })
-            features = data.features
-            for (var i = 0; i < features.length; i++) {
-                var a = features[i];
-                var id = a.id;
-                var marker = L.marker(new L.LatLng(a.geometry.coordinates[1], a.geometry.coordinates[0]), { id: id, icon: iconUrl });
-                markers.addLayer(marker);
-            }
-            markers.on('click', function (a) {
-                if($("#end").val())
-                {
-	                $("#start").val("");
-	                $("#end").val("");
-                }
-                if(!$("#start").val())
-	                $("#start").val(a.layer.options.id);
-                else
-	                $("#end").val(a.layer.options.id);
-            });
-            map.spin(false);
-        },
-        error: function(e) {
-            alert('Unexpected error! Cannot load graph nodes');
-            map.spin(false);
-        }
+    $('#routingType label').click(function() {
+        routingType = $(this).children().val();
+        if(routingType >= 2)
+            $("#periodSelect").removeClass("hidden");
+        else
+            $("#periodSelect").addClass("hidden");
     });
 
-///////// Containers loader ///////////
-    var containers = L.markerClusterGroup();
-    map.addLayer( containers );
-
-
-    function containerPopup(feature, layer) {
-        if (feature.properties){
-            l = layer.bindPopup("Loading...", {maxWidth: 600, maxHeight: 400, className: 'map-popup'});
-            l.on('click', function(e) {
-                var popup = e.target._popup;
-                popup.setContent("Loading...");
-                popup.update();
-                var container_id = e.target.feature.id;
-                $.ajax({
-                    type: 'POST',
-                    data: {'id': container_id},
-                    dataType: 'json',
-                    url: '{{ url_for('graphGetContainerDetails', graphID=graphID) }}',
-                    success: function(data) {
-
-                        var containersHTML = ""
-                        for (container of data.containers)
-                           containersHTML += parse('<li><b>%s %s, %s</b>, %s, %s, %s, %s</li>', container.street, container.house_number, container.city, container.waste_name, container.container_type, container.interval, container.days);
-
-
-                        var contentHTML = parse('<ul>%s</ul>', containersHTML);
-                        popup.setContent(contentHTML);
-                        popup.update();
-                    },
-                    error: function(e) {
-                        alert('Unexpected error! Cannot load edge detail ' . e);
-                    }
-                });
-            });
-        }
-        
-    }
-
-    function loadEdgeContainers(feature, layer) {
-            layer.on('click', function(e) {
-                var n1 = e.target.feature.properties.n1;
-                var n2 = e.target.feature.properties.n2;
-                $.ajax({
-                    type: 'POST',
-                    data: {'n1': n1, 'n2': n2},
-                    dataType: 'json',
-                    url: '{{ url_for('graphGetContainers', graphID=graphID) }}',
-                    success: function(data) {
-                        var iconUrl = L.icon({ iconUrl: '{{ url_for('static', filename='images/trash.png') }}' })
-                        map.removeLayer(containers)
-                        containers = L.geoJson(data, {
-                            pointToLayer : function(feature, latlng) {
-                                return L.marker(latlng, {icon: iconUrl});
-                            },
-                            onEachFeature: containerPopup
-                        }).addTo(map);
-                        map.spin(false);
-                    },
-                    error: function(e) {
-                        alert('Unexpected error! Cannot load edge detail ' . e);
-                    }
-                });
-            });
-    }
-
-    map.spin(true);
-    $.ajax({
-        type: 'GET',
-        dataType: 'json',
-        url: '{{ url_for('graphGetEdgesWithContainers', graphID=graphID) }}',
-        success: function(data) {
-            var iconUrl = L.icon({ iconUrl: '{{ url_for('static', filename='images/trash.png') }}' })
-            edgesWithContainers = L.geoJson(data, {
-                pointToLayer : function(feature, latlng) {
-                    return L.marker(latlng, {icon: iconUrl});
-                },
-                onEachFeature: loadEdgeContainers
-            }).addTo(map);
-            map.spin(false);
-        },
-        error: function(e) {
-            alert('Unexpected error! Cannot load street with containers');
-            map.spin(false);
-        }
-    });
-
+//////////////////////////// DEPRICATED ////////////////////////////////
 
 ///////// Affected edges loader ///////////
     function affectedEdgesPopup(feature, layer) {
@@ -336,48 +221,9 @@
         }
     });
 
-///////// Trigger zoomed event ///////////
-    map.fitBounds(bounds);
+
 
 ///////// Path loader ///////////
-    $('#routingType label').click(function() {
-        routingType = $(this).children().val();
-        if(routingType >= 2)
-            $("#periodSelect").removeClass("hidden");
-        else
-            $("#periodSelect").addClass("hidden");
-    });
-    
-    function wastePath(pathID)
-    {
-        $.ajax({
-            type: 'POST',
-            data: {'pathID': pathID},
-            dataType: 'json',
-            url: '{{ url_for('graphGetPathFromFile', graphID=graphID) }}',
-            success: function(data) {
-                if(data.succeded)
-                {
-                    paths_pool = data.paths;
-                    path = L.geoJson(paths_pool, {
-                                    style: function(feature) { return {color: 'red'};}
-                                }).addTo(map);
-                    pathsLayer.push(path);
-                }
-                else
-                {
-                    alert(data.message.toString());
-                }
-                map.spin(false);
-            },
-            error: function(e) {
-                alert('Unexpected error! Cannot get path');
-                map.spin(false);
-            }
-        });    
-    }
-
-
     function dijkstraPath(startInputID, endInputID, routingTypeInputID, seasonInputID, dayTimeInputID)
     {
         start = $("#"+startInputID).val();
@@ -391,7 +237,6 @@
     var blueLineColors = ["#00001A", "#00004D", "#000080", "#0000CC", "#001AE6", "#0033FF", "#3366FF", "#7FB2FF", "#B3E6FF", "#E5FFFF"];
     var yellowLineColors = ["#E3EE68", "#FCFF81", "#FFFF9B", "#FFFFB5", "#000900", "#172200", "#313C00", "#646F00", "#B0BB35", "#CAD54F"];
     var greenLineColors = ["#03B00B", "#1DCA25", "#36E33E", "#50FD58", "#69FF71", "#82FF8A", "#9CFFA4", "#B6FFBE", "#CFFFD7", "#E8FFF0"];
-    var pathsLayer = []
     function GetShortestPath(start, end, routingType, season, dayTime){
         map.spin(true);
         switch(routingType){
@@ -450,32 +295,6 @@
             error: function(e) {
                 alert('Unexpected error! Cannot get path');
                 map.spin(false);
-            }
-        });
-    }
-
-
-    function removeAllPaths()
-    {
-        for (path of pathsLayer)
-        {
-            map.removeLayer(path);
-        }
-        pathsLayer.length = 0;
-        $("#foundPaths tbody").empty();
-    }
-    
-    function exportGraph(type)
-    {
-        // send ajax POST request to start background job
-        $.ajax({
-            type: 'POST',
-            url: type,
-            success: function() {
-                alert('DONE! Look to export folder.');
-            },
-            error: function() {
-                alert('Unexpected error');
             }
         });
     }
