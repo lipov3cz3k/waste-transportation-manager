@@ -255,6 +255,8 @@ class Network:
             writer = csv.writer(f)
             writer.writerow(['edge','n1', 'n2','length','highway','contaniners'])
             for n1, n2, e in self.G.edges(data=True):
+                if not e['containers']:
+                    continue
                 writer.writerow([e['id'], n1, n2, e['length'], e['highway'], e['containers']])
         return self.G.nodes(data=True)
 
