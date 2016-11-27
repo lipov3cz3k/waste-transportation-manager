@@ -22,6 +22,7 @@ class Way:
         self.msgs = []
         self.containers = []
         self.length = 0
+        self.forward = None
 
     def GetFirstLastNodeId(self):
         return (self.nodes[0], self.nodes[-1])
@@ -55,9 +56,9 @@ class Way:
                     incidents.append({'class' : worstTMCclass, 'TSTA' : tsta, 'TSTO' : tsto, 'season' : Season(daytime), 'daytime' : DayTime(daytime)})
         return incidents
 
-    def GetContainers(self, db_session):
+    def GetContainers(self, db_session, right_side = None):
         containers = []
-        for container in self.containers:
+        for container, direction in self.containers:
             if inspect(container).detached:
                 container = db_session.merge(container)
             if container.address.latitude:
@@ -66,6 +67,10 @@ class Way:
                 coords = (container.address.location.latitude, container.address.location.longitude)
             else:
                 continue
+            if right_side != None:
+                if (self.forward == direction['right_side']) != right_side:
+                    continue
+
             containers.append({'id' : container.id, 
                                'container_type' : container.container_type, 
                                'waste_code' : container.waste_code, 
@@ -106,9 +111,11 @@ class Way:
             new_way.tags = self.tags
             ret.append( new_way )
             i += 1
-
         return ret
 
+    def set_direction(self):
+        self.forward = self.nodes[0].lat < self.nodes[1].lat
+        self.forward = True if self.nodes[0].lat == self.nodes[1].lat and self.nodes[0].lon < self.nodes[1].lon else self.forward
 
 class SimpleHandler(ContentHandler):
 

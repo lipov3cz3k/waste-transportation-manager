@@ -99,6 +99,7 @@ class OSMParser:
                     distance += vincenty((past.lat, past.lon), (current.lat, current.lon)).meters
                     past = current
                 split_way.length = round(distance)
+                split_way.set_direction()
                 new_ways[way.id].append(split_way)
 
         return new_ways
@@ -226,12 +227,53 @@ class OSMParser:
         print("[%d] Mapping finished" % (iteration))
         local_db_session.close()
 
+    def _cut(self, line, distance):
+        # Cuts a line in two at a distance from its starting point
+        if distance <= 0.0 or distance >= line.length:
+            return [LineString(line)]
+        coords = list(line.coords)
+        for i, p in enumerate(coords):
+            pd = line.project(Point(p))
+            if pd == distance:
+                return [
+                    LineString(coords[:i+1]),
+                    LineString(coords[i:])]
+            if pd > distance:
+                cp = line.interpolate(distance)
+                return [
+                    LineString(coords[:i+1]),
+                    LineString([(cp.x, cp.y)] + coords[i:])]
+        return [LineString(line)]
+
     def _Geometry(self, way):
         x = [(float(node.lon), float(node.lat)) for node in way.nodes]
         if len(x) >= 2:
             return LineString(x)
         else:
             return Point(x[0])
+
+    def _Direction(self, way, point):
+        right_side = None
+        try:
+            ls = self._Geometry(way)
+            part = self._cut(ls, ls.project(point))[0]
+            closestSeg = LineString(part.coords[-2:])
+            a_point, b_point = closestSeg.coords
+            p = point.coords[0]
+        
+            kriterium = (p[0] - b_point[0]) * (a_point[1] - b_point[1]) + (p[1] - b_point[1]) * (b_point[0] - a_point[0])
+            if kriterium > 0:
+                right_side = True
+                print("a -> b direction")
+            elif kriterium < 0:
+                right_side = False
+                print("b -> a direction")
+            else:
+                print("cannot determine direction")
+        except Exception as e:
+            print("Direction detection failed", log_type=LogType.error)
+            raise e
+        return {"right_side" : right_side}
 
     ################## Waste management #####################
     def ConnectContainersWithWays(self, db_session):
@@ -286,10 +328,12 @@ class OSMParser:
                     ways = [item for sublist in ways for item in sublist]
 
                 if len(ways) == 1:
-                    ways[0].containers.append(container)
+                    direction = self._Direction(ways[0], point)
+                    ways[0].containers.append((container, direction))
                 elif len(ways) > 1:
                     near_way = min(ways, key=dist)
-                    near_way.containers.append(container)
+                    direction = self._Direction(near_way, point)
+                    near_way.containers.append((container, direction))
                 
         except Exception as e:
             print(str(e), log_type=LogType.error)
