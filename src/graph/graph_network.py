@@ -250,14 +250,20 @@ class Network:
         return self.G.nodes(data=True)
 
     def ExportConainers(self):
+        from database import db_session
+        from models.waste import Container
         file_path = join(local_config.folder_export_root, '%s' % self.graphID)
-        with open(file_path+"_containers.csv", 'w',newline="\n", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow(['edge','n1', 'n2','length','highway','contaniners'])
-            for n1, n2, e in self.G.edges(data=True):
-                if not e['containers']:
-                    continue
-                writer.writerow([e['id'], n1, n2, e['length'], e['highway'], e['containers']])
+
+        waste_codes_obj = db_session.query(Container.waste_code).group_by(Container.waste_code).all()
+        for waste_code in waste_codes_obj:
+            with open(file_path+"_containers_"+str(waste_code[0])+".csv", 'w',newline="\n", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                writer.writerow(['edge','n1', 'n2','length','highway','contaniners'])
+                for n1, n2, e in self.G.edges(data=True):
+                    containers = [d for d in e['containers'] if d.get('waste_code') == waste_code[0]]
+                    if not containers:
+                        continue
+                    writer.writerow([e['id'], n1, n2, e['length'], e['highway'], containers])
         return self.G.nodes(data=True)
 
 ############# Import functions ################
