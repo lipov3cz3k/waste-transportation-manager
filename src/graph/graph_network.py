@@ -169,6 +169,12 @@ class Network:
             containers = e.get('containers')
             for container in containers:
                 features.append( Feature(id=container.get('id'), geometry=Point((float(container.get('lon')), float(container.get('lat')))), properties=container) )
+            # oposit direction
+            if n1 in self.G[n2]:
+                e = self.G[n2][n1]
+                containers = e.get('containers')
+                for container in containers:
+                    features.append( Feature(id=container.get('id'), geometry=Point((float(container.get('lon')), float(container.get('lat')))), properties=container) )
         else:
             for n1, n2, e in self.G.edges_iter(data=True):
                 containers = e.get('containers')
