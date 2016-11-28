@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{9966053f-1e84-4dcd-8082-382c68598649}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>gui.py</StartupFile>
+    <StartupFile>test.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
@@ -74,6 +74,9 @@
     <Compile Include="graph\osm\elements.py" />
     <Compile Include="graph\osm\osm_parser.py" />
     <Compile Include="graph\osm\__init__.py" />
+    <Compile Include="graph\path_finder.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="graph\routing.py" />
     <Compile Include="graph\statistics.py">
       <SubType>Code</SubType>
