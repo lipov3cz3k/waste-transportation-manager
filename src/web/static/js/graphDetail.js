@@ -58,7 +58,21 @@ function loadCrossroads(apiURL, iconURL) {
 }
 
 ///////// Containers loader ///////////
-function loadContainers(containersAPIUrl, containerAPIUrl, containerDetailApi, iconURLs) {
+function loadAllContainers(containerAPIUrl, containerDetailApi, iconURLs)
+{
+    map.spin(true);
+    var options = {
+        iconDefault: L.icon({ iconUrl: iconURLs[0] }),
+        iconSko: L.icon({ iconUrl: iconURLs[1] }),
+        iconBio: L.icon({ iconUrl: iconURLs[2] }),
+        iconPlast: L.icon({ iconUrl: iconURLs[3] }),
+        iconSklo: L.icon({ iconUrl: iconURLs[4] }),
+        iconPapir: L.icon({ iconUrl: iconURLs[5] }),
+        }
+    loadEdgeContainers(null, null, containerAPIUrl, containerDetailApi, options)
+}
+
+function loadEdgesWithContainers(containersAPIUrl, containerAPIUrl, containerDetailApi, iconURLs) {
     containers = L.markerClusterGroup();
     map.addLayer(containers);
 
@@ -75,7 +89,7 @@ function loadContainers(containersAPIUrl, containerAPIUrl, containerDetailApi, i
             var iconSkloUrl = iconURLs[4]
             var iconPapirUrl = iconURLs[5]
             edgesWithContainers = L.geoJson(data, {
-                onEachFeature: loadEdgeContainers,
+                onEachFeature: loadEdgeContainersClick,
                 containerApi: containerAPIUrl,
                 containerDetailApi: containerDetailApi,
                 iconDefault: L.icon({ iconUrl: iconDefaultUrl }),
@@ -94,45 +108,52 @@ function loadContainers(containersAPIUrl, containerAPIUrl, containerDetailApi, i
     });
 }
 
-function loadEdgeContainers(feature, layer) {
+function loadEdgeContainersClick(feature, layer) {
         layer.on('click', function(e) {
             var n1 = e.target.feature.properties.n1;
             var n2 = e.target.feature.properties.n2;
-            $.ajax({
-                type: 'POST',
-                data: {'n1': n1, 'n2': n2},
-                dataType: 'json',
-                url: layer.options.containerApi,
-                success: function(data) {
-                    map.removeLayer(containers)
-                    containers = L.geoJson(data, {
-                        pointToLayer: function (feature, latlng) {
-                            switch (feature.properties.waste_code) {
-                                case 200101: // Papír a lepenka
-                                    return L.marker(latlng, { icon: e.target.options.iconPapir });
-                                case 200102: // Sklo
-                                    return L.marker(latlng, { icon: e.target.options.iconSklo });
-                                case 200139: // Plasty
-                                    return L.marker(latlng, { icon: e.target.options.iconPlast });
-                                case 200201: // Biologicky rozložitelný odpad
-                                    return L.marker(latlng, { icon: e.target.options.iconBio });
-                                case 200301: //Smìsný komunální odpad
-                                    return L.marker(latlng, { icon: e.target.options.iconSko });
-                                default:
-                                    return L.marker(latlng, { icon: e.target.options.iconDefault });
-                            }
-                        },
-                        onEachFeature: containerPopup,
-                        containerDetailApi: layer.options.containerDetailApi
-                    }).addTo(map);
-                    map.spin(false);
-                },
-                error: function(e) {
-                    alert('Unexpected error! Cannot load edge detail ' . e);
-                }
-            });
+
+            loadEdgeContainers(n1, n2, layer.options.containerApi, layer.options.containerDetailApi, e.target.options)
         });
 }
+
+function loadEdgeContainers(n1, n2, containerAPIUrl, containerDetailApi, options)
+{
+    $.ajax({
+        type: 'POST',
+        data: { 'n1': n1, 'n2': n2 },
+        dataType: 'json',
+        url: containerAPIUrl,
+        success: function (data) {
+            map.removeLayer(containers)
+            containers = L.geoJson(data, {
+                pointToLayer: function (feature, latlng) {
+                    switch (feature.properties.waste_code) {
+                        case 200101: // Papír a lepenka
+                            return L.marker(latlng, { icon: options.iconPapir });
+                        case 200102: // Sklo
+                            return L.marker(latlng, { icon: options.iconSklo });
+                        case 200139: // Plasty
+                            return L.marker(latlng, { icon: options.iconPlast });
+                        case 200201: // Biologicky rozložitelný odpad
+                            return L.marker(latlng, { icon: options.iconBio });
+                        case 200301: //Smìsný komunální odpad
+                            return L.marker(latlng, { icon: options.iconSko });
+                        default:
+                            return L.marker(latlng, { icon: options.iconDefault });
+                    }
+                },
+                onEachFeature: containerPopup,
+                containerDetailApi: containerDetailApi
+            }).addTo(map);
+            map.spin(false);
+        },
+        error: function (e) {
+            alert('Unexpected error! Cannot load edge detail '.e);
+        }
+    });
+}
+
 
 function containerPopup(feature, layer) {
     if (feature.properties){

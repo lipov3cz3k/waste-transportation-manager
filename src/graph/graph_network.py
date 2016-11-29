@@ -169,6 +169,12 @@ class Network:
             containers = e.get('containers')
             for container in containers:
                 features.append( Feature(id=container.get('id'), geometry=Point((float(container.get('lon')), float(container.get('lat')))), properties=container) )
+            # oposit direction
+            if n1 in self.G[n2]:
+                e = self.G[n2][n1]
+                containers = e.get('containers')
+                for container in containers:
+                    features.append( Feature(id=container.get('id'), geometry=Point((float(container.get('lon')), float(container.get('lat')))), properties=container) )
         else:
             for n1, n2, e in self.G.edges_iter(data=True):
                 containers = e.get('containers')
@@ -283,6 +289,80 @@ class Network:
             fc = FeatureCollection([ v for v in paths_pool.values() ])
             return {'succeded' : True, 'paths' : fc}
 
+
+############## Routing #####################
+    def Route(self, startNode, endNode, routingType = RoutingType.basic, simulatedSeason = Season(datetime.now()), simulatedDayTime = DayTime(datetime.now())):
+        if not startNode or not endNode:
+            return {'succeded' : False, 'message' : 'Missing start or end point.'}
+        number_of_experiments = 1
+        paths_pool = {}
+        for i in range(number_of_experiments):
+            print("DijkstraPath experiment: %d/%d" % (i+1, number_of_experiments))
+            # Set new evaluation based on probability, road type etc.
+            self._ReloadGraphEvaluation(routingType, simulatedSeason, simulatedDayTime)
+                
+            # Compute path
+            try:
+                eval, path = nx.bidirectional_dijkstra(self.G, startNode, endNode, 'evaluation')
+            except nx.NetworkXNoPath as e:
+                return {'succeded' : False, 'message' : str(e.args[0])}
+            except nx.NetworkXError as e:
+                return {'succeded' : False, 'message' : str(e.args[0])}
+
+            # Save path if not already saved
+            h = hash(tuple(path))
+            if not h in paths_pool:
+                points = []
+                length = 0
+                for n1,n2 in zip(path[0:], path[1:]):
+                    length += self.G.edge[n1][n2]['length']
+
+                for n in path:
+                    points.append(((float(self.G.node[n]['lon']), float(self.G.node[n]['lat']))))
+                paths_pool[h] = Feature(geometry=LineString(points), properties={"length" : length, "eval": eval, "count" : 1})
+            else:
+                paths_pool[h].properties['count'] += 1
+
+        # Set path line weight
+        for path in paths_pool.values():
+            path.properties['weight'] = ((path.properties['count'] * 5) / number_of_experiments) + 5
+        fc = FeatureCollection([ v for v in paths_pool.values() ])
+        return {'succeded' : True, 'paths' : fc, 'number_of_experiments' : number_of_experiments}
+
+
+    def _ReloadGraphEvaluation(self, routingType, simulatedSeason = Season(datetime.now()), simulatedDayTime = DayTime(datetime.now())):
+        today_diff = (datetime.now() - datetime(2015, 11, 14)).days
+        today_diff = max([today_diff, 1])
+
+        for n1, n2, edge in self.G.edges(data=True):
+            if routingType == RoutingType.basic:
+                edge['evaluation'] = edge['length']
+            elif routingType == RoutingType.worstCase:
+                edge['evaluation'] = edge['length'] * edge['penalty_multiplicator']
+            elif routingType == RoutingType.stochasticWS or routingType == RoutingType.stochasticWad:
+                pen_mul = 1
+                if edge['incidents']:
+                    lifetime_coefficient = len(edge['incidents']) / today_diff
+                    lifetime_coefficient = min([lifetime_coefficient, 1])
+                    for incident in edge['incidents']:
+                        # check if total_incidents is large enaugh and time is in correlation matrix
+                        if self.total_incidents > 100 and simulatedSeason in self.season_correlation and simulatedDayTime in self.daytime_correlation:
+                            season_coefficient = abs(self.season_correlation[simulatedSeason][incident['season']])
+                            daytime_coefficient = abs(self.daytime_correlation[simulatedDayTime][incident['daytime']])
+                        else:
+                            season_coefficient = SeasonCoefficient(simulatedSeason, incident['season'])
+                            daytime_coefficient = DayTimeCoefficient(simulatedDayTime, incident['daytime'])
+                        rnd = random()
+                        probability = season_coefficient * daytime_coefficient * lifetime_coefficient
+                        if rnd <= probability:
+                            class_penalty = (TMCUpdateClass.ClassToPenalization[incident['class']])
+                            pen_mul += class_penalty
+                edge['evaluation'] = edge['length'] * pen_mul
+            else:
+                print('Routing type is not supported', log_type=LogType.error)
+
+
+
 ############## Depricated #####################
 
     def ExportFusionTables(self, fileName):
@@ -314,70 +394,3 @@ class Network:
             local_db_session.close()
             raise e
         local_db_session.close()
-
-
-    def DijkstraPath(self, startNode, endNode, routingType = RoutingType.stochasticWS, simulatedSeason = Season(datetime.now()), simulatedDayTime = DayTime(datetime.now())):
-        if not startNode or not endNode:
-            return {'succeded' : False, 'message' : 'Missing start or end point.'}
-
-        today_diff = (datetime.now() - datetime(2015, 11, 14)).days
-        today_diff = max([today_diff, 1])
-        number_of_experiments = 1
-        paths_pool = {}
-        if routingType == RoutingType.stochasticWad:
-            number_of_experiments = local_config.number_of_stochastic_experiments
-        
-        for i in range(number_of_experiments):
-            print("DijkstraPath experiment: %d/%d" % (i+1, number_of_experiments))
-            # Set new evaluation based on probability, road type etc.
-            for n1, n2, edge in self.G.edges(data=True):
-                if routingType == RoutingType.stochasticWS or routingType == RoutingType.stochasticWad:
-                    pen_mul = 1
-                    if edge['incidents']:
-                        lifetime_coefficient = len(edge['incidents']) / today_diff
-                        lifetime_coefficient = min([lifetime_coefficient, 1])
-                        for incident in edge['incidents']:
-                            # check if total_incidents is large enaugh and time is in correlation matrix
-                            if self.total_incidents > 100 and simulatedSeason in self.season_correlation and simulatedDayTime in self.daytime_correlation:
-                                season_coefficient = abs(self.season_correlation[simulatedSeason][incident['season']])
-                                daytime_coefficient = abs(self.daytime_correlation[simulatedDayTime][incident['daytime']])
-                            else:
-                                season_coefficient = SeasonCoefficient(simulatedSeason, incident['season'])
-                                daytime_coefficient = DayTimeCoefficient(simulatedDayTime, incident['daytime'])
-                            rnd = random()
-                            probability = season_coefficient * daytime_coefficient * lifetime_coefficient
-                            if rnd <= probability:
-                                class_penalty = (TMCUpdateClass.ClassToPenalization[incident['class']])
-                                pen_mul += class_penalty
-                    edge['evaluation'] = edge['length'] * pen_mul
-                else: # deterministic
-                    if routingType == RoutingType.worstCase:
-                        edge['evaluation'] = edge['length'] * edge['penalty_multiplicator']
-                    else:
-                        edge['evaluation'] = edge['length']
-            
-
-            try:
-                eval, path = nx.bidirectional_dijkstra(self.G, startNode, endNode, 'evaluation')
-            except nx.NetworkXNoPath as e:
-                return {'succeded' : False, 'message' : str(e.args[0])}
-            except nx.NetworkXError as e:
-                return {'succeded' : False, 'message' : str(e.args[0])}
-
-            h = hash(tuple(path))
-            if not h in paths_pool:
-                points = []
-                length = 0
-                for n1,n2 in zip(path[0:], path[1:]):
-                    length += self.G.edge[n1][n2]['length']
-
-                for n in path:
-                    points.append(((float(self.G.node[n]['lon']), float(self.G.node[n]['lat']))))
-                paths_pool[h] = Feature(geometry=LineString(points), properties={"length" : length, "eval": eval, "count" : 1})
-            else:
-                paths_pool[h].properties['count'] += 1
-        for path in paths_pool.values():
-            path.properties['weight'] = ((path.properties['count'] * 5) / number_of_experiments) + 5
-
-        fc = FeatureCollection([ v for v in paths_pool.values() ])
-        return {'succeded' : True, 'paths' : fc, 'number_of_experiments' : number_of_experiments}

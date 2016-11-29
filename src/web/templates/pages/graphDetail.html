@@ -27,6 +27,15 @@
             <div class="row">
                 <div class="col-md-6">
                     <label for="controls" class="control-label input-group">Controls:</label>
+                    <input type="button" name="controls" class="btn btn-default" value="Show all containers" onclick="loadAllContainers(
+                           '{{ url_for('graphGetContainers', graphID=graphID) }}',
+                           '{{ url_for('graphGetContainerDetails', graphID=graphID) }}',
+                           ['{{ url_for('static', filename='images/trashDefault.png') }}',
+                            '{{ url_for('static', filename='images/trashSko.png') }}',
+                            '{{ url_for('static', filename='images/trashBio.png') }}',
+                            '{{ url_for('static', filename='images/trashPlast.png') }}',
+                            '{{ url_for('static', filename='images/trashSklo.png') }}',
+                            '{{ url_for('static', filename='images/trashPapir.png') }}',] );">
                     <input type="button" name="controls" class="btn btn-default" value="Remove all paths" onclick="removeAllPaths();">
                     <input type="button" name="controls" class="btn btn-default" value="Export to CSV (simple graph)" onclick="exportGraph('{{ url_for('graphExportSimple', graphID=graphID) }}');">
                     <input type="button" name="controls" class="btn btn-default" value="Export to CSV (containers)" onclick="exportGraph('{{ url_for('graphExportContainers', graphID=graphID) }}');">
@@ -152,7 +161,7 @@
     init([[{{ bbox[3] }}, {{ bbox[0] }}], [{{ bbox[1] }}, {{ bbox[2] }}]]);
 
     loadCrossroads('{{ url_for('graphGetNodes', graphID=graphID) }}', '{{ url_for('static', filename='images/measle.png') }}');
-    loadContainers('{{ url_for('graphGetEdgesWithContainers', graphID=graphID) }}',
+    loadEdgesWithContainers('{{ url_for('graphGetEdgesWithContainers', graphID=graphID) }}',
                    '{{ url_for('graphGetContainers', graphID=graphID) }}',
                    '{{ url_for('graphGetContainerDetails', graphID=graphID) }}',
                    ['{{ url_for('static', filename='images/trashDefault.png') }}',

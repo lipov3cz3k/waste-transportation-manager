@@ -223,7 +223,7 @@ def graphGetSortestPath(graphID):
             season = request.form['season']
             dayTime = request.form['dayTime']
             graph = loadGraph(app.graph_pool, graphID)
-            path = graph.DijkstraPath(startId, endId, routingType, season, dayTime)
+            path = graph.Route(startId, endId, routingType, season, dayTime)
             return jsonify(**path)
     return redirect(url_for('graphDetail', graphID=graphID))
 

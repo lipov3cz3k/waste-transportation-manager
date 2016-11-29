@@ -8,7 +8,7 @@ def dijkstraPath(graphID, start, end):
     from graph.graph_network import Network
     graph = Network()
     graph.LoadFromFile(graphID)
-    print(graph.DijkstraPath(start,end))
+    print(graph.Route(start,end))
 
 def getGraphList():
     result = []
