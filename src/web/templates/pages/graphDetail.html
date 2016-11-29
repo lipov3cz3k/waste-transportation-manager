@@ -160,9 +160,9 @@
                     '{{ url_for('static', filename='images/trashBio.png') }}',
                     '{{ url_for('static', filename='images/trashPlast.png') }}',
                     '{{ url_for('static', filename='images/trashSklo.png') }}',
-                    '{{ url_for('static', filename='images/trashPapir.png') }}',] )
+                    '{{ url_for('static', filename='images/trashPapir.png') }}',] );
     loadAffectedEdges('{{ url_for('graphGetAffectedEdges', graphID=graphID) }}',
-                      '{{ url_for('graphGetEdgeDetails', graphID=graphID) }}')
+                      '{{ url_for('graphGetEdgeDetails', graphID=graphID) }}');
 
     $('#routingType label').click(function() {
         routingType = $(this).children().val();
