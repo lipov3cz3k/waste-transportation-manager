@@ -22,7 +22,9 @@ class Address(UniqueMixin, Base) :
     location = relationship("OSMLocation")
 
     def __init__(self, **kwargs):
-        self.hash = sha1(json.dumps(kwargs, sort_keys=True).encode("UTF-8")).hexdigest()
+        s = sha1()
+        s.update(json.dumps(kwargs, sort_keys=True).encode("UTF-8"))
+        self.hash = s.hexdigest()
         return super().__init__(**kwargs)
 
     def set_location(self, location):
@@ -30,12 +32,17 @@ class Address(UniqueMixin, Base) :
 
     @classmethod
     def unique_hash(cls, **kwargs):
-        return sha1(json.dumps(kwargs, sort_keys=True).encode("UTF-8")).hexdigest()
+        s = sha1()
+        s.update(json.dumps(kwargs, sort_keys=True).encode("UTF-8"))
+        return s.hexdigest()
 
     @classmethod
     def unique_filter(cls, query, **kwargs):
-        return query.filter(Address.hash == sha1(json.dumps(kwargs, sort_keys=True).encode("UTF-8")).hexdigest())
+        s = sha1()
+        s.update(json.dumps(kwargs, sort_keys=True).encode("UTF-8"))
+        return query.filter(Address.hash == s.hexdigest())
 address_coords_index = Index('Address_coords_index', Address.latitude, Address.longitude)
+address_hash_index = Index('Address_hash_index', Address.hash)
 
 class OSMLocation(UniqueMixin, Base) :
     __tablename__ = 'OSMLocation'

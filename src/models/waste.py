@@ -90,13 +90,14 @@ class Cheb(UniqueMixin, Container) :
             return
         super().__init__(**kwargs)
         self.internal_key = '{}-{}'.format(data['waste_type'], data['row'])
-        unique_id_raw =  (data['tech_grp']+
-                         data['city']+
-                         data['street']+
-                         data['house_number']+
-                         str(data['row'])+
-                         data['start'].date().isoformat())
-        self.hash = sha1(unique_id_raw.encode("UTF-8")).hexdigest()
+        s = sha1()
+        s.update(data['tech_grp'].encode('utf-8'))
+        s.update(data['city'].encode('utf-8'))
+        s.update(data['street'].encode('utf-8'))
+        s.update(data['house_number'].encode('utf-8'))
+        s.update(str(data['row']).encode('utf-8'))
+        s.update(data['start'].date().isoformat().encode('utf-8'))
+        self.hash = s.hexdigest()
         self.tech_grp = data['tech_grp']
         self.state = data['state'] in ['T']
         self.invoicing = data['invoicing']
@@ -110,24 +111,26 @@ class Cheb(UniqueMixin, Container) :
     @classmethod
     def unique_hash(cls, **kwargs):
         data = kwargs['data']
-        unique_id_raw =  (data['tech_grp']+
-                         data['city']+
-                         data['street']+
-                         data['house_number']+
-                         str(data['row'])+
-                         data['start'].date().isoformat())
-        return sha1(unique_id_raw.encode("UTF-8")).hexdigest()
+        s = sha1()
+        s.update(data['tech_grp'].encode('utf-8'))
+        s.update(data['city'].encode('utf-8'))
+        s.update(data['street'].encode('utf-8'))
+        s.update(data['house_number'].encode('utf-8'))
+        s.update(str(data['row']).encode('utf-8'))
+        s.update(data['start'].date().isoformat().encode('utf-8'))
+        return s.hexdigest()
 
     @classmethod
     def unique_filter(cls, query, **kwargs):
         data = kwargs['data']
-        unique_id_raw =  (data['tech_grp']+
-                         data['city']+
-                         data['street']+
-                         data['house_number']+
-                         str(data['row'])+
-                         data['start'].date().isoformat())
-        return query.filter(Cheb.hash == sha1(unique_id_raw.encode("UTF-8")).hexdigest())
+        s = sha1()
+        s.update(data['tech_grp'].encode('utf-8'))
+        s.update(data['city'].encode('utf-8'))
+        s.update(data['street'].encode('utf-8'))
+        s.update(data['house_number'].encode('utf-8'))
+        s.update(str(data['row']).encode('utf-8'))
+        s.update(data['start'].date().isoformat().encode('utf-8'))
+        return query.filter(Cheb.hash == s.hexdigest())
 
     def __repr__(self):
         return '%s %s %r' % (self.id, self.internal_key, self.waste_type)
