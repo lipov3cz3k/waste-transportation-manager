@@ -43,20 +43,25 @@ class Track(UniqueMixin, Base) :
         s.update(data['date_to'].isoformat().encode('utf-8'))
         s.update(str(data['distance']).encode('utf-8'))
         self.hash = s.hexdigest()
-
+        start_address = data['start_address']
         self.start_address = Address.as_unique(kwargs['db_session'], 
-                                         city=str(data['start_address']['city']),
-                                         street=str(data['start_address']['street']),
-                                         house_number=str(data['start_address']['house_number']), 
-                                         longitude=float(data.get('latitude')) if data.get('latitude') else None, 
-                                         latitude=float(data.get('longitude')) if data.get('longitude') else None
+                                         city=str(start_address['city']),
+                                         street=str(start_address['street']),
+                                         house_number=str(start_address['house_number']),
+                                         postal=int(start_address.get('postal')) if start_address.get('postal') else None, 
+                                         country=str(start_address.get('country')) if start_address.get('country') else None, 
+                                         longitude=float(start_address.get('latitude')) if start_address.get('latitude') else None, 
+                                         latitude=float(start_address.get('longitude')) if start_address.get('longitude') else None
                                          )
+        finish_address = data['finish_address']
         self.finish_address = Address.as_unique(kwargs['db_session'], 
-                                         city=str(data['finish_address']['city']),
-                                         street=str(data['finish_address']['street']),
-                                         house_number=str(data['finish_address']['house_number']), 
-                                         longitude=float(data.get('latitude')) if data.get('latitude') else None, 
-                                         latitude=float(data.get('longitude')) if data.get('longitude') else None
+                                         city=str(finish_address['city']),
+                                         street=str(finish_address['street']),
+                                         house_number=str(finish_address['house_number']),
+                                         postal=int(finish_address.get('postal')) if finish_address.get('postal') else None, 
+                                         country=str(finish_address.get('country')) if finish_address.get('country') else None, 
+                                         longitude=float(finish_address.get('latitude')) if finish_address.get('latitude') else None, 
+                                         latitude=float(finish_address.get('longitude')) if finish_address.get('longitude') else None
                                          )
         self.start = data['start']
         self.finish = data['finish']

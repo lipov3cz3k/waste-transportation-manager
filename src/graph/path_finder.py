@@ -82,7 +82,7 @@ class TrackImporter(Importer):
             street = result[1]
             house_number = ''
 
-        return {'street': street, 'house_number' : house_number, 'postal' : result[2], 'city' : result[3], 'country' : result[4]}
+        return {'street': street, 'house_number' : house_number, 'postal' : result[2].replace(' ', ''), 'city' : result[3], 'country' : result[4]}
 
     def PathBasic(self, graphID, start, finish):
 

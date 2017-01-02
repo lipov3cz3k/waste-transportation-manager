@@ -12,6 +12,8 @@ class Address(UniqueMixin, Base) :
     city = Column(Text)
     street = Column(Text)
     house_number = Column(Text)
+    postal = Column(Integer)
+    country = Column(Text)
     hash = Column(Integer, unique=True, nullable=False)
 
     #coords from original source

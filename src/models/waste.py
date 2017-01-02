@@ -43,7 +43,9 @@ class Container(Base) :
         self.address = Address.as_unique(kwargs['db_session'], 
                                          city=str(data['city']),
                                          street=str(data['street']),
-                                         house_number=str(data['house_number']), 
+                                         house_number=str(data['house_number']),
+                                         postal=int(data.get('postal')) if data.get('postal') else None, 
+                                         country=str(data.get('country')) if data.get('country') else None, 
                                          longitude=float(data.get('latitude')) if data.get('latitude') else None, 
                                          latitude=float(data.get('longitude')) if data.get('longitude') else None
                                          )

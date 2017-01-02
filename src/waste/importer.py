@@ -95,7 +95,12 @@ class Importer:
                     successful = True
                 else:
                     try:
-                        location = geolocator.geocode({'street':addr_obj.house_number + ' ' + addr_obj.street,'city':addr_obj.city},
+                        query = {'street' :addr_obj.house_number + ' ' + addr_obj.street, 'city':addr_obj.city}
+                        if addr_obj.postal:
+                            query['postal'] = addr_obj.postal
+                        if addr_obj.country:
+                            query['country'] = addr_obj.country
+                        location = geolocator.geocode(query,
                                                       addressdetails=True)
                     except GeocoderTimedOut as e:
                         print("Service timed out, waiting a little bit")
@@ -264,6 +269,7 @@ class Jihlava(Importer):
                 record['street'] = row.get('ADRESA')
                 record['house_number'] = ''
             record['city'] = 'Jihlava'
+            record['country'] = 'Czech republic'
             record['latitude'], record['longitude'] = transform(sjtsk, wgs84, row.get('X'), row.get('Y'))
             record['population'] = row.get('OBYVATEL')
             record['name'] = row.get('NAZEV')
