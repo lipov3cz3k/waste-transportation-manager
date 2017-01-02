@@ -2,6 +2,7 @@ from openpyxl import load_workbook
 from common.utils import LogType, print, get_tqdm
 from waste.importer import Importer
 from .routing import RoutingType
+from re import split
 
 class TrackImporter(Importer):
     def __init__(self):
@@ -25,8 +26,10 @@ class TrackImporter(Importer):
                 print("Exception reading source data: %s" % str(e), LogType.error)
                 return
             #save to database
-            #self.SaveAllRecordsToDatabase(data)
+            self.SaveAllRecordsToDatabase(data)
             data.clear()
+        #get location
+        self.LoadOSMLocation()
 
     def _ParseSheet(self, sheet):
         from models.tracks import Track
@@ -56,24 +59,30 @@ class TrackImporter(Importer):
                     record[normalize.get(key, key)] = cell.value.strip()
                 else:
                     record[normalize.get(key, key)] = cell.value
-            #for x in ['start', 'finish']:
-            #    address = {}
-            #    adresa = record.get(x).split(',')
-            #    adresa_ulice = adresa[0].rsplit(' ', 1)
-            #    if len(adresa_ulice) > 1 and adresa_ulice[1][0].isdigit():
-            #            address['street'], address['house_number'] = adresa_ulice
-            #    else:
-            #        address['street'] = adresa[0]
-            #        address['house_number'] = ''
-
-            #    adresa_mesto= adresa[-2].strip().split(' ', 2)
-            #    address['postal_code'] = adresa_mesto[0]+adresa_mesto[1]
-            #    address['city'] = adresa_mesto[2]
-            #    record[x] = address
-
-            data.append(Track(**record))
+            record['start_address'] = self._ParseAddress(record.get('start'))
+            record['finish_address'] = self._ParseAddress(record.get('finish'))
+            data.append(Track(db_session=self.db_session, data=record))
         return data
 
+    def _ParseAddress(self, address):
+        result = split('^(.*),\s?(\d{3}\s\d{2})\s*(.*),\s*(.*)', address)
+        if len(result) == 1:
+            adresa = address.split(',')
+            if len(adresa) < 2:
+                raise
+            result.insert(1, adresa[0])
+            result.insert(2, '')
+            result.insert(3, adresa[-2])
+            result.insert(4, adresa[-1])
+
+        adresa = result[1].rsplit(' ', 1)
+        if len(adresa) > 1 and adresa[1][0].isdigit():
+                street, house_number = adresa
+        else:
+            street = result[1]
+            house_number = ''
+
+        return {'street': street, 'house_number' : house_number, 'postal' : result[2], 'city' : result[3], 'country' : result[4]}
 
     def PathBasic(self, graphID, start, finish):
 
