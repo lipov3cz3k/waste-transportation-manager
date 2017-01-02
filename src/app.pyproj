@@ -87,6 +87,9 @@
     <Compile Include="models\location.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="models\tracks.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="models\waste.py">
       <SubType>Code</SubType>
     </Compile>

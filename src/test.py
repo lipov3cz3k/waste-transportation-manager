@@ -10,4 +10,4 @@ if __name__ == '__main__':
     #run_import("../data/jihlava/VUT/komunal.dbf", "Jihlava")
     #bbox = BoundingBox(12.274475,50.023182,12.505188,50.152266)
     #run_graph(bbox)
-    run_path_finder("../data/paths/tracks_23_02_2016.xlsx")
+    run_path_finder("../data/tracks/tracks_23_02_2016.xlsx")

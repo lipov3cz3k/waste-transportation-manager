@@ -20,7 +20,7 @@ class TrackImporter(Importer):
                 self.RemoveDBSession()
                 print("KeyboardInterrupt", LogType.error)
                 raise KeyboardInterrupt
-            except e:
+            except Exception as e:
                 self.RemoveDBSession()
                 print("Exception reading source data: %s" % str(e), LogType.error)
                 return
@@ -29,10 +29,11 @@ class TrackImporter(Importer):
             data.clear()
 
     def _ParseSheet(self, sheet):
+        from models.tracks import Track
         normalize = {'start' : 'start',
                 'cíl' : 'finish',
-                'od' : 'from',
-                'do' : 'to',
+                'od' : 'date_from',
+                'do' : 'date_to',
                 'vozidlo' : 'vehicle',
                 'SPZ' : 'reg_plate',
                 'řidič' : 'driver',
@@ -55,7 +56,22 @@ class TrackImporter(Importer):
                     record[normalize.get(key, key)] = cell.value.strip()
                 else:
                     record[normalize.get(key, key)] = cell.value
-            data.append(record)
+            #for x in ['start', 'finish']:
+            #    address = {}
+            #    adresa = record.get(x).split(',')
+            #    adresa_ulice = adresa[0].rsplit(' ', 1)
+            #    if len(adresa_ulice) > 1 and adresa_ulice[1][0].isdigit():
+            #            address['street'], address['house_number'] = adresa_ulice
+            #    else:
+            #        address['street'] = adresa[0]
+            #        address['house_number'] = ''
+
+            #    adresa_mesto= adresa[-2].strip().split(' ', 2)
+            #    address['postal_code'] = adresa_mesto[0]+adresa_mesto[1]
+            #    address['city'] = adresa_mesto[2]
+            #    record[x] = address
+
+            data.append(Track(**record))
         return data
 
 

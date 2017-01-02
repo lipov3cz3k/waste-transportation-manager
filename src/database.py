@@ -20,6 +20,7 @@ def init_db():
     #import ddr.ddr_models
     import models.location
     import models.waste
+    import models.tracks
     Base.metadata.create_all(bind=engine)
 
     # recreate index of EVI - use only on DB where index doesn't exist
