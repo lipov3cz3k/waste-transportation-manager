@@ -5,9 +5,10 @@ from database import Base, UniqueMixin
 from models.location import Address
 from hashlib import sha1
 
-class Track(Base) :
+class Track(UniqueMixin, Base) :
     __tablename__ = 'Track'
     id = Column(Integer, primary_key=True)
+    hash = Column(Integer, unique=True, nullable=False)
 
     start = Column(Text)
     finish = Column(Text)
@@ -36,6 +37,13 @@ class Track(Base) :
         data = kwargs['data']
         if data == None :
             return
+
+        s = sha1()
+        s.update(data['date_from'].isoformat().encode('utf-8'))
+        s.update(data['date_to'].isoformat().encode('utf-8'))
+        s.update(str(data['distance']).encode('utf-8'))
+        self.hash = s.hexdigest()
+
         self.start_address = Address.as_unique(kwargs['db_session'], 
                                          city=str(data['start_address']['city']),
                                          street=str(data['start_address']['street']),
@@ -65,3 +73,22 @@ class Track(Base) :
         self.distance = data['distance']
         self.time = data['time']
         self.same = data['same']
+
+    @classmethod
+    def unique_hash(cls, **kwargs):
+        data = kwargs['data']
+        s = sha1()
+        s.update(data['date_from'].isoformat().encode('utf-8'))
+        s.update(data['date_to'].isoformat().encode('utf-8'))
+        s.update(str(data['distance']).encode('utf-8'))
+        return s.hexdigest()
+
+    @classmethod
+    def unique_filter(cls, query, **kwargs):
+        data = kwargs['data']
+        s = sha1()
+        s.update(data['date_from'].isoformat().encode('utf-8'))
+        s.update(data['date_to'].isoformat().encode('utf-8'))
+        s.update(str(data['distance']).encode('utf-8'))
+        return query.filter(Track.hash == s.hexdigest())
+track_hash_index = Index('Track_hash_index', Track.hash)

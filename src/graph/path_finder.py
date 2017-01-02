@@ -61,7 +61,7 @@ class TrackImporter(Importer):
                     record[normalize.get(key, key)] = cell.value
             record['start_address'] = self._ParseAddress(record.get('start'))
             record['finish_address'] = self._ParseAddress(record.get('finish'))
-            data.append(Track(db_session=self.db_session, data=record))
+            data.append(Track.as_unique(self.db_session, db_session=self.db_session, data=record))
         return data
 
     def _ParseAddress(self, address):
