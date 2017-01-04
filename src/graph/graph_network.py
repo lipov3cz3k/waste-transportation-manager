@@ -118,8 +118,8 @@ class Network:
                     params['containers'] = containers
                     self.G.add_path((node_last.id, node_first.id), **params)
 
-                self.G.node[node_first.id] = dict(lon=node_first.lon, lat=node_first.lat, traffic_lights=node_first.tags.get('highway') == 'traffic_signals')
-                self.G.node[node_last.id] = dict(lon=node_last.lon, lat=node_last.lat, traffic_lights=node_last.tags.get('highway') == 'traffic_signals')
+                self.G.node[node_first.id] = dict(lon=float(node_first.lon), lat=float(node_first.lat), traffic_lights=node_first.tags.get('highway') == 'traffic_signals')
+                self.G.node[node_last.id] = dict(lon=float(node_last.lon), lat=float(node_last.lat), traffic_lights=node_last.tags.get('highway') == 'traffic_signals')
 
             osm.ways[id] = None
         
@@ -289,6 +289,54 @@ class Network:
             fc = FeatureCollection([ v for v in paths_pool.values() ])
             return {'succeded' : True, 'paths' : fc}
 
+
+############# Tracks management ################
+    def ConnectTracksWithGraph(self):
+        from .path_finder import TrackImporter
+        from shapely.geometry import Point as splPoint
+        importer = TrackImporter()
+        tracks_obj = []
+        try:
+            if importer:
+                importer.run = True
+                tracks_obj = importer.GetTracks(self.bbox)
+        except KeyboardInterrupt:
+            importer.run = False
+            print("KeyboardInterrupt", LogType.info)
+        except Exception as e:
+            print("Exception reading source data: %s" % str(e), LogType.error)
+            return
+        result = []
+        for track in get_tqdm(tracks_obj, self.SetState, desc="Connecting tracks to network", total=None):
+            start_node = self._searchNearby(splPoint(float(track[1].longitude), float(track[1].latitude)))
+            finish_node = self._searchNearby(splPoint(float(track[2].longitude), float(track[2].latitude)))
+
+            if not start_node or not finish_node:
+                continue 
+            route = self.Route(start_node, finish_node)
+            route['track'] = track[0]
+            result.append(route)
+        return result
+
+    def _searchNearby(self, point):
+        from graph.bounding_box import get_bounding_box
+        from shapely.geometry import Point as splPoint
+        bbox = get_bounding_box(point.y,  point.x, 0.5)
+
+        nodes = (n for n,d in self.G.nodes_iter(data=True) if d['lat'] > bbox.min_latitude and \
+                                                              d['lat'] < bbox.max_latitude and \
+                                                              d['lon'] > bbox.min_longitude  and \
+                                                              d['lon'] < bbox.max_longitude)
+        nodes = list(nodes)
+        if len(nodes) == 0:
+            return None
+        try:
+            dist = lambda node: point.distance(splPoint(self.G.node[node]['lon'], self.G.node[node]['lat']))
+            near_node = min(nodes, key=dist)
+            return near_node
+        except Exception as e:
+            print(str(e), log_type=LogType.error)
+            raise e
 
 ############## Routing #####################
     def Route(self, startNode, endNode, routingType = RoutingType.basic, simulatedSeason = Season(datetime.now()), simulatedDayTime = DayTime(datetime.now())):

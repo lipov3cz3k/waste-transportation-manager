@@ -1,6 +1,7 @@
 from openpyxl import load_workbook
 from common.utils import LogType, print, get_tqdm
 from waste.importer import Importer
+from models.tracks import Track
 from .routing import RoutingType
 from re import split
 
@@ -32,7 +33,6 @@ class TrackImporter(Importer):
         self.LoadOSMLocation()
 
     def _ParseSheet(self, sheet):
-        from models.tracks import Track
         normalize = {'start' : 'start',
                 'cíl' : 'finish',
                 'od' : 'date_from',
@@ -84,12 +84,29 @@ class TrackImporter(Importer):
 
         return {'street': street, 'house_number' : house_number, 'postal' : result[2].replace(' ', ''), 'city' : result[3], 'country' : result[4]}
 
-    def PathBasic(self, graphID, start, finish):
 
-        #resolve start/finish from address to node ID
+    def GetTracks(self, bbox):
+        from database import init_db, db_session
+        from models.location import Address, OSMLocation
+        from sqlalchemy.orm import aliased
+        init_db()
+        self.db_session = db_session
+        self.TestIsRun()
+        start_alias = aliased(Address)
+        finish_alias = aliased(Address)
+        OSMstart_alias = aliased(OSMLocation)
+        OSMfinish_alias = aliased(OSMLocation)
+        tracks_obj = db_session.query(Track, OSMstart_alias, OSMfinish_alias).join(start_alias, Track.start_address) \
+                                        .join(finish_alias, Track.finish_address) \
+                                        .join(OSMstart_alias, start_alias.location) \
+                                        .join(OSMfinish_alias, finish_alias.location) \
+                                        .filter(OSMstart_alias.latitude > bbox.min_latitude, \
+                                                OSMstart_alias.latitude < bbox.max_latitude, \
+                                                OSMstart_alias.longitude > bbox.min_longitude, \
+                                                OSMstart_alias.longitude < bbox.max_longitude) \
+                                        .all()
+        return tracks_obj
 
-        print(graphID.Route(startNode, endNode))
-        
 
 
 
@@ -104,3 +121,5 @@ def Run(importFile=None, sourceCity=None):
     except KeyboardInterrupt:
         importer.run = False
         print("KeyboardInterrupt", LogType.info)
+    except Exception as e:
+        print("Exception reading track source data: %s" % str(e), LogType.error)
