@@ -96,4 +96,6 @@ class Track(UniqueMixin, Base) :
         s.update(data['date_to'].isoformat().encode('utf-8'))
         s.update(str(data['distance']).encode('utf-8'))
         return query.filter(Track.hash == s.hexdigest())
+    def __repr__(self):
+        return '%s' % (self.id)
 track_hash_index = Index('Track_hash_index', Track.hash)

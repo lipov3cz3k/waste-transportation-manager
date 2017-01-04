@@ -272,6 +272,13 @@ class Network:
                     writer.writerow([e['id'], n1, n2, e['length'], e['highway'], containers])
         return self.G.nodes(data=True)
 
+    def ExportTracksWithPaths(self):
+        file_path = join(local_config.folder_export_root, '%s' % self.graphID)
+        result = self.GetTracksWithPaths()
+        with open(file_path+"_tracks.txt", 'w',newline="\n", encoding="utf-8") as f:
+            _print(result, file=f)
+            f.flush()
+
 ############# Import functions ################
 
     def LoadPath(self, pathID):
@@ -289,9 +296,8 @@ class Network:
             fc = FeatureCollection([ v for v in paths_pool.values() ])
             return {'succeded' : True, 'paths' : fc}
 
-
 ############# Tracks management ################
-    def ConnectTracksWithGraph(self):
+    def GetTracksWithPaths(self):
         from .path_finder import TrackImporter
         from shapely.geometry import Point as splPoint
         importer = TrackImporter()
@@ -341,7 +347,7 @@ class Network:
 ############## Routing #####################
     def Route(self, startNode, endNode, routingType = RoutingType.basic, simulatedSeason = Season(datetime.now()), simulatedDayTime = DayTime(datetime.now())):
         if not startNode or not endNode:
-            return {'succeded' : False, 'message' : 'Missing start or end point.'}
+            return {"succeded" : "false", "message" : "Missing start or end point."}
         number_of_experiments = 1
         paths_pool = {}
         for i in range(number_of_experiments):
@@ -353,9 +359,9 @@ class Network:
             try:
                 eval, path = nx.bidirectional_dijkstra(self.G, startNode, endNode, 'evaluation')
             except nx.NetworkXNoPath as e:
-                return {'succeded' : False, 'message' : str(e.args[0])}
+                return {"succeded" : "false", "message" : str(e.args[0])}
             except nx.NetworkXError as e:
-                return {'succeded' : False, 'message' : str(e.args[0])}
+                return {"succeded" : "false", "message" : str(e.args[0])}
 
             # Save path if not already saved
             h = hash(tuple(path))
@@ -375,7 +381,7 @@ class Network:
         for path in paths_pool.values():
             path.properties['weight'] = ((path.properties['count'] * 5) / number_of_experiments) + 5
         fc = FeatureCollection([ v for v in paths_pool.values() ])
-        return {'succeded' : True, 'paths' : fc, 'number_of_experiments' : number_of_experiments}
+        return {"succeded" : "true", "paths" : fc, "number_of_experiments" : number_of_experiments}
 
 
     def _ReloadGraphEvaluation(self, routingType, simulatedSeason = Season(datetime.now()), simulatedDayTime = DayTime(datetime.now())):

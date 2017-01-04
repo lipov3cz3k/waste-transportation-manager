@@ -210,7 +210,7 @@ def graphExportContainers(graphID):
 @app.route('/graph/<graphID>/export/tracks', methods=['POST', 'GET'])
 def graphExportTracks(graphID):
     graph = loadGraph(app.graph_pool, graphID)
-    return str(graph.ConnectTracksWithGraph())
+    return str(graph.ExportTracksWithPaths())
 
 ############################
 @app.route('/graph/<graphID>/affected')
