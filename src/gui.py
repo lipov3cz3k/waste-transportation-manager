@@ -207,6 +207,11 @@ def graphExportContainers(graphID):
     graph = loadGraph(app.graph_pool, graphID)
     return str(graph.ExportConainers())
 
+@app.route('/graph/<graphID>/export/tracks', methods=['POST', 'GET'])
+def graphExportTracks(graphID):
+    graph = loadGraph(app.graph_pool, graphID)
+    return str(graph.ConnectTracksWithGraph())
+
 ############################
 @app.route('/graph/<graphID>/affected')
 def graphGetAffectedEdges(graphID):
