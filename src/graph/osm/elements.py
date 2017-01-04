@@ -114,8 +114,11 @@ class Way:
         return ret
 
     def set_direction(self):
-        self.forward = self.nodes[0].lat < self.nodes[1].lat
-        self.forward = True if self.nodes[0].lat == self.nodes[1].lat and self.nodes[0].lon < self.nodes[1].lon else self.forward
+        try:
+            self.forward = self.nodes[0].lat < self.nodes[1].lat
+            self.forward = True if self.nodes[0].lat == self.nodes[1].lat and self.nodes[0].lon < self.nodes[1].lon else self.forward
+        except Exception as e:
+            self.forward = True
 
 class SimpleHandler(ContentHandler):
 

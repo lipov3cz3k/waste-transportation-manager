@@ -293,6 +293,8 @@ class OSMParser:
                                                           .filter((Address.longitude > self.bbox.min_longitude) | (OSMLocation.longitude > self.bbox.min_longitude)) \
                                                           .filter((Address.longitude < self.bbox.max_longitude) | (OSMLocation.longitude < self.bbox.max_longitude)) \
                                                           .all()
+        if len(containers_obj) == 0:
+            return
 
         try:
             #print("[%d] Mapping %s containers" % (iteration, len(containers_obj)))
