@@ -373,7 +373,7 @@ class Network:
 
                 for n in path:
                     points.append(((float(self.G.node[n]['lon']), float(self.G.node[n]['lat']))))
-                paths_pool[h] = Feature(geometry=LineString(points), properties={"length" : length, "eval": eval, "count" : 1})
+                paths_pool[h] = Feature(geometry=LineString(points), properties={"length" : length, "eval": eval, "count" : 1, "ids" : path})
             else:
                 paths_pool[h].properties['count'] += 1
 
