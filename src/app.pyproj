@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{9966053f-1e84-4dcd-8082-382c68598649}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>test.py</StartupFile>
+    <StartupFile>main.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
@@ -13,7 +13,7 @@
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <InterpreterId>{9a7a9026-48c1-4688-9d5d-e5699d47d074}</InterpreterId>
     <InterpreterVersion>3.5</InterpreterVersion>
-    <CommandLineArguments>-i ../data/Cheb/winx_Cheb.20160608.xlsx</CommandLineArguments>
+    <CommandLineArguments>-g -bbox 16.580086 49.143538 16.666260 49.181928 -t</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
@@ -86,6 +86,9 @@
     <Compile Include="gui.py" />
     <Compile Include="main.py" />
     <Compile Include="models\location.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="models\path.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="models\tracks.py">

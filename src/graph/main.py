@@ -131,7 +131,7 @@ class GraphManager:
             self.DownloadOSMData(data_path)
 
 
-def Run(bbox=None, exportFile=None):
+def Run(bbox=None, exportFile=None, processTracks=None):
     CheckFolders()
     # brno: 16.50,49.11,16.70,49.24
     # palackeho: 16.2953, 50.1147, 16.2979, 50.1170
@@ -149,7 +149,8 @@ def Run(bbox=None, exportFile=None):
         graph.SaveToFile()
         if exportFile:
             graph.ExportFusionTables(exportFile)
-
+        if processTracks:
+            graph.ExportTracksWithPaths()
         print("Nodes <%d>:" % (len(graph.GetNodes())))
         print("Edges <%d>:" % (len(graph.GetEdges())))
         _print("DONE")

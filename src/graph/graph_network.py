@@ -297,9 +297,11 @@ class Network:
             return {'succeded' : True, 'paths' : fc}
 
 ############# Tracks management ################
-    def GetTracksWithPaths(self):
+    def GetTracksWithPaths(self, safeToDb = True):
         from .path_finder import TrackImporter
         from shapely.geometry import Point as splPoint
+        from database import db_session
+        from models.path import Path
         importer = TrackImporter()
         tracks_obj = []
         try:
@@ -313,6 +315,7 @@ class Network:
             print("Exception reading source data: %s" % str(e), LogType.error)
             return
         result = []
+        db_temp = []
         for track in get_tqdm(tracks_obj, self.SetState, desc="Connecting tracks to network", total=None):
             start_node = self._searchNearby(splPoint(float(track[1].longitude), float(track[1].latitude)))
             finish_node = self._searchNearby(splPoint(float(track[2].longitude), float(track[2].latitude)))
@@ -321,7 +324,13 @@ class Network:
                 continue 
             route = self.Route(start_node, finish_node)
             route['track'] = track[0]
+            if safeToDb:
+                db_temp.append(Path(db_session=db_session, data=route))
             result.append(route)
+
+        if safeToDb:
+            db_session.add_all(db_temp)
+            db_session.commit()
         return result
 
     def _searchNearby(self, point):

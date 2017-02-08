@@ -27,6 +27,9 @@ if __name__ == '__main__':
     parser.add_argument("-exportCSV",
                         type=FileType('w', encoding='utf-8'), dest="exportCSV",
                         help="If parameter present, program exports graph to CSV file ready to import to Google Fusion tables")
+    parser.add_argument("-t", "--tracks",
+                        action="store_true", dest="processTracks", default=False,
+                        help="Map tracks from db to the graph and compute shortest path")
 
     args = parser.parse_args()
 
@@ -36,6 +39,6 @@ if __name__ == '__main__':
     if args.import_containers:
         run_import(args.import_containers, args.import_city)
     elif(args.graph == True):
-        run_graph(bbox, args.exportCSV)
+        run_graph(bbox, exportFile = args.exportCSV, processTracks = args.processTracks)
     else:
         parser.print_help()
