@@ -17,7 +17,7 @@ class GraphManager:
         self.graph = None
 
         # highway tag values to use, separated by pipes (|), for instance 'motorway|trunk|primary'
-        self.highway_cat = 'motorway|trunk|primary|secondary|tertiary|road|residential|service|motorway_link|trunk_link|primary_link|secondary_link|teriary_link|living_street'
+        self.highway_cat = 'motorway|trunk|primary|secondary|tertiary|road|residential|service|motorway_link|trunk_link|primary_link|secondary_link|teriary_link|living_street|unclassified'
 
         self.run = {0: False}
         self.is_gui = False
