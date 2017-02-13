@@ -232,6 +232,14 @@ def graphGetSortestPath(graphID):
             return jsonify(**path)
     return redirect(url_for('graphDetail', graphID=graphID))
 
+@app.route('/graph/<graphID>/restrictions', methods=['POST', 'GET'])
+def graphRestrictions(graphID):
+    from ddr.restrictions import LoadFromFile, ExportGeoJSON
+    from os.path import join
+    fileName = join(local_config.folder_restrictions_root, 'Barier_All_pro Vlastika_fin.xlsx')
+    return jsonify(ExportGeoJSON(LoadFromFile(fileName)))
+
+
 ########################################################################################################################
 
 ######################################## PAGES HANDLERS ################################################################

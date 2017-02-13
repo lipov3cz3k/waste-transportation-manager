@@ -358,6 +358,49 @@ function GetShortestPath(apiUrl, start, end, routingType, season, dayTime) {
     });
 }
 
+///////// Restrictions loader ///////////
+function showRestrictions(apiUrl) {
+    map.spin(true);
+    $.ajax({
+        type: 'POST',
+        dataType: 'json',
+        url: apiUrl,
+        success: function (geojson) {
+
+
+            var geojsonMarkerOptions = {
+                radius: 8,
+                fillColor: "blue",
+                color: "#000",
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.8
+            };
+
+            restrictions = L.geoJSON(geojson, {
+                            pointToLayer: function (feature, latlng) {
+                                return L.circleMarker(latlng, geojsonMarkerOptions);
+                            },
+                            onEachFeature: restrictionFeature
+                        }).addTo(map);
+
+            pathsLayer.push(restrictions);
+
+            map.spin(false);
+        },
+        error: function (e) {
+            alert('Unexpected error! Cannot get path');
+            map.spin(false);
+        }
+    });
+}
+
+function restrictionFeature(feature, layer) {
+        //if (feature.properties && feature.properties.popupContent) {
+        layer.bindPopup("no:" + feature.id);
+        //}
+}
+
 ///////// Export ///////////
 function exportGraph(type) {
     // send ajax POST request to start background job
