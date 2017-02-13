@@ -291,8 +291,8 @@ class Network:
                 _print(path.get('id'))
                 for n in path.get('path'):
                     n = str(n)
-                    points.append(((float(self.G.node[n]['lon']), float(self.G.node[n]['lat']))))                    
-                paths_pool[path.get('id')] = Feature(geometry=LineString(points))
+                    points.append(((float(self.G.node[n]['lon']), float(self.G.node[n]['lat']))))
+                paths_pool[path.get('id')] = Feature(geometry=LineString(points), style={'color':path.get('color', '#00FF00')})
             fc = FeatureCollection([ v for v in paths_pool.values() ])
             return {'succeded' : True, 'paths' : fc}
 

@@ -272,7 +272,7 @@ function wastePath(apiURL, pathID)
                 {
                     paths_pool = data.paths;
                     path = L.geoJson(paths_pool, {
-                        style: function(feature) { return {color: 'red'};}
+                        style: function(feature) { return feature.style;}
                     }).addTo(map);
                     pathsLayer.push(path);
                 }
