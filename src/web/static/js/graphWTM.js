@@ -1,4 +1,4 @@
-﻿var map, bounds, affectedEdges, containers;
+﻿var map, bounds, affectedEdges, containers, crossroads;
 var pathsLayer = [];
 
 var overlayMaps;
@@ -13,7 +13,7 @@ function init(bounds) {
         maxZoom: 19,
         attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     });
-    map = L.map('map', { layers: [OpenStreetMap_Mapnik] });
+    map = L.map('map', { layers: [OpenStreetMap_Mapnik], preferCanvas: true });
     affectedEdges = null;
 
     overlayMaps = L.control.layers(null, null, { collapsed: false }).addTo(map);
@@ -23,9 +23,33 @@ function init(bounds) {
     map.fitBounds(bounds);
 }
 
+
+function saveMapPNG()
+{
+    var crossLayerEnabled = false;
+    if (map.hasLayer(crossroads)) {
+        crossLayerEnabled = true
+        map.removeLayer(crossroads);
+    }
+    leafletImage(map, doImage);
+    if (crossLayerEnabled)
+        map.addLayer(crossroads);
+}
+
+function doImage(err, canvas) {
+    var img = document.createElement('img');
+    var dimensions = map.getSize();
+    img.width = dimensions.x;
+    img.height = dimensions.y;
+    img.src = canvas.toDataURL("image/png");
+    var w = window.open('about:blank', 'image from canvas');
+    w.document.body.appendChild(img);
+}
+
+
 ///////// Crossroads loader ///////////
 function preloadCrossroads(apiURL, iconURL) {
-    var crossroads = L.markerClusterGroup({ spiderfyOnMaxZoom: false, disableClusteringAtZoom: 17 });
+    crossroads = L.markerClusterGroup({ spiderfyOnMaxZoom: false, disableClusteringAtZoom: 17 });
     overlayMaps.addOverlay(crossroads, "Crossroads");
 
     map.spin(true);
@@ -101,7 +125,7 @@ function preloadRestrictions(apiUrl) {
 ///////// Containers loader ///////////
 
 function preloadEdgesWithContainers(containersAPIUrl, containerAPIUrl, containerDetailApi, iconURLs) {
-    containers = L.markerClusterGroup();
+    containers = L.layerGroup();
     map.addLayer(containers);
 
     map.spin(true);

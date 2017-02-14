@@ -14,6 +14,7 @@
 <script type="application/javascript" src="{{ url_for('static', filename='js/leaflet.markercluster.js') }}"></script>
 <script type="application/javascript" src="{{ url_for('static', filename='js/utils.js') }}"></script>
 <script type="application/javascript" src="{{ url_for('static', filename='js/graphWTM.js') }}"></script>
+<script type="application/javascript" src="{{ url_for('static', filename='js/leaflet-image.js') }}"></script>
 {% endblock %}
 
 {% block content %}
@@ -32,7 +33,7 @@
         <input type="button" name="export" class="btn btn-default" value="Export to CSV (containers)" onclick="exportGraph('{{ url_for('graphExportContainers', graphID=graphID) }}');">
         <input type="button" name="export" class="btn btn-default" value="Export tracks" onclick="exportGraph('{{ url_for('graphExportTracks', graphID=graphID) }}');">
     </div>
-    <div class="col-md-2">
+    <div class="col-md-1">
         <label for="controls" class="control-label input-group">Controls:</label>
         <input type="button" name="controls" class="btn btn-default" value="Show all containers" onclick="loadAllContainers(
                            '{{ url_for('graphGetContainers', graphID=graphID) }}',
@@ -44,6 +45,12 @@
                             '{{ url_for('static', filename='images/trashSklo.png') }}',
                             '{{ url_for('static', filename='images/trashPapir.png') }}',] );">
         <input type="button" name="controls" class="btn btn-default" value="Remove all paths" onclick="removeAllPaths();">
+        <input type="button" name="controls" class="btn btn-default" value="Save as image" onclick="saveMapPNG();">
+        <input type="button" name="export" class="btn btn-default" value="(h) +" onclick="(function () { $('#map').css('height', '+=100'); map.invalidateSize(); })(event)">
+        <input type="button" name="export" class="btn btn-default" value="(h) -" onclick="(function () { $('#map').css('height', '-=100'); map.invalidateSize(); })(event)">
+        <input type="button" name="export" class="btn btn-default" value="(w) +" onclick="(function () { $('#map').css('width', '+=100'); map.invalidateSize(); })(event)">
+        <input type="button" name="export" class="btn btn-default" value="(w) -" onclick="(function () { $('#map').css('width', '-=100'); map.invalidateSize(); })(event)">
+
     </div>
 </div>
 
@@ -149,21 +156,12 @@
     init([[{{ bbox[3] }}, {{ bbox[0] }}], [{{ bbox[1] }}, {{ bbox[2] }}]]);
 
 
-    $('#mapElements :checkbox').change(function() {
-        // this will contain a reference to the checkbox
-        if (this.checked) {
-            // the checkbox is now checked
-        } else {
-            // the checkbox is now no longer checked
-        }
-    });
 
 
 
-
-    preloadCrossroads('{{ url_for('graphGetNodes', graphID=graphID) }}', '{{ url_for('static', filename='images/measle.png') }}');
     preloadRestrictions('{{ url_for('graphRestrictions', graphID=graphID) }}');
 
+    preloadCrossroads('{{ url_for('graphGetNodes', graphID=graphID) }}', '{{ url_for('static', filename='images/measle.png') }}');
 
     preloadEdgesWithContainers('{{ url_for('graphGetEdgesWithContainers', graphID=graphID) }}',
                    '{{ url_for('graphGetContainers', graphID=graphID) }}',
@@ -176,8 +174,8 @@
                     '{{ url_for('static', filename='images/trashPapir.png') }}',] );
 
 
-    preloadAllWastePath("{{ url_for('graphGetPathFromFile', graphID=graphID) }}", [{% for item in paths %}"{{ item.id }}",{% endfor %}]);
 
+    preloadAllWastePath("{{ url_for('graphGetPathFromFile', graphID=graphID) }}", [{% for item in paths %}"{{ item.id }}",{% endfor %}]);
 
 
     $('#routingType label').click(function() {
