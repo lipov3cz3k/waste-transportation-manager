@@ -48,7 +48,7 @@
         <label for="export" class="control-label input-group">Export:</label>
         <input type="button" name="export" class="btn btn-default" value="Export to CSV (simple graph)" onclick="exportGraph('{{ url_for('graphExportSimple', graphID=graphID) }}');">
         <input type="button" name="export" class="btn btn-default" value="Export to CSV (containers)" onclick="exportGraph('{{ url_for('graphExportContainers', graphID=graphID) }}');">
-        <input type="button" name="export" class="btn btn-default" value="Export tracks" onclick="exportGraph('{{ url_for('graphExportTracks', graphID=graphID) }}');">
+        <input type="button" name="export" class="btn btn-default" value="Export tracks (to DB)" onclick="exportGraph('{{ url_for('graphExportTracks', graphID=graphID) }}');">
     </div>
     <div class="col-md-5">
         <div class="form-group">

@@ -21,11 +21,6 @@ class WebApplication(Flask):
 app = WebApplication(__name__, static_folder="web/static", template_folder="web/templates")
 
 
-# Load default config and override config from an environment variable
-app.config.update(dict(
-    DEBUG=True,
-    SECRET_KEY='development key secret'
-))
 ########################################################################################################################
 
 ######################################## METHODS FOR RUN LONG TASK #####################################################
@@ -273,7 +268,30 @@ def settings():
 
 ########################################################################################################################
 
+@app.route('/update')
+def gitUpdate():
+    from os import system
+    result = system("git pull")  
+    return str(result);
 
 
 if __name__ == '__main__':
+    from argparse import ArgumentParser
+    parser = ArgumentParser(description='Waste transportation manager ...')
+    parser.add_argument("-r", "--release",
+                        action="store_true", dest="release_config", default=None,
+                        help="Disable debugging and set visiblity to 0.0.0.0:5432")
+    args = parser.parse_args()
+        # Load default config and override config from an environment variable
+    if args.release_config:
+        app.config.update(dict(
+            DEBUG=False,
+            SECRET_KEY='development key secret',
+            SERVER_NAME='0.0.0.0:5432'
+        ))
+    else:
+        app.config.update(dict(
+            DEBUG=True,
+            SECRET_KEY='development key secret'
+        ))
     app.run()
