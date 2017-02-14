@@ -354,9 +354,15 @@ class Network:
             raise e
 
 ############## Routing #####################
-    def Route(self, startNode, endNode, routingType = RoutingType.basic, simulatedSeason = Season(datetime.now()), simulatedDayTime = DayTime(datetime.now())):
+    def Route(self, startNode, endNode, routingType = None, simulatedSeason = None, simulatedDayTime = None):
         if not startNode or not endNode:
             return {"succeded" : "false", "message" : "Missing start or end point."}
+        if not routingType:
+            routingType = RoutingType.basic
+        if not simulatedSeason: 
+            simulatedSeason = Season(datetime.now())
+        if not simulatedDayTime:
+            simulatedDayTime = DayTime(datetime.now())
         number_of_experiments = 1
         paths_pool = {}
         for i in range(number_of_experiments):

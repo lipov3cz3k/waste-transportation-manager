@@ -218,8 +218,9 @@ def graphGetAffectedEdges(graphID):
     graph = loadGraph(app.graph_pool, graphID)
     return str(graph.GetAffectedEdges())
 
-@app.route('/graph/<graphID>/path', methods=['POST', 'GET'])
-def graphGetSortestPath(graphID):
+@app.route('/graph/<graphID>/path', methods=['POST', 'GET'], defaults={'startId': None, 'endId': None})
+@app.route('/graph/<graphID>/path/<startId>/<endId>', methods=['GET'])
+def graphGetSortestPath(graphID, startId, endId):
     if request.method == 'POST':
         if request.form['submit'] == 'start':
             startId = request.form['start']
@@ -227,10 +228,13 @@ def graphGetSortestPath(graphID):
             routingType = int(request.form['routingType'])
             season = request.form['season']
             dayTime = request.form['dayTime']
-            graph = loadGraph(app.graph_pool, graphID)
-            path = graph.Route(startId, endId, routingType, season, dayTime)
-            return jsonify(**path)
-    return redirect(url_for('graphDetail', graphID=graphID))
+    else:
+        routingType = season = dayTime = None;
+
+
+    graph = loadGraph(app.graph_pool, graphID)
+    path = graph.Route(startId, endId, routingType, season, dayTime)
+    return jsonify(**path)
 
 @app.route('/graph/<graphID>/restrictions', methods=['POST', 'GET'])
 def graphRestrictions(graphID):
