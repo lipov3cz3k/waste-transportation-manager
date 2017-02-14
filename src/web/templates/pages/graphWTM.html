@@ -1,0 +1,191 @@
+﻿{% extends "layout.html" %}
+{% set active_page = "graphs" %}
+
+{% block head_title %}{% endblock %}
+{% block head_css %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/leaflet.css') }}" />
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/MarkerCluster.css') }}" />
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/MarkerCluster.Default.css') }}" />
+{% endblock %}
+{% block head_js %}
+<script type="application/javascript" src="{{ url_for('static', filename='js/spin.min.js') }}"></script>
+<script type="application/javascript" src="{{ url_for('static', filename='js/leaflet.js') }}"></script>
+<script type="application/javascript" src="{{ url_for('static', filename='js/leaflet.spin.js') }}"></script>
+<script type="application/javascript" src="{{ url_for('static', filename='js/leaflet.markercluster.js') }}"></script>
+<script type="application/javascript" src="{{ url_for('static', filename='js/utils.js') }}"></script>
+<script type="application/javascript" src="{{ url_for('static', filename='js/graphWTM.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+
+<div class="row">
+    <div class="col-md-12">
+        <div id="map" class="map-large"></div>
+    </div>
+</div>
+
+<div class="row">
+
+    <div class="col-md-2">
+        <label for="export" class="control-label input-group">Export:</label>
+        <input type="button" name="export" class="btn btn-default" value="Export to CSV (simple graph)" onclick="exportGraph('{{ url_for('graphExportSimple', graphID=graphID) }}');">
+        <input type="button" name="export" class="btn btn-default" value="Export to CSV (containers)" onclick="exportGraph('{{ url_for('graphExportContainers', graphID=graphID) }}');">
+        <input type="button" name="export" class="btn btn-default" value="Export tracks" onclick="exportGraph('{{ url_for('graphExportTracks', graphID=graphID) }}');">
+    </div>
+    <div class="col-md-2">
+        <label for="controls" class="control-label input-group">Controls:</label>
+        <input type="button" name="controls" class="btn btn-default" value="Show all containers" onclick="loadAllContainers(
+                           '{{ url_for('graphGetContainers', graphID=graphID) }}',
+                           '{{ url_for('graphGetContainerDetails', graphID=graphID) }}',
+                           ['{{ url_for('static', filename='images/trashDefault.png') }}',
+                            '{{ url_for('static', filename='images/trashSko.png') }}',
+                            '{{ url_for('static', filename='images/trashBio.png') }}',
+                            '{{ url_for('static', filename='images/trashPlast.png') }}',
+                            '{{ url_for('static', filename='images/trashSklo.png') }}',
+                            '{{ url_for('static', filename='images/trashPapir.png') }}',] );">
+        <input type="button" name="controls" class="btn btn-default" value="Remove all paths" onclick="removeAllPaths();">
+    </div>
+</div>
+
+
+<hr>
+<div class="row">
+    <div class="col-md-8">
+        <div class="form-group">
+            <div class="row">
+                <div class="col-md-12">
+                    <label for="routingType" class="control-label input-group">Routing type</label>
+                    <div class="btn-group" id="routingType" data-toggle="buttons">
+                        <label class="btn btn-default active">
+                            <input type="radio" name="routingType" value="0" checked="">Basic
+                        </label>
+                        <label class="btn btn-default">
+                            <input type="radio" name="routingType" value="1">Low risk / worst-case
+                        </label>
+                        <label class="btn btn-default">
+                            <input type="radio" name="routingType" value="2">Wait-and-See
+                        </label>
+                        <label class="btn btn-default">
+                            <input type="radio" name="routingType" value="3">Scenario Wait-and-See
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="row hidden" id="periodSelect">
+                <div class="col-md-5">
+                    <label for="season" class="control-label input-group">Season</label>
+                    <div class="btn-group" id="season" data-toggle="buttons">
+                        <label class="btn btn-default active">
+                            <input type="radio" name="season" value="spring" checked="">Spring
+                        </label>
+                        <label class="btn btn-default">
+                            <input type="radio" name="season" value="summer">Summer
+                        </label>
+                        <label class="btn btn-default">
+                            <input type="radio" name="season" value="autumn">Autumn
+                        </label>
+                        <label class="btn btn-default">
+                            <input type="radio" name="season" value="winter">Winter
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-7">
+                    <label for="dayTime" class="control-label input-group">Day Time</label>
+                    <div class="btn-group" id="dayTime" data-toggle="buttons">
+                        <label class="btn btn-default">
+                            <input type="radio" name="dayTime" value="morning">Morning
+                        </label>
+                        <label class="btn btn-default">
+                            <input type="radio" name="dayTime" value="forenoon">Forenoon
+                        </label>
+                        <label class="btn btn-default active">
+                            <input type="radio" name="dayTime" value="afternoon" checked="">Afternoon
+                        </label>
+                        <label class="btn btn-default">
+                            <input type="radio" name="dayTime" value="evening">Evening
+                        </label>
+                        <label class="btn btn-default">
+                            <input type="radio" name="dayTime" value="night">Night
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-6">
+                    <label for="start" class="control-label input-group">Start</label>
+                    <input id="start" name="start" class="form-control" placeholder="start node ID">
+                </div>
+                <div class="col-sm-6">
+                    <label for="end" class="control-label input-group">End</label>
+                    <input id="end" name="end" class="form-control" placeholder="end node ID">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-3">
+                    <label for="dijkstra" class="control-label input-group">Shortest path</label>
+                    <input type="button" name="dijkstra" class="btn btn-default" value="Compute" onclick="dijkstraPath('{{ url_for('graphGetSortestPath', graphID=graphID) }}' ,'start', 'end', 'routingType', 'season', 'dayTime');">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <label for="foundPaths" class="control-label input-group">Found Paths:</label>
+        <table class="table" id="foundPaths">
+            <thead>
+                <tr><th>#</th><th>Length</th><th>Frequency [%]</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block body_js_src %}
+{% endblock %}
+
+{% block body_js_script %}
+
+    init([[{{ bbox[3] }}, {{ bbox[0] }}], [{{ bbox[1] }}, {{ bbox[2] }}]]);
+
+
+    $('#mapElements :checkbox').change(function() {
+        // this will contain a reference to the checkbox
+        if (this.checked) {
+            // the checkbox is now checked
+        } else {
+            // the checkbox is now no longer checked
+        }
+    });
+
+
+
+
+    preloadCrossroads('{{ url_for('graphGetNodes', graphID=graphID) }}', '{{ url_for('static', filename='images/measle.png') }}');
+    preloadRestrictions('{{ url_for('graphRestrictions', graphID=graphID) }}');
+
+
+    preloadEdgesWithContainers('{{ url_for('graphGetEdgesWithContainers', graphID=graphID) }}',
+                   '{{ url_for('graphGetContainers', graphID=graphID) }}',
+                   '{{ url_for('graphGetContainerDetails', graphID=graphID) }}',
+                   ['{{ url_for('static', filename='images/trashDefault.png') }}',
+                    '{{ url_for('static', filename='images/trashSko.png') }}',
+                    '{{ url_for('static', filename='images/trashBio.png') }}',
+                    '{{ url_for('static', filename='images/trashPlast.png') }}',
+                    '{{ url_for('static', filename='images/trashSklo.png') }}',
+                    '{{ url_for('static', filename='images/trashPapir.png') }}',] );
+
+
+    preloadAllWastePath("{{ url_for('graphGetPathFromFile', graphID=graphID) }}", [{% for item in paths %}"{{ item.id }}",{% endfor %}]);
+
+
+
+    $('#routingType label').click(function() {
+        routingType = $(this).children().val();
+        if(routingType >= 2)
+            $("#periodSelect").removeClass("hidden");
+        else
+            $("#periodSelect").addClass("hidden");
+    });
+
+{% endblock %}

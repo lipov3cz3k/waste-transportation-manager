@@ -1,5 +1,3 @@
-
-
 function parse(str) {
     var args = [].slice.call(arguments, 1),
         i = 0;

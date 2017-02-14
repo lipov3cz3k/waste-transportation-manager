@@ -254,7 +254,7 @@ def graphList():
 @app.route('/graph/<graphID>')
 def graphDetail(graphID):
     coords = graphID.split("_")[1:-1]
-    return render_template('pages/graphDetail.html', graphID=graphID, bbox=coords, paths=getPathsList(graphID))
+    return render_template('pages/graphWTM.html', graphID=graphID, bbox=coords, paths=getPathsList(graphID))
 
 @app.route('/contact', methods=['POST', 'GET'])
 def contact():
