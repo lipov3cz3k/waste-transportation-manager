@@ -26,13 +26,6 @@
 </div>
 
 <div class="row">
-
-    <div class="col-md-2">
-        <label for="export" class="control-label input-group">Export:</label>
-        <input type="button" name="export" class="btn btn-default" value="Export to CSV (simple graph)" onclick="exportGraph('{{ url_for('graphExportSimple', graphID=graphID) }}');">
-        <input type="button" name="export" class="btn btn-default" value="Export to CSV (containers)" onclick="exportGraph('{{ url_for('graphExportContainers', graphID=graphID) }}');">
-        <input type="button" name="export" class="btn btn-default" value="Export tracks" onclick="exportGraph('{{ url_for('graphExportTracks', graphID=graphID) }}');">
-    </div>
     <div class="col-md-1">
         <label for="controls" class="control-label input-group">Controls:</label>
         <input type="button" name="controls" class="btn btn-default" value="Show all containers" onclick="loadAllContainers(
@@ -50,14 +43,14 @@
         <input type="button" name="export" class="btn btn-default" value="(h) -" onclick="(function () { $('#map').css('height', '-=100'); map.invalidateSize(); })(event)">
         <input type="button" name="export" class="btn btn-default" value="(w) +" onclick="(function () { $('#map').css('width', '+=100'); map.invalidateSize(); })(event)">
         <input type="button" name="export" class="btn btn-default" value="(w) -" onclick="(function () { $('#map').css('width', '-=100'); map.invalidateSize(); })(event)">
-
     </div>
-</div>
-
-
-<hr>
-<div class="row">
-    <div class="col-md-8">
+    <div class="col-md-2">
+        <label for="export" class="control-label input-group">Export:</label>
+        <input type="button" name="export" class="btn btn-default" value="Export to CSV (simple graph)" onclick="exportGraph('{{ url_for('graphExportSimple', graphID=graphID) }}');">
+        <input type="button" name="export" class="btn btn-default" value="Export to CSV (containers)" onclick="exportGraph('{{ url_for('graphExportContainers', graphID=graphID) }}');">
+        <input type="button" name="export" class="btn btn-default" value="Export tracks" onclick="exportGraph('{{ url_for('graphExportTracks', graphID=graphID) }}');">
+    </div>
+    <div class="col-md-5">
         <div class="form-group">
             <div class="row">
                 <div class="col-md-12">
@@ -135,8 +128,7 @@
             </div>
         </div>
     </div>
-
-    <div class="col-md-4">
+    <div class="col-md-3">
         <label for="foundPaths" class="control-label input-group">Found Paths:</label>
         <table class="table" id="foundPaths">
             <thead>
@@ -145,7 +137,9 @@
             <tbody></tbody>
         </table>
     </div>
+
 </div>
+
 {% endblock %}
 
 {% block body_js_src %}
