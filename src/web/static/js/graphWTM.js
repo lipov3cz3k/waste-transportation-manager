@@ -17,7 +17,7 @@ function init(bounds) {
     affectedEdges = null;
 
     overlayMaps = L.control.layers(null, null, { collapsed: false }).addTo(map);
-    overlayPaths = L.control.layers(null, null, { collapsed: false }).addTo(map);
+    overlayPaths = L.control.layers(null, null, { collapsed: false });
 
     ///////// Trigger zoomed event ///////////
     map.fitBounds(bounds);
@@ -46,6 +46,12 @@ function doImage(err, canvas) {
     w.document.body.appendChild(img);
 }
 
+function addAllContainersButton(containerAPIUrl, containerDetailApi, iconURLs)
+{
+    L.easyButton('fa-trash-o', function (btn, map) {
+        loadAllContainers(containerAPIUrl, containerDetailApi, iconURLs);
+    }, { position: 'topright' }).addTo(map);
+}
 
 ///////// Crossroads loader ///////////
 function preloadCrossroads(apiURL, iconURL) {
@@ -222,7 +228,7 @@ function loadEdgeContainers(n1, n2, containerAPIUrl, containerDetailApi, options
                     containerDetailApi: containerDetailApi
                 });
                 containers.addLayer(container_layer);
-                overlayMaps.addOverlay(container_layer, "Containers (" + waste_code + ")");
+                overlayMaps.addOverlay(container_layer,  waste_code + " - " + data[waste_code].features.length );
             }
             map.spin(false);
         },
@@ -271,6 +277,9 @@ function containerPopup(feature, layer) {
 function preloadAllWastePath(apiUrl, paths) {
     for (key in paths) {
         wastePath(apiUrl, paths[key]);
+    }
+    if (paths.length) {
+        overlayPaths.addTo(map);
     }
 }
 
