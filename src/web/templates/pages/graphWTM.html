@@ -33,7 +33,6 @@
 <div class="row">
     <div class="col-md-1">
         <label for="controls" class="control-label input-group">Controls:</label>
-        <input type="button" name="controls" class="btn btn-default" value="Remove all paths" onclick="removeAllPaths();">
         <input type="button" name="controls" class="btn btn-default" value="Save as image" onclick="saveMapPNG();">
         <input type="button" name="export" class="btn btn-default" value="(h) +" onclick="(function () { $('#map').css('height', '+=100'); map.invalidateSize(); })(event)">
         <input type="button" name="export" class="btn btn-default" value="(h) -" onclick="(function () { $('#map').css('height', '-=100'); map.invalidateSize(); })(event)">
@@ -117,9 +116,10 @@
                 </div>
             </div>
             <div class="row">
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <label for="dijkstra" class="control-label input-group">Shortest path</label>
                     <input type="button" name="dijkstra" class="btn btn-default" value="Compute" onclick="dijkstraPath('{{ url_for('graphGetSortestPath', graphID=graphID) }}' ,'start', 'end', 'routingType', 'season', 'dayTime');">
+                    <input type="button" name="controls" class="btn btn-default" value="Remove all paths" onclick="removeAllPaths();">
                 </div>
             </div>
         </div>

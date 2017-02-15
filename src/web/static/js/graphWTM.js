@@ -30,6 +30,7 @@ function saveMapPNG()
         crossLayerEnabled = true
         map.removeLayer(crossroads);
     }
+    map.spin(true);
     leafletImage(map, doImage);
     if (crossLayerEnabled)
         map.addLayer(crossroads);
@@ -43,6 +44,7 @@ function doImage(err, canvas) {
     img.src = canvas.toDataURL("image/png");
     var w = window.open('about:blank', 'image from canvas');
     w.document.body.appendChild(img);
+    map.spin(false);
 }
 
 function addAllContainersButton(containerAPIUrl, containerDetailApi, iconURLs)
