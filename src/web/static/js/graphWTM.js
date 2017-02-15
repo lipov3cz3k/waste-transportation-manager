@@ -1,4 +1,4 @@
-﻿var map, bounds, affectedEdges, crossroads;
+﻿var map, bounds, crossroads;
 var pathsLayer = [];
 var containers = L.layerGroup();
 var overlayMaps;
@@ -14,7 +14,6 @@ function init(bounds) {
         attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     });
     map = L.map('map', { layers: [OpenStreetMap_Mapnik], preferCanvas: true });
-    affectedEdges = null;
 
     overlayMaps = L.control.layers(null, null, { collapsed: false }).addTo(map);
     overlayPaths = L.control.layers(null, null, { collapsed: false });
@@ -381,7 +380,6 @@ function GetShortestPath(apiUrl, start, end, routingType, season, dayTime) {
                     }
                 }).addTo(map);
                 pathsLayer.push(path);
-                affectedEdges.bringToFront();
             }
             else {
                 alert(data.message.toString());
