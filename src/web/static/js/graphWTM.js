@@ -3,7 +3,7 @@ var pathsLayer = [];
 var containers = L.layerGroup();
 var overlayMaps;
 var overlayPaths;
-
+var allContainersBtn;
 function init(bounds) {
     bounds = bounds
 
@@ -48,7 +48,7 @@ function doImage(err, canvas) {
 
 function addAllContainersButton(containerAPIUrl, containerDetailApi, iconURLs)
 {
-    L.easyButton('fa-trash-o', function (btn, map) {
+    allContainersBtn = L.easyButton('fa-trash-o', function (btn, map) {
         loadAllContainers(containerAPIUrl, containerDetailApi, iconURLs);
     }, { position: 'topright' }).addTo(map);
 }
@@ -176,35 +176,36 @@ function loadAllContainers(containerAPIUrl, containerDetailApi, iconURLs) {
     }
     if (map.hasLayer(containers))
         map.removeLayer(containers)
-    loadEdgeContainers(null, null, containerAPIUrl, containerDetailApi, options)
+    loadEdgeContainers(null, null, containerAPIUrl, containerDetailApi, options);
+    allContainersBtn.disable();
 }
 
 function loadEdgeContainersClick(feature, layer) {
     layer.on('click', function (e) {
+        map.spin(true);
         var n1 = e.target.feature.properties.n1;
         var n2 = e.target.feature.properties.n2;
-
-        loadEdgeContainers(n1, n2, layer.options.containerApi, layer.options.containerDetailApi, e.target.options)
+        loadEdgeContainers(n1, n2, layer.options.containerApi, layer.options.containerDetailApi, e.target.options);
         map.addLayer(containers);
+        allContainersBtn.enable();
     });
 }
 
 function loadEdgeContainers(n1, n2, containerAPIUrl, containerDetailApi, options) {
+    containers.eachLayer(function (layer) {
+        overlayMaps.removeLayer(layer);
+        if (map.hasLayer(layer)) {
+            map.removeLayer(layer);
+        }
+    });
+    containers.clearLayers();
+
     $.ajax({
         type: 'POST',
         data: { 'n1': n1, 'n2': n2 },
         dataType: 'json',
         url: containerAPIUrl,
         success: function (data) {
-            containers.eachLayer(function (layer) {
-                overlayMaps.removeLayer(layer);
-                if (map.hasLayer(layer)) {
-                    map.removeLayer(layer);
-                }
-            });
-            containers.clearLayers();
-            
-
             for (waste_code in data)
             {
                 container_layer = L.geoJson(data[waste_code], {
