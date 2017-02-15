@@ -162,25 +162,27 @@ class Network:
 
     def GetContainersGeoJSON(self, n1=None, n2=None):
         from graph.bounding_box import BoundingBox
-        features = []
 
+        result = {};
         if n1 and n2:
             e = self.G[n1][n2]
             containers = e.get('containers')
             for container in containers:
-                features.append( Feature(id=container.get('id'), geometry=Point((float(container.get('lon')), float(container.get('lat')))), properties=container) )
+                result.setdefault(container.get('waste_code'),[]).append(Feature(id=container.get('id'), geometry=Point((float(container.get('lon')), float(container.get('lat')))), properties=container))
             # oposit direction
             if n1 in self.G[n2]:
                 e = self.G[n2][n1]
                 containers = e.get('containers')
                 for container in containers:
-                    features.append( Feature(id=container.get('id'), geometry=Point((float(container.get('lon')), float(container.get('lat')))), properties=container) )
+                    result.setdefault(container.get('waste_code'),[]).append(Feature(id=container.get('id'), geometry=Point((float(container.get('lon')), float(container.get('lat')))), properties=container))
         else:
             for n1, n2, e in self.G.edges_iter(data=True):
                 containers = e.get('containers')
                 for container in containers:
-                    features.append( Feature(id=container.get('id'), geometry=Point((float(container.get('lon')), float(container.get('lat')))), properties=container) )
-        return FeatureCollection(features)    
+                    result.setdefault(container.get('waste_code'),[]).append(Feature(id=container.get('id'), geometry=Point((float(container.get('lon')), float(container.get('lat')))), properties=container))
+        for key, value in result.items():
+            result[key] = FeatureCollection(value)  
+        return result
 
     def GetContainerDetails(self, id):
         from database import db_session
@@ -288,7 +290,6 @@ class Network:
             source = json.load(myfile)
             for path in source:
                 points = []
-                _print(path.get('id'))
                 for n in path.get('path'):
                     n = str(n)
                     points.append(((float(self.G.node[n]['lon']), float(self.G.node[n]['lat']))))

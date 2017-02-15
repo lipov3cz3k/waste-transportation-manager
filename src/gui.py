@@ -149,14 +149,14 @@ def graphGetEdgesWithContainers(graphID):
     graph = loadGraph(app.graph_pool, graphID)
     return str(graph.GetEdgesWithContainers())
 
-@app.route('/graph/<graphID>/containers', methods=['GET','POST'])
-def graphGetContainers(graphID):
+@app.route('/graph/<graphID>/containers', methods=['POST', 'GET'], defaults={'n1': None, 'n2': None})
+@app.route('/graph/<graphID>/containers/<n1>/<n2>', methods=['GET'])
+def graphGetContainers(graphID, n1, n2):
     graph = loadGraph(app.graph_pool, graphID)
-    n1 = n2 = None
     if request.method == 'POST':
         n1 = request.form['n1']
         n2 =  request.form['n2']
-    return str(graph.GetContainersGeoJSON(n1, n2))
+    return jsonify(graph.GetContainersGeoJSON(n1, n2))
 
 @app.route('/graph/<graphID>/container/details', methods=['POST'])
 def graphGetContainerDetails(graphID):
@@ -286,8 +286,7 @@ if __name__ == '__main__':
     if args.release_config:
         app.config.update(dict(
             DEBUG=False,
-            SECRET_KEY='development key secret',
-            SERVER_NAME='0.0.0.0:5432'
+            SECRET_KEY='development key secret'
         ))
     else:
         app.config.update(dict(

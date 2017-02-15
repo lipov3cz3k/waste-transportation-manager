@@ -1,6 +1,6 @@
-﻿var map, bounds, affectedEdges, containers, crossroads;
+﻿var map, bounds, affectedEdges, crossroads;
 var pathsLayer = [];
-
+var containers = L.layerGroup();
 var overlayMaps;
 var overlayPaths;
 
@@ -125,9 +125,6 @@ function preloadRestrictions(apiUrl) {
 ///////// Containers loader ///////////
 
 function preloadEdgesWithContainers(containersAPIUrl, containerAPIUrl, containerDetailApi, iconURLs) {
-    containers = L.layerGroup();
-    map.addLayer(containers);
-
     map.spin(true);
     $.ajax({
         type: 'GET',
@@ -171,6 +168,8 @@ function loadAllContainers(containerAPIUrl, containerDetailApi, iconURLs) {
         iconSklo: L.icon({ iconUrl: iconURLs[4] }),
         iconPapir: L.icon({ iconUrl: iconURLs[5] }),
     }
+    if (map.hasLayer(containers))
+        map.removeLayer(containers)
     loadEdgeContainers(null, null, containerAPIUrl, containerDetailApi, options)
 }
 
@@ -180,6 +179,7 @@ function loadEdgeContainersClick(feature, layer) {
         var n2 = e.target.feature.properties.n2;
 
         loadEdgeContainers(n1, n2, layer.options.containerApi, layer.options.containerDetailApi, e.target.options)
+        map.addLayer(containers);
     });
 }
 
@@ -190,32 +190,40 @@ function loadEdgeContainers(n1, n2, containerAPIUrl, containerDetailApi, options
         dataType: 'json',
         url: containerAPIUrl,
         success: function (data) {
-            overlayMaps.removeLayer(containers);
-            if (map.hasLayer(containers)) {
-                map.removeLayer(containers);
-            }
-            containers = L.geoJson(data, {
-                pointToLayer: function (feature, latlng) {
-                    switch (feature.properties.waste_code) {
-                        case 200101: // Papír a lepenka
-                            return L.marker(latlng, { icon: options.iconPapir });
-                        case 200102: // Sklo
-                            return L.marker(latlng, { icon: options.iconSklo });
-                        case 200139: // Plasty
-                            return L.marker(latlng, { icon: options.iconPlast });
-                        case 200201: // Biologicky rozložitelný odpad
-                            return L.marker(latlng, { icon: options.iconBio });
-                        case 200301: //Směsný komunální odpad
-                            return L.marker(latlng, { icon: options.iconSko });
-                        default:
-                            return L.marker(latlng, { icon: options.iconDefault });
-                    }
-                },
-                onEachFeature: containerPopup,
-                containerDetailApi: containerDetailApi
-            }).addTo(map);
+            containers.eachLayer(function (layer) {
+                overlayMaps.removeLayer(layer);
+                if (map.hasLayer(layer)) {
+                    map.removeLayer(layer);
+                }
+            });
+            containers.clearLayers();
+            
 
-            overlayMaps.addOverlay(containers, "Containers (click on road)");
+            for (waste_code in data)
+            {
+                container_layer = L.geoJson(data[waste_code], {
+                    pointToLayer: function (feature, latlng) {
+                        switch (feature.properties.waste_code) {
+                            case 200101: // Papír a lepenka
+                                return L.marker(latlng, { icon: options.iconPapir });
+                            case 200102: // Sklo
+                                return L.marker(latlng, { icon: options.iconSklo });
+                            case 200139: // Plasty
+                                return L.marker(latlng, { icon: options.iconPlast });
+                            case 200201: // Biologicky rozložitelný odpad
+                                return L.marker(latlng, { icon: options.iconBio });
+                            case 200301: //Směsný komunální odpad
+                                return L.marker(latlng, { icon: options.iconSko });
+                            default:
+                                return L.marker(latlng, { icon: options.iconDefault });
+                        }
+                    },
+                    onEachFeature: containerPopup,
+                    containerDetailApi: containerDetailApi
+                });
+                containers.addLayer(container_layer);
+                overlayMaps.addOverlay(container_layer, "Containers (" + waste_code + ")");
+            }
             map.spin(false);
         },
         error: function (e) {
