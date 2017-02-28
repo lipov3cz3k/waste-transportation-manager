@@ -108,13 +108,13 @@ class Network:
                 penalty_multiplicator = GetPenaltyMul(incidents)
                 if penalty_multiplicator > self.max_penalty:
                     self.max_penalty = penalty_multiplicator
-                containers =  w.GetContainers(db_session, True)
+                containers = w.GetContainers(db_session, False)
                 params = {'id':w.id, 'length':w.length, 'highway':w.tags['highway'], 'msgs':w.msgs, 'incidents':incidents, 'penalty_multiplicator':penalty_multiplicator, 'containers' : containers}
                 node_first, node_last = w.GetFirstLastNodeId()
                 self.G.add_path((node_first.id, node_last.id), **params)
 
                 if ('oneway' not in w.tags and w.tags['highway'] != 'motorway') or ('oneway' in w.tags and w.tags['oneway'] != 'yes' and w.tags['oneway'] != '-1' and w.tags['highway'] != 'motorway'):
-                    containers =  w.GetContainers(db_session, False)
+                    containers =  w.GetContainers(db_session, True)
                     params['containers'] = containers
                     self.G.add_path((node_last.id, node_first.id), **params)
 
