@@ -109,9 +109,13 @@ class TrackImporter(Importer):
         result['country'] = parts[0]
         result['city'] = parts[1]
         #result['postal'] = parts[0]
-        #result['house_number'] = parts[0]
         if len(parts) > 2:
-            result['street'] = parts[-1]
+            if parts[-1][0].isdigit():
+                result['house_number'] = parts[-1]
+                if len(parts) > 3:
+                    result['street'] = parts[-2]
+            else:
+                result['street'] = parts[-1]
         return result
 
     def GetTracks(self, bbox):

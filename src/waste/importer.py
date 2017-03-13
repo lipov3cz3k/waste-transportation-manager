@@ -71,7 +71,7 @@ class Importer:
     def _GetAddressesWithoutLocation(self):
         from models.location import Address
 
-        addresses_obj = self.db_session.query(Address).filter(Address.location == None).all()
+        addresses_obj = self.db_session.query(Address).filter(Address.location == None, Address.country == 'CZ').all()
         return addresses_obj
 
     def _GetLocationsForAddresses(self, addresses_array):
@@ -95,7 +95,15 @@ class Importer:
                     successful = True
                 else:
                     try:
-                        query = {'street' :addr_obj.house_number + ' ' + addr_obj.street, 'city':addr_obj.city}
+                        query = {'street':''}
+                        if addr_obj.house_number:
+                            query['street'] = addr_obj.house_number
+                        if addr_obj.street:
+                            if query['street']:
+                                query['street'] += ' '
+                            query['street'] += addr_obj.street
+                        if addr_obj.city:
+                            query['city'] = addr_obj.city
                         if addr_obj.postal:
                             query['postal'] = addr_obj.postal
                         if addr_obj.country:
