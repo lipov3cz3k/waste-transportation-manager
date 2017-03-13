@@ -46,8 +46,8 @@ class Track(UniqueMixin, Base) :
         start_address = data['start_address']
         self.start_address = Address.as_unique(kwargs['db_session'], 
                                          city=str(start_address['city']),
-                                         street=str(start_address['street']),
-                                         house_number=str(start_address['house_number']),
+                                         street=str(start_address['street']) if start_address.get('street') else None,
+                                         house_number=str(start_address['house_number']) if start_address.get('house_number') else None,
                                          postal=int(start_address.get('postal')) if start_address.get('postal') else None, 
                                          country=str(start_address.get('country')) if start_address.get('country') else None, 
                                          longitude=float(start_address.get('latitude')) if start_address.get('latitude') else None, 
@@ -56,8 +56,8 @@ class Track(UniqueMixin, Base) :
         finish_address = data['finish_address']
         self.finish_address = Address.as_unique(kwargs['db_session'], 
                                          city=str(finish_address['city']),
-                                         street=str(finish_address['street']),
-                                         house_number=str(finish_address['house_number']),
+                                         street=str(finish_address['street']) if finish_address.get('street') else None,
+                                         house_number=str(finish_address['house_number']) if finish_address.get('house_number') else None,
                                          postal=int(finish_address.get('postal')) if finish_address.get('postal') else None, 
                                          country=str(finish_address.get('country')) if finish_address.get('country') else None, 
                                          longitude=float(finish_address.get('latitude')) if finish_address.get('latitude') else None, 
@@ -68,16 +68,16 @@ class Track(UniqueMixin, Base) :
         self.date_from = data['date_from']
         self.date_to = data['date_to']
         self.vehicle = data['vehicle']
-        self.reg_plate = data['reg_plate']
-        self.driver = data['driver']
-        self.type = data['type']
+        self.reg_plate = data['reg_plate'] if data.get('reg_plate') else None
+        self.driver = data['driver'] if data.get('driver') else None
+        self.type = data['type'] if data.get('type') else None
         self.note = data['note']
-        self.tank = data['tank']
-        self.tachometer_start = data['tachometer_start']
-        self.tachometer_finish = data['tachometer_finish']
+        self.tank = data['tank'] if data.get('tank') else None
+        self.tachometer_start = data['tachometer_start'] if data.get('tachometer_start') else None
+        self.tachometer_finish = data['tachometer_finish'] if data.get('tachometer_finish') else None
         self.distance = data['distance']
         self.time = data['time']
-        self.same = data['same']
+        self.same = data['same'] if data.get('same') else None
 
     @classmethod
     def unique_hash(cls, **kwargs):

@@ -1,4 +1,5 @@
 from openpyxl import load_workbook
+from datetime import datetime, time
 from common.utils import LogType, print, get_tqdm
 from waste.importer import Importer
 from models.tracks import Track
@@ -33,21 +34,32 @@ class TrackImporter(Importer):
         self.LoadOSMLocation()
 
     def _ParseSheet(self, sheet):
-        normalize = {'start' : 'start',
-                'cíl' : 'finish',
+        normalize = {
                 'od' : 'date_from',
                 'do' : 'date_to',
                 'vozidlo' : 'vehicle',
+                # Vodafone
+                'start' : 'start',
+                'cíl' : 'finish',
                 'SPZ' : 'reg_plate',
                 'řidič' : 'driver',
-                'typ' : 'type',
                 'popis' : 'note',
+                'typ' : 'type',
                 'tank' : 'tank',
-                'Tach. start' : 'tachometer_start',
-                'Tach.  cíl' : 'tachometer_finish',
                 'vzdálenost metrů' : 'distance',
                 'čas' : 'time',
-                'stejné' : 'same'}
+                'Tach. start' : 'tachometer_start',
+                'Tach.  cíl' : 'tachometer_finish',
+                'stejné' : 'same',
+                # Positrex
+                'Začátek' : 'start',
+                'Konec' : 'finish',
+                'Vzdalenost [m]' : 'distance',
+                'Doba jízdy [min]' : 'time',
+                'Prům. rychlost [km/h]' : 'avg_speed',
+                'Max. rychlost [km/h]' : 'max_speed',
+                'Poznámka 1' : 'note',
+                'Poznámka 2' : 'note2'}
 
         data = []
         rows = sheet.rows
@@ -59,12 +71,19 @@ class TrackImporter(Importer):
                     record[normalize.get(key, key)] = cell.value.strip()
                 else:
                     record[normalize.get(key, key)] = cell.value
-            record['start_address'] = self._ParseAddress(record.get('start'))
-            record['finish_address'] = self._ParseAddress(record.get('finish'))
+            if record.get('note2') == "Positrex":
+                record['start_address'] = self._ParsePositrexAddress(record.get('start'))
+                record['finish_address'] = self._ParsePositrexAddress(record.get('finish'))
+                record['date_from'] = datetime.strptime(record['date_from'], '%d.%m.%Y %H:%M')
+                record['date_to'] = datetime.strptime(record['date_to'], '%d.%m.%Y %H:%M')
+                record['time'] = datetime.strptime('{:02d}:{:02d}'.format(*divmod(int(round(record['time'])), 60)), '%H:%M').time()
+            else:
+                record['start_address'] = self._ParseVodafoneAddress(record.get('start'))
+                record['finish_address'] = self._ParseVodafoneAddress(record.get('finish'))
             data.append(Track.as_unique(self.db_session, db_session=self.db_session, data=record))
         return data
 
-    def _ParseAddress(self, address):
+    def _ParseVodafoneAddress(self, address):
         result = split('^(.*),\s?(\d{3}\s\d{2})\s*(.*),\s*(.*)', address)
         if len(result) == 1:
             adresa = address.split(',')
@@ -84,6 +103,16 @@ class TrackImporter(Importer):
 
         return {'street': street, 'house_number' : house_number, 'postal' : result[2].replace(' ', ''), 'city' : result[3], 'country' : result[4]}
 
+    def _ParsePositrexAddress(self, address):
+        parts = [x.strip() for x in address.split(',')]
+        result = {}
+        result['country'] = parts[0]
+        result['city'] = parts[1]
+        #result['postal'] = parts[0]
+        #result['house_number'] = parts[0]
+        if len(parts) > 2:
+            result['street'] = parts[-1]
+        return result
 
     def GetTracks(self, bbox):
         from database import init_db, db_session
