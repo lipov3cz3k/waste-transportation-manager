@@ -21,11 +21,18 @@ class Path(Base):
     def __init__(self, **kwargs):
         route = kwargs['data']
         self.track = route['track']
-    
         if route['succeded'] == 'true':
-            for node in route.get('paths').get('features')[0].get('properties').get('ids'):
-                self.routes.append(Routes(node_id = node, path_id = id))        
-        
+            properties = route.get('paths').get('features')[0].get('properties')
+            ids = properties.get('ids')
+            i = 0
+            for start, end in zip(ids, ids[1:]):
+                edge = properties.get('edges')[i]
+                self.routes.append(Routes(start_node_id = start, end_node_id = end, 
+                                          path_id = id, highway = edge.get('highway'), 
+                                          length = edge.get('length'),
+                                          segment_id = edge.get('id')))
+                i += 1
+            
 
 class Routes(Base):
     __tablename__ = 'Routes'
@@ -33,7 +40,14 @@ class Routes(Base):
     id = Column(Integer, primary_key=True)
     path_id = Column(Integer, ForeignKey('Path.id'))
     
-    node_id = Column(Integer, ForeignKey('Address.id'))
-    node = relationship("Address", foreign_keys=[node_id])
+    start_node_id = Column(Integer, ForeignKey('Address.id'))
+    start_node = relationship("Address", foreign_keys=[start_node_id])
+
+    end_node_id = Column(Integer, ForeignKey('Address.id'))
+    end_node = relationship("Address", foreign_keys=[end_node_id])
+    
     position = Column(Integer)
+    length = Column(Integer)
+    highway = Column(String)
+    segment_id = Column(String)
 

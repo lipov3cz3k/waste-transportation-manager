@@ -383,13 +383,16 @@ class Network:
             h = hash(tuple(path))
             if not h in paths_pool:
                 points = []
+                edges = []
                 length = 0
                 for n1,n2 in zip(path[0:], path[1:]):
-                    length += self.G.edge[n1][n2]['length']
+                    e = self.G.edge[n1][n2]
+                    length += e['length']
+                    edges.append({'id' : e['id'], 'length': e['length'], 'highway' :  e['highway']})
 
                 for n in path:
                     points.append(((float(self.G.node[n]['lon']), float(self.G.node[n]['lat']))))
-                paths_pool[h] = Feature(geometry=LineString(points), properties={"length" : length, "eval": eval, "count" : 1, "ids" : path})
+                paths_pool[h] = Feature(geometry=LineString(points), properties={"length" : length, "eval": eval, "count" : 1, "ids" : path, "edges" : edges})
             else:
                 paths_pool[h].properties['count'] += 1
 

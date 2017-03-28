@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{9966053f-1e84-4dcd-8082-382c68598649}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>test.py</StartupFile>
+    <StartupFile>main.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
@@ -13,7 +13,7 @@
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <InterpreterId>{9a7a9026-48c1-4688-9d5d-e5699d47d074}</InterpreterId>
     <InterpreterVersion>3.5</InterpreterVersion>
-    <CommandLineArguments>-g -bbox 14.406509 49.236431 14.945526 49.613602 -t</CommandLineArguments>
+    <CommandLineArguments>-g -bbox 16.563606 49.212436 16.585750 49.224553 -t</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
@@ -41,6 +41,7 @@
     <Content Include="web\static\js\Edit.Rectangle.js" />
     <Content Include="web\static\js\Edit.SimpleShape.js" />
     <Content Include="web\static\js\graphDetail.js" />
+    <Content Include="web\static\js\graphWTM.js" />
     <Content Include="web\static\js\jquery.min.js" />
     <Content Include="web\static\js\leaflet.js" />
     <Content Include="web\static\js\leaflet.markercluster-src.js" />

@@ -389,7 +389,7 @@ function showRestrictions(apiUrl) {
             map.spin(false);
         },
         error: function (e) {
-            alert('Unexpected error! Cannot get path');
+            alert('Unexpected error! Cannot load restriction file.');
             map.spin(false);
         }
     });
