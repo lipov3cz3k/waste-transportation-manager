@@ -40,7 +40,7 @@ class Network:
             osm = OSMParser(self.graphID, bbox=self.bbox, state=self.state, run=self.run)
             osm.ParseFromXMLFile(osm_path_xml_data)
 #            osm.ConnectDDRDataWithWays(db_session)
-            osm.ConnectContainersWithWays(db_session)
+#            osm.ConnectContainersWithWays(db_session)
             self.SetState(action="Saving parsed osm to file", percentage=0)
             osm.SaveToFile()
             self.SetState(action="Saving parsed osm to file", percentage=100)

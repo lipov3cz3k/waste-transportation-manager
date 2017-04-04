@@ -6,6 +6,7 @@ from common.config import local_config
 from common.utils import LogType, _print, print, TRACE_FN_CALL, DECORATE_ALL, CheckFolders, progress_hook, removeFile
 from .graph_network import Network
 from .bounding_box import BoundingBox
+from .path_finder import PathFinder
 
 @DECORATE_ALL(TRACE_FN_CALL)
 class GraphManager:
@@ -150,7 +151,12 @@ def Run(bbox=None, exportFile=None, processTracks=None):
         if exportFile:
             graph.ExportFusionTables(exportFile)
         if processTracks:
-            graph.ExportTracksWithPaths()
+            try:
+                pathFinder = PathFinder(graph, {})    
+                pathFinder.GetTracksWithPaths()
+            except KeyboardInterrupt:
+                pathFinder.run[0] = False
+#            graph.ExportTracksWithPaths()
         print("Nodes <%d>:" % (len(graph.GetNodes())))
         print("Edges <%d>:" % (len(graph.GetEdges())))
         _print("DONE")

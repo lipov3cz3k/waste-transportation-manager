@@ -152,13 +152,14 @@ def decorated_tqdm(sequence, SetState, desc="", total=None):
             SetState(action=description, percentage=int((n/total)*100))
         n += 1
 
-def get_tqdm(files, SetState, desc, total):
+def get_tqdm(files, SetState, desc, total=None, position=None):
     return decorated_tqdm(
         tqdm(files,
             desc=desc,
             total=total,
             leave=True,
-            disable=local_config.tqdm_console_disabled),
+            disable=local_config.tqdm_console_disabled,
+            position=position),
         SetState,
         desc,
         total)
