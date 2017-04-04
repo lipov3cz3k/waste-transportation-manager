@@ -173,6 +173,11 @@ class PathFinder:
 
     def GetTracksWithPaths(self, safeToDb = True):
         from .path_finder import TrackImporter
+        from models.path import Path
+        from multiprocessing.pool import Pool
+        from tqdm import tqdm
+        from database import db_session
+        from sqlalchemy import inspect
         self.run[0] = True
         importer = TrackImporter()
         tracks_chunks = []
@@ -180,8 +185,8 @@ class PathFinder:
         try:
             if importer:
                 importer.run = True
-                tracks_chunks = importer.GetTracks(self.network.bbox)
-                tracks_chunks = list(chunks(tracks_chunks, 100))
+                tracks_chunks = tracks = importer.GetTracks(self.network.bbox)
+                #tracks_chunks = list(chunks(tracks_chunks, 100))
         except KeyboardInterrupt as e:
             importer.run = False
             print("KeyboardInterrupt", LogType.info)
@@ -190,18 +195,34 @@ class PathFinder:
             print("Exception reading source data: %s" % str(e), LogType.error)
             return
 
-        thread_results = {}
-        thread_pool = ThreadPool(processes=local_config.thread_pool_size_for_mapping)
-
-        for index, tracks_obj in enumerate(tracks_chunks):
-            thread_pool.apply_async(self._GetTracksRouting, args=(tracks_obj, safeToDb, index, len(tracks_chunks), thread_results))
-
-        print("Threads started, wait for finish.")
-
-        thread_pool.close()
-        thread_pool.join()
-        print("Threads finished.")
-        return thread_results
+        result = []
+        try:
+            pool = Pool()
+            for route in get_tqdm(pool.imap_unordered(self._GetTracksRouting, tracks, chunksize=100), self.SetState, desc="Finding all routing:", total=len(tracks)):
+                if not route:
+                    continue
+                if inspect(route['track']).detached:
+                    route['track'] = db_session.merge(route['track'])
+                result.append(Path(db_session=db_session, data=route))
+                if safeToDb and len(result) >= 500:
+                    print("Saving to database")
+                    db_session.add_all(result)
+                    db_session.commit()
+                    result.clear()
+            if safeToDb:
+                print("Saving to database")
+                db_session.add_all(result)
+                db_session.commit()
+                result.clear()
+            pool.close()
+        except KeyboardInterrupt:
+            pool.terminate()
+            _print("Interrupted")
+        except Exception as e:
+            print(str(e), log_type=LogType.error)
+            raise e
+        finally:
+            pool.join()
 
 
 
@@ -227,47 +248,23 @@ class PathFinder:
 
 
 
-    def _GetTracksRouting(self, tracks_obj, safeToDb, iteration, iteration_total, thread_results):
-        from database import db_session
-        local_db_session = db_session()
-        from models.path import Path
+    def _GetTracksRouting(self, track):
         from shapely.geometry import Point as splPoint
         result = []
         db_temp = []
         try:
-            #for track in get_tqdm(tracks_obj, self.SetState, desc="Connecting tracks to network", total=None):
-            for track in get_tqdm(tracks_obj, self.SetState, desc="Connecting tracks to network %d/%d:" % (iteration, iteration_total), position=iteration):
-            #for track in tracks_obj:
-                self.TestIsRun()
-                start_node = self._searchNearby(splPoint(float(track[1].longitude), float(track[1].latitude)))
-                finish_node = self._searchNearby(splPoint(float(track[2].longitude), float(track[2].latitude)))
+            self.TestIsRun()
+            start_node = self._searchNearby(splPoint(float(track[1].longitude), float(track[1].latitude)))
+            finish_node = self._searchNearby(splPoint(float(track[2].longitude), float(track[2].latitude)))
 
-                if not start_node or not finish_node:
-                    continue 
-                route = self.network.Route(start_node, finish_node)
-
-                if safeToDb:
-                    #route['track']  = local_db_session.query(Track).get(track[0])
-                    track_session = Session.object_session(track[0])
-                    track_session.expunge(track[0])
-                    route['track'] = track[0]
-                    db_temp.append(Path(db_session=local_db_session, data=route))
-                else:
-                    route['track'] = track[0]
-                    result.append(route)
-
-            if safeToDb:
-                local_db_session.add_all(db_temp)
-                local_db_session.commit()
+            if not start_node or not finish_node:
+                return None 
+            route = self.network.Route(start_node, finish_node)
+            route['track'] = track[0]
         except Exception as e:
-            if safeToDb:
-                local_db_session.add_all(db_temp)
-                local_db_session.commit()
-            #local_db_session.close()
-            raise e
-        _print("Thread %d / %d finished." % (iteration+1, iteration_total))
-        thread_results[iteration] = result
-        #local_db_session.close()
+            print(str(e), log_type=LogType.error)
+            return None
+        return route
 
 def Run(importFile=None, sourceCity=None):
     importer = TrackImporter()
