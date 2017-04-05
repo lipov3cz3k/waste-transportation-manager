@@ -109,7 +109,7 @@ class Network:
                 if penalty_multiplicator > self.max_penalty:
                     self.max_penalty = penalty_multiplicator
                 containers = w.GetContainers(db_session, False)
-                params = {'id':w.id, 'length':w.length, 'highway':w.tags['highway'], 'msgs':w.msgs, 'incidents':incidents, 'penalty_multiplicator':penalty_multiplicator, 'containers' : containers}
+                params = {'id':w.id, 'length':w.length, 'evaluation':w.length, 'highway':w.tags['highway'], 'msgs':w.msgs, 'incidents':incidents, 'penalty_multiplicator':penalty_multiplicator, 'containers' : containers}
                 node_first, node_last = w.GetFirstLastNodeId()
                 self.G.add_path((node_first.id, node_last.id), **params)
 
@@ -404,13 +404,13 @@ class Network:
 
 
     def _ReloadGraphEvaluation(self, routingType, simulatedSeason = Season(datetime.now()), simulatedDayTime = DayTime(datetime.now())):
+        if routingType == RoutingType.basic:
+            return
         today_diff = (datetime.now() - datetime(2015, 11, 14)).days
         today_diff = max([today_diff, 1])
 
         for n1, n2, edge in self.G.edges(data=True):
-            if routingType == RoutingType.basic:
-                edge['evaluation'] = edge['length']
-            elif routingType == RoutingType.worstCase:
+            if routingType == RoutingType.worstCase:
                 edge['evaluation'] = edge['length'] * edge['penalty_multiplicator']
             elif routingType == RoutingType.stochasticWS or routingType == RoutingType.stochasticWad:
                 pen_mul = 1

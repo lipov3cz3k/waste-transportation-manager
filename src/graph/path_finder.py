@@ -139,7 +139,7 @@ class TrackImporter(Importer):
         finish_alias = aliased(Address)
         OSMstart_alias = aliased(OSMLocation)
         OSMfinish_alias = aliased(OSMLocation)
-        tracks_obj = db_session.query(Track, OSMstart_alias, OSMfinish_alias).join(start_alias, Track.start_address) \
+        tracks_obj = db_session.query(Track, OSMstart_alias.longitude, OSMstart_alias.latitude, OSMfinish_alias.longitude, OSMfinish_alias.latitude).join(start_alias, Track.start_address) \
                                         .join(finish_alias, Track.finish_address) \
                                         .join(OSMstart_alias, start_alias.location) \
                                         .join(OSMfinish_alias, finish_alias.location) \
@@ -185,8 +185,7 @@ class PathFinder:
         try:
             if importer:
                 importer.run = True
-                tracks_chunks = tracks = importer.GetTracks(self.network.bbox)
-                #tracks_chunks = list(chunks(tracks_chunks, 100))
+                tracks = importer.GetTracks(self.network.bbox)
         except KeyboardInterrupt as e:
             importer.run = False
             print("KeyboardInterrupt", LogType.info)
@@ -198,13 +197,13 @@ class PathFinder:
         result = []
         try:
             pool = Pool()
-            for route in get_tqdm(pool.imap_unordered(self._GetTracksRouting, tracks, chunksize=100), self.SetState, desc="Finding all routing:", total=len(tracks)):
+            for route in get_tqdm(pool.imap_unordered(self._GetTracksRouting, tracks, chunksize=50), self.SetState, desc="Finding all routing:", total=len(tracks)):
                 if not route:
                     continue
                 if inspect(route['track']).detached:
                     route['track'] = db_session.merge(route['track'])
                 result.append(Path(db_session=db_session, data=route))
-                if safeToDb and len(result) >= 500:
+                if safeToDb and len(result) >= 100:
                     print("Saving to database")
                     db_session.add_all(result)
                     db_session.commit()
@@ -254,13 +253,15 @@ class PathFinder:
         db_temp = []
         try:
             self.TestIsRun()
-            start_node = self._searchNearby(splPoint(float(track[1].longitude), float(track[1].latitude)))
-            finish_node = self._searchNearby(splPoint(float(track[2].longitude), float(track[2].latitude)))
+            start_node = self._searchNearby(splPoint(float(track[1]), float(track[2])))
+            finish_node = self._searchNearby(splPoint(float(track[3]), float(track[4])))
 
             if not start_node or not finish_node:
                 return None 
             route = self.network.Route(start_node, finish_node)
             route['track'] = track[0]
+        except KeyboardInterrupt:
+            return None
         except Exception as e:
             print(str(e), log_type=LogType.error)
             return None
