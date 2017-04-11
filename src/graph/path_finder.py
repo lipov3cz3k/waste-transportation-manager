@@ -172,12 +172,13 @@ class PathFinder:
 
 
     def GetTracksWithPaths(self, safeToDb = True):
+        import multiprocessing as mp
         from .path_finder import TrackImporter
-        from models.path import Path
         from multiprocessing.pool import Pool
         from tqdm import tqdm
         from database import db_session
         from sqlalchemy import inspect
+        from math import ceil
         self.run[0] = True
         importer = TrackImporter()
         tracks_chunks = []
@@ -195,35 +196,48 @@ class PathFinder:
             return
 
         result = []
+        pool = None
         try:
-            pool = Pool()
-            for route in get_tqdm(pool.imap_unordered(self._GetTracksRouting, tracks, chunksize=50), self.SetState, desc="Finding all routing:", total=len(tracks)):
-                if not route:
-                    continue
-                if inspect(route['track']).detached:
-                    route['track'] = db_session.merge(route['track'])
-                result.append(Path(db_session=db_session, data=route))
-                if safeToDb and len(result) >= 100:
-                    print("Saving to database")
-                    db_session.add_all(result)
-                    db_session.commit()
-                    result.clear()
+            if mp.cpu_count() > 1:
+                pool = Pool()
+                for route in get_tqdm(pool.imap_unordered(self._GetTracksRouting, tracks, chunksize=50), self.SetState, desc="Finding all routing:", total=len(tracks)):
+                    self._saveRoute(safeToDb, route, result)
+                pool.close()
+            else:
+                track_chunks = chunks(tracks, 50)
+                for chunk in get_tqdm(track_chunks, self.SetState, desc="Finding all routing:", total=ceil(len(tracks)/50)):
+                    for track in chunk:
+                        self._saveRoute(safeToDb, self._GetTracksRouting(track), result)
             if safeToDb:
                 print("Saving to database")
                 db_session.add_all(result)
                 db_session.commit()
                 result.clear()
-            pool.close()
+ 
         except KeyboardInterrupt:
-            pool.terminate()
+            if pool:
+                pool.terminate()
             _print("Interrupted")
         except Exception as e:
             print(str(e), log_type=LogType.error)
             raise e
         finally:
-            pool.join()
+            if pool:
+                pool.join()
 
-
+    def _saveRoute(self, safeToDb,  route, result):
+        from database import db_session
+        from models.path import Path
+        if not route:
+            return
+        if inspect(route['track']).detached:
+            route['track'] = db_session.merge(route['track'])
+        result.append(Path(db_session=db_session, data=route))
+        if safeToDb and len(result) >= 100:
+            print("Saving to database")
+            db_session.add_all(result)
+            db_session.commit()
+            result.clear()
 
     def _searchNearby(self, point):
         from graph.bounding_box import get_bounding_box
