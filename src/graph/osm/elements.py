@@ -56,7 +56,7 @@ class Way:
                     incidents.append({'class' : worstTMCclass, 'TSTA' : tsta, 'TSTO' : tsto, 'season' : Season(daytime), 'daytime' : DayTime(daytime)})
         return incidents
 
-    def GetContainers(self, db_session, right_side = None):
+    def GetContainers(self, db_session, opposite):
         containers = []
         for container, direction in self.containers:
             if inspect(container).detached:
@@ -67,9 +67,12 @@ class Way:
                 coords = (container.address.location.latitude, container.address.location.longitude)
             else:
                 continue
-            if right_side != None:
-                if (self.forward == direction['right_side']) != right_side:
-                    continue
+
+            first, last = self.GetFirstLastNodeId()
+            if opposite:
+                first, last = last, first
+            if first.id != direction[0] or last.id != direction[1]:
+                continue
 
             containers.append({'id' : container.id, 
                                'container_type' : container.container_type, 

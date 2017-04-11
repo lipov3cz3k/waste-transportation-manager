@@ -258,7 +258,7 @@ function containerPopup(feature, layer) {
 
                     var containersHTML = ""
                     for (container of data.containers)
-                        containersHTML += parse('<li><b>%s %s, %s</b>, %s, %s, %s, %s</li>', container.street, container.house_number, container.city, container.waste_name, container.container_type, container.interval, container.days);
+                        containersHTML += parse('<li>(%s)<b>%s %s, %s</b>, %s, %s, %s, %s</li>', container.id, container.street, container.house_number, container.city, container.waste_name, container.container_type, container.interval, container.days);
 
 
                     var contentHTML = parse('<ul>%s</ul>', containersHTML);

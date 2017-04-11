@@ -227,23 +227,25 @@ class OSMParser:
         print("[%d] Mapping finished" % (iteration))
         local_db_session.close()
 
-    def _cut(self, line, distance):
+    def _cut(self, line, distance, nodes=None):
         # Cuts a line in two at a distance from its starting point
         if distance <= 0.0 or distance >= line.length:
-            return [LineString(line)]
+            return ([LineString(line)],len(line.coords)-1)
         coords = list(line.coords)
         for i, p in enumerate(coords):
             pd = line.project(Point(p))
             if pd == distance:
-                return [
-                    LineString(coords[:i+1]),
-                    LineString(coords[i:])]
+                return ([
+                         LineString(coords[:i+1]),
+                         LineString(coords[i:])],
+                        i)
             if pd > distance:
                 cp = line.interpolate(distance)
-                return [
-                    LineString(coords[:i+1]),
-                    LineString([(cp.x, cp.y)] + coords[i:])]
-        return [LineString(line)]
+                return ([
+                         LineString(coords[:i+1]),
+                         LineString([(cp.x, cp.y)] + coords[i:])],
+                        i)
+        return ([LineString(line)],len(line.coords)-1)
 
     def _Geometry(self, way):
         x = [(float(node.lon), float(node.lat)) for node in way.nodes]
@@ -252,28 +254,34 @@ class OSMParser:
         else:
             return Point(x[0])
 
-    def _Direction(self, way, point):
-        right_side = None
+    def _Direction(self, way, point, point_id=None):
+        direction = None
         try:
             ls = self._Geometry(way)
-            part = self._cut(ls, ls.project(point))[0]
-            closestSeg = LineString(part.coords[-2:])
-            a_point, b_point = closestSeg.coords
+            part, cut_id = self._cut(ls, ls.project(point))
+            closestSeg = way.nodes[cut_id-1], way.nodes[cut_id]
+            a_point = float(closestSeg[0].lon), float(closestSeg[0].lat)
+            b_point = float(closestSeg[1].lon), float(closestSeg[1].lat)
+            p_to_a = point.distance(Point(a_point))
+            p_to_b = point.distance(Point(b_point))
+            close,far = (a_point, b_point) if p_to_a < p_to_b else (b_point, a_point)
             p = point.coords[0]
-        
-            kriterium = (p[0] - b_point[0]) * (a_point[1] - b_point[1]) + (p[1] - b_point[1]) * (b_point[0] - a_point[0])
-            if kriterium > 0:
-                right_side = True
-                print("a -> b direction")
-            elif kriterium < 0:
-                right_side = False
-                print("b -> a direction")
+
+            kriterium = (close[1]-far[1])*(p[0]-close[0])+(far[0]-close[0])*(p[1]-close[1])
+
+            start,end = (way.nodes[0].id, way.nodes[-1].id) if p_to_a < p_to_b else (way.nodes[-1].id, way.nodes[0].id)
+            if kriterium < 0:
+                direction = (start, end)
+                print("(%s) %s -> %s" % (point_id, start, end))
+            elif kriterium > 0:
+                direction = (end, start)
+                print("(%s) %s -> %s" % (point_id, end, start))
             else:
                 print("cannot determine direction")
         except Exception as e:
             print("Direction detection failed", log_type=LogType.error)
             raise e
-        return {"right_side" : right_side}
+        return direction
 
     ################## Waste management #####################
     def ConnectContainersWithWays(self, db_session):
@@ -330,11 +338,11 @@ class OSMParser:
                     ways = [item for sublist in ways for item in sublist]
 
                 if len(ways) == 1:
-                    direction = self._Direction(ways[0], point)
+                    direction = self._Direction(ways[0], point, container.id)
                     ways[0].containers.append((container, direction))
                 elif len(ways) > 1:
                     near_way = min(ways, key=dist)
-                    direction = self._Direction(near_way, point)
+                    direction = self._Direction(near_way, point, container.id)
                     near_way.containers.append((container, direction))
                 
         except Exception as e:
