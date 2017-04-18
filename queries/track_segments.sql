@@ -2,7 +2,7 @@
 .mode csv
 .output test.csv
 
-select x.path_id, Path.track_id, sum(x.length) as osm_length, Track.distance as original_length, Track.date_from, Track.date_to, 
+select x.path_id, Path.track_id, sum(x.length) as osm_length, Track.distance as original_length, datetime(Track.date_from) as date_from, datetime(Track.date_to) as date_to,
 		sum(x.motorway) as motorway, sum(x.trunk) as trunk, sum(x.prim) as prim, sum(x.secondary) as secondary, sum(x.tertiary) as tertiary,
 		sum(x.road) as road, sum(x.residential) as residential,sum(x.service) as service,sum(x.motorway_link) as motorway_link,sum(x.trunk_link) as trunk_link,
 		sum(x.primary_link) as primary_link, sum(x.secondary_link) as secondary_link,sum(x.teriary_link) as teriary_link,sum(x.living_street) as living_street,sum(x.unclassified) as unclassified
