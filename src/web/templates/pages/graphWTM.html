@@ -133,6 +133,21 @@
             <tbody></tbody>
         </table>
     </div>
+    <div class="col-md-3">
+        <label for="assignedFrequencies" class="control-label input-group">Frequency files:</label>
+        <table class="table" id="assignedFrequencies">
+            <thead>
+                <tr><th>#</th></tr>
+            </thead>
+            <tbody>
+                {% for item in frequencies %}
+                <tr>
+                    <td><a href="#" onclick="updateFrequencyFile('{{ url_for('graphUpdateFrequencyFile', graphID=graphID) }}', '{{ item.id }}');">{{ item.id }}</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
 </div>
 

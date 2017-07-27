@@ -274,7 +274,7 @@ function containerPopup(feature, layer) {
 
 }
 
-///////// Wastpath loader ///////////
+///////// Wastepath loader ///////////
 
 function preloadAllWastePath(apiUrl, paths) {
     for (key in paths) {
@@ -309,6 +309,31 @@ function wastePath(apiURL, pathID) {
             map.spin(false);
         }
     });
+}
+
+/////// Frequency files /////////
+
+function updateFrequencyFile(apiURL, fileName) {
+    $.ajax({
+        type: 'POST',
+        data: { 'fileName': fileName },
+        dataType: 'json',
+        url: apiURL,
+        success: function (data) {
+            if (data.succeded) {
+                alert('DONE!');
+            }
+            else {
+                alert(data.message.toString());
+            }
+            map.spin(false);
+        },
+        error: function (e) {
+            alert('Unexpected error!');
+            map.spin(false);
+        }
+    });
+
 }
 
 

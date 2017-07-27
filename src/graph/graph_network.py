@@ -109,7 +109,7 @@ class Network:
                 if penalty_multiplicator > self.max_penalty:
                     self.max_penalty = penalty_multiplicator
                 containers = w.GetContainers(db_session, False)
-                params = {'id':w.id, 'length':w.length, 'evaluation':w.length, 'highway':w.tags['highway'], 'msgs':w.msgs, 'incidents':incidents, 'penalty_multiplicator':penalty_multiplicator, 'containers' : containers}
+                params = {'id':w.id, 'length':w.length, 'evaluation':w.length, 'highway':w.tags['highway'], 'msgs':w.msgs, 'incidents':incidents, 'ref':w.tags.get('ref'), 'penalty_multiplicator':penalty_multiplicator, 'containers' : containers}
                 node_first, node_last = w.GetFirstLastNodeId()
                 self.G.add_path((node_first.id, node_last.id), **params)
 
@@ -296,6 +296,19 @@ class Network:
                 paths_pool[path.get('id')] = Feature(geometry=LineString(points), style={'color':path.get('color', '#00FF00')})
             fc = FeatureCollection([ v for v in paths_pool.values() ])
             return {'succeded' : True, 'paths' : fc, 'name' : pathID}
+
+    def LoadAndFillFrequecy(self, fileName):
+        import csv
+        with open(join(local_config.folder_paths_root, '%s.freq' % fileName), "r") as csvinput:
+            with open(join(local_config.folder_paths_root, '%s.out.freq' % fileName), 'w', newline="\n", encoding="utf-8") as csvoutput:
+                writer = csv.writer(csvoutput, delimiter='\t')
+                for row in csv.reader(csvinput,delimiter='\t'):
+                    if self.G.has_edge(row[0],row[1]):
+                        e = self.G.edge[row[0]][row[1]]
+                        writer.writerow(row+[e.get('id'), e.get('ref')])
+                    else:
+                        writer.writerow(row+['no_edge'])
+        return {'succeded' : True}
 
 ############# Tracks management ################
     def GetTracksWithPaths(self, safeToDb = True):

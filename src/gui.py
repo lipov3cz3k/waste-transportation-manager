@@ -1,7 +1,7 @@
 from flask import Flask, request, redirect, url_for, render_template, jsonify
 
 from common.config import ftp_config, local_config
-from graph.api import getOSMList, getGraphList, loadGraph, getPathsList
+from graph.api import getOSMList, getGraphList, loadGraph, getImportList
 from graph.bounding_box import BoundingBox
 from common.utils import get_float_coord, CheckFolders
 from web.long_task_threads import DDR_thread, GRAPH_thread, GRAPH_update_thread
@@ -140,9 +140,9 @@ def graphGetNodes(graphID):
     graph = loadGraph(app.graph_pool, graphID)
     return str(graph.GetNodesGeoJSON())
 
-@app.route('/graph/<graphID>/path/list')
-def graphGetPaths(graphID):
-    return jsonify(paths=getPathsList(graphID))
+@app.route('/graph/<graphID>/<suffix>/list')
+def graphGetPaths(graphID, suffix):
+    return jsonify(paths=getImportList(graphID, suffix))
 
 @app.route('/graph/<graphID>/edges-containers')
 def graphGetEdgesWithContainers(graphID):
@@ -188,6 +188,14 @@ def graphGetPathFromFile(graphID):
         pathID = request.form['pathID']
         graph = loadGraph(app.graph_pool, graphID)
         return jsonify(graph.LoadPath(pathID))
+    return redirect(url_for('graphDetail', graphID=graphID))
+
+@app.route('/graph/<graphID>/updateFrequencyFile', methods=['POST'])
+def graphUpdateFrequencyFile(graphID):
+    if request.method == 'POST':
+        fileName = request.form['fileName']
+        graph = loadGraph(app.graph_pool, graphID)
+        return jsonify(graph.LoadAndFillFrequecy(fileName))
     return redirect(url_for('graphDetail', graphID=graphID))
 
 ############################ Export ################
@@ -253,7 +261,7 @@ def graphList():
 @app.route('/graph/<graphID>')
 def graphDetail(graphID):
     coords = graphID.split("_")[1:-1]
-    return render_template('pages/graphWTM.html', graphID=graphID, bbox=coords, paths=getPathsList(graphID))
+    return render_template('pages/graphWTM.html', graphID=graphID, bbox=coords, paths=getImportList(graphID, 'path'), frequencies=getImportList(graphID, 'freq'))
 
 @app.route('/contact', methods=['POST', 'GET'])
 def contact():

@@ -35,7 +35,7 @@ class local_config:
     folder_paths_root = normpath(join(root_folder, "paths"))
     folder_restrictions_root = normpath(join(root_folder, "restrictions"))
     allowed_tags_node = ['highway']
-    allowed_tags_way = ['oneway', 'highway', 'name']
+    allowed_tags_way = ['oneway', 'highway', 'name', 'ref']
     not_allowed_evi = [TMCUpdateClass.parking]
     thread_pool_size_for_mapping = 10
     number_of_stochastic_experiments = 100

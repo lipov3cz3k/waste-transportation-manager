@@ -46,9 +46,8 @@ def loadGraph(graph_pool, graphID=None):
     graph_pool.append(graph)
     return graph
 
-def getPathsList(graphID=None):
+def getImportList(graphID=None, suffix="path"):
     result = []
-    suffix = ".path"
     if not exists(local_config.folder_paths_root):
         return result
     for file in listdir(local_config.folder_paths_root):
