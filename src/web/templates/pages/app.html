@@ -76,7 +76,7 @@
                 <div class="row">
                     {% for item in osmList %}
                         <div class="col-md-2">
-                            <div id="{{ item.id }}" class="map-osmList"></div>
+                            <div id="{{ item.id }}" class="map-osmList" data-toggle="tooltip" title="{{ item.id }}"></div>
                         </div>
                     {% endfor %}
                 </div>

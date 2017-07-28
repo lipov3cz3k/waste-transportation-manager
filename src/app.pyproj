@@ -55,6 +55,7 @@
     <Content Include="web\templates\pages\contact.html" />
     <Content Include="web\templates\pages\graphDetail.html" />
     <Content Include="web\templates\pages\graphList.html" />
+    <Content Include="web\templates\pages\graphWTM.html" />
     <Content Include="web\templates\pages\settings.html" />
   </ItemGroup>
   <ItemGroup>
