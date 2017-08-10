@@ -142,6 +142,7 @@ class GraphManager:
         print("Download OSM data if not exists", LogType.trace)
         if not exists(data_path):
             self.DownloadOSMData(data_path)
+        if not exists(data_path+'.city'):
             self.DownloadOSMCities(data_path+'.city')
 
 

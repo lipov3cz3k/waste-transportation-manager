@@ -207,17 +207,19 @@ class SimpleHandler(ContentHandler):
         if name == 'node':
             if 'place' in self.tags:
                 self.city_nodes[self.id] = Node(self.id, self.lon, self.lat, self.tags)
-            else:
-                self.nodes_global[self.id] = Node(self.id, self.lon, self.lat, self.tags)
-                self.node_histogram[self.id] = 0
+
+            self.nodes_global[self.id] = Node(self.id, self.lon, self.lat, self.tags)
+            self.node_histogram[self.id] = 0
             self.reset()
         elif name == "way":
             if len(self.nodes) > 1:
                 self.ways_global[self.id] = Way(self.id, self.nodes, self.tags)
             self.reset()
         elif name == "relation":
-            if len(self.ways) > 1:
+            if len(self.ways) > 1 and self.admin_centre:
                 self.relation_global[self.id] = Relation(self.id, self.ways, self.tags, self.admin_centre)
+            else:
+                print("Relation has no admin centre or any connected ways. (id:"+self.id+")")
             self.reset()
 
     def reset(self):

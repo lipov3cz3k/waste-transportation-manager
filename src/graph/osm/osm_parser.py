@@ -75,8 +75,10 @@ class OSMParser:
             parser = make_parser()
             parser.setContentHandler(SimpleHandler(self.node_histogram, self.ways, self.relations, self.city_nodes, total_size, self.SetState, self.run))
             city_xml_data = osm_path_xml_data+'.city'
+            print("parsing path xml")
             with open(osm_path_xml_data, 'rb') as osm_data:
                 parser.parse(osm_data)
+            print("parsing city xml")
             with open(city_xml_data, 'rb') as osm_data:
                 parser.parse(osm_data)
         except Exception as e:
@@ -378,8 +380,6 @@ class OSMParser:
             ml = MultiLineString(ls).convex_hull
             
             result[k] = {'id' : k, 'shape' : ml, 'tags' : rel.tags, 'admin_centre' : rel.admin_centre}
-            #result.append({'id' : k, 'shape' : ml, 'tags' : rel.tags, 'admin_centre' : rel.admin_centre})
-            
         return result
                     
                     
