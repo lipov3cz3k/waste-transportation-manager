@@ -21,7 +21,8 @@ class OSMParser:
         self.node_histogram = {}
         self.bbox = bbox
         self.state = state
-
+        self.city_nodes = {}
+        self.relations = {}
         self.run = run
 
         self.last_location_obj_id = 0 # last location for last message which was connected with graph
@@ -72,9 +73,11 @@ class OSMParser:
         try:
             total_size = getsize(osm_path_xml_data)
             parser = make_parser()
-            parser.setContentHandler(SimpleHandler(self.node_histogram, self.ways, total_size, self.SetState, self.run))
-
+            parser.setContentHandler(SimpleHandler(self.node_histogram, self.ways, self.relations, self.city_nodes, total_size, self.SetState, self.run))
+            city_xml_data = osm_path_xml_data+'.city'
             with open(osm_path_xml_data, 'rb') as osm_data:
+                parser.parse(osm_data)
+            with open(city_xml_data, 'rb') as osm_data:
                 parser.parse(osm_data)
         except Exception as e:
             print("Cannot read or parse stored OSM data file: %s" % str(e), LogType.error)
@@ -350,3 +353,36 @@ class OSMParser:
             local_db_session.close()
             raise e
         local_db_session.close()
+
+
+
+    ################## Boundary shape  #####################
+
+
+    def GetLAU2Shapes(self):
+        from shapely.geometry import MultiLineString, LineString
+
+        print("Creating shapes from OSM relation objects")
+        result = {}
+        for k, rel in self.relations.items():
+            if not 'admin_level' in rel.tags:
+                continue
+            if rel.tags['admin_level'] != '8':
+                continue
+
+            ls = []
+            for way in rel.ways:
+                x = tuple([(float(node.lat), float(node.lon)) for node in way.nodes])
+                ls.append(LineString(x))
+            
+            ml = MultiLineString(ls).convex_hull
+            
+            result[k] = {'id' : k, 'shape' : ml, 'tags' : rel.tags, 'admin_centre' : rel.admin_centre}
+            #result.append({'id' : k, 'shape' : ml, 'tags' : rel.tags, 'admin_centre' : rel.admin_centre})
+            
+        return result
+                    
+                    
+                
+
+            

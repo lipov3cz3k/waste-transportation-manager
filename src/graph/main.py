@@ -18,8 +18,8 @@ class GraphManager:
         self.graph = None
 
         # highway tag values to use, separated by pipes (|), for instance 'motorway|trunk|primary'
-        self.highway_cat = 'motorway|trunk|primary|secondary|tertiary|road|residential|service|motorway_link|trunk_link|primary_link|secondary_link|teriary_link|living_street|unclassified'
-
+        self.highway_cat = '|'.join(local_config.allowed_highway_cat)
+        self.place_cat = '|'.join(local_config.allowed_place_tags)
         self.run = {0: False}
         self.is_gui = False
 
@@ -126,10 +126,23 @@ class GraphManager:
             removeFile(data_path)
             raise
 
+    def DownloadOSMCities(self, data_path):
+        print("Downloading OSM data", LogType.info)
+        try:
+            url = "http://overpass-api.de/api/interpreter?data=(relation['boundary'='administrative']['admin_level'='8'](%s););(._;>;);out;"  % (self.BBox.ToXAPIBBox())
+            #url = "http://www.overpass-api.de/api/xapi?relation[place=%s][%s]" % (place_cat, self.BBox.ToURL())
+            print("City shape url: %s" % str(url), LogType.error)
+            urlretrieve(url, filename=data_path, reporthook=progress_hook(self.state), data=None)
+        except Exception as e:
+            print("Cannot save osm data to file: %s" % str(e), LogType.error)
+            removeFile(data_path)
+            raise
+
     def GetOSMData(self, data_path):
         print("Download OSM data if not exists", LogType.trace)
         if not exists(data_path):
             self.DownloadOSMData(data_path)
+            self.DownloadOSMCities(data_path+'.city')
 
 
 def Run(bbox=None, exportFile=None, processTracks=None):

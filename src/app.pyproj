@@ -13,7 +13,7 @@
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <InterpreterId>{9a7a9026-48c1-4688-9d5d-e5699d47d074}</InterpreterId>
     <InterpreterVersion>3.5</InterpreterVersion>
-    <CommandLineArguments>-g -bbox 16.563606 49.212436 16.585750 49.224553 -t</CommandLineArguments>
+    <CommandLineArguments>-g -bbox 16.248436 50.089970 16.343880 50.139285 -t</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
@@ -77,6 +77,10 @@
     <Compile Include="graph\bounding_box.py" />
     <Compile Include="graph\graph_network.py" />
     <Compile Include="graph\main.py" />
+    <Compile Include="main.py" />
+    <Compile Include="module1.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="graph\osm\elements.py" />
     <Compile Include="graph\osm\osm_parser.py" />
     <Compile Include="graph\osm\__init__.py" />
@@ -89,7 +93,6 @@
     </Compile>
     <Compile Include="graph\__init__.py" />
     <Compile Include="gui.py" />
-    <Compile Include="main.py" />
     <Compile Include="models\location.py">
       <SubType>Code</SubType>
     </Compile>

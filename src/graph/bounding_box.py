@@ -8,6 +8,9 @@ class BoundingBox:
     def ToURL(self):
         return "bbox=%f,%f,%f,%f" % (self.min_longitude, self.min_latitude, self.max_longitude, self.max_latitude)
 
+    def ToXAPIBBox(self):
+        return "%f,%f,%f,%f" % (self.min_latitude, self.min_longitude, self.max_latitude, self.max_longitude)
+
     def ToName(self):
         return "data_%f_%f_%f_%f"% (self.min_longitude, self.min_latitude, self.max_longitude, self.max_latitude)
     def ToList(self):

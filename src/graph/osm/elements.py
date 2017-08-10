@@ -12,6 +12,7 @@ class Node:
         self.lon = lon
         self.lat = lat
         self.tags = tags
+        self.city_relation = None
 
 class Way:
 
@@ -123,21 +124,33 @@ class Way:
         except Exception as e:
             self.forward = True
 
+class Relation:
+    def __init__(self, id, ways = [], tags = {}, admin_centre = None):
+        self.id = id
+        self.ways = ways
+        self.tags = tags
+        self.admin_centre = admin_centre
+
 class SimpleHandler(ContentHandler):
 
-    def __init__(self, node_histogram, ways, total_size, SetStateFc, run):
+    def __init__(self, node_histogram, ways, relations, city_nodes, total_size, SetStateFc, run):
         ContentHandler.__init__(self)
         self.id = None
         self.lon = None
         self.lat = None
         self.nodes = []
+        self.ways = []
         self.tags = {}
+        self.admin_centre = None
 
         self.allowed_tags = None
+        self.allowed_members = None
 
         self.nodes_global = {}
         self.node_histogram = node_histogram
         self.ways_global = ways
+        self.relation_global = relations
+        self.city_nodes = city_nodes
 
         self.total_size = total_size
         self.SetStateFc = SetStateFc
@@ -169,18 +182,42 @@ class SimpleHandler(ContentHandler):
             if attrs['k'] in self.allowed_tags:
                 if (attrs['k'] != "oneway") or (attrs['k'] == "oneway" and attrs['v'] == "yes"):
                     self.tags[attrs['k']] = attrs['v']
+                if attrs['k'] == "place" and attrs['v'] in local_config.allowed_place_tags:
+                    self.tags[attrs['k']] = attrs['v']
         elif name == 'nd':
             self.nodes.append(self.nodes_global[attrs['ref']])
             self.node_histogram[attrs['ref']] += 1
+        elif name == 'relation':
+            self.id = attrs['id']
+            self.nodes = []
+            self.ways = []
+            self.tags = {}
+            self.admin_centre = None
+            self.allowed_tags = local_config.allowed_relation_tags
+            self.allowed_members = local_config.allowed_members
+        elif name == 'member':
+            if attrs['type'] in self.allowed_members:
+                if (attrs['type'] == "way"):
+                    self.ways.append(self.ways_global[attrs['ref']])
+                if (attrs['type'] == "node" and attrs['role'] == "admin_centre"):
+                    self.admin_centre = self.city_nodes[attrs['ref']]
+
 
     def endElement(self, name):
         if name == 'node':
-            self.nodes_global[self.id] = Node(self.id, self.lon, self.lat, self.tags)
-            self.node_histogram[self.id] = 0
+            if 'place' in self.tags:
+                self.city_nodes[self.id] = Node(self.id, self.lon, self.lat, self.tags)
+            else:
+                self.nodes_global[self.id] = Node(self.id, self.lon, self.lat, self.tags)
+                self.node_histogram[self.id] = 0
             self.reset()
         elif name == "way":
             if len(self.nodes) > 1:
                 self.ways_global[self.id] = Way(self.id, self.nodes, self.tags)
+            self.reset()
+        elif name == "relation":
+            if len(self.ways) > 1:
+                self.relation_global[self.id] = Relation(self.id, self.ways, self.tags, self.admin_centre)
             self.reset()
 
     def reset(self):
@@ -188,5 +225,8 @@ class SimpleHandler(ContentHandler):
         self.lon = None
         self.lat = None
         self.nodes = []
+        self.ways = []
         self.tags = {}
+        self.admin_centre = None
         self.allowed_tags = None
+        self.allowed_members = None

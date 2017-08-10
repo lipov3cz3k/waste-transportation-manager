@@ -14,6 +14,8 @@ from .osm.osm_parser import OSMParser
 from .routing import RoutingType, GetPenaltyMul
 from .statistics import createCorrelation, correlationVisualize
 
+import matplotlib.pyplot as plt
+
 @DECORATE_ALL(TRACE_FN_CALL)
 class Network:
     def __init__(self, bbox = None, state = None, run = {0: False}):
@@ -22,6 +24,8 @@ class Network:
         self.bbox = bbox
         self.max_penalty = 0
         self.G = nx.DiGraph()
+        self.cityGraph = None
+        self.Cities = nx.DiGraph()
         self.season_correlation = None
         self.daytime_correlation = None
         self.total_incidents = 0
@@ -40,7 +44,7 @@ class Network:
             osm = OSMParser(self.graphID, bbox=self.bbox, state=self.state, run=self.run)
             osm.ParseFromXMLFile(osm_path_xml_data)
 #            osm.ConnectDDRDataWithWays(db_session)
-            osm.ConnectContainersWithWays(db_session)
+#            osm.ConnectContainersWithWays(db_session)
             self.SetState(action="Saving parsed osm to file", percentage=0)
             osm.SaveToFile()
             self.SetState(action="Saving parsed osm to file", percentage=100)
@@ -52,7 +56,24 @@ class Network:
 
         try:
             self.SetState(action="Add edges to graph, compute evaluation", percentage=0)
-            self.fillGraphWithData(osm, db_session)
+            cityShapes = osm.GetLAU2Shapes()
+            self.fillGraphWithData(osm, db_session, cityShapes)
+            self.cityGraph = self.supergraph(cityShapes, self.G, self.inCity)
+
+
+
+            pos = nx.get_node_attributes(self.cityGraph,'lon')
+            pos_lat = nx.get_node_attributes(self.cityGraph,'lat')
+            for k, v in pos.items():
+                pos[k] = (v, pos_lat[k])
+            nx.draw(self.cityGraph, pos=pos)
+
+            node_labels = nx.get_node_attributes(self.cityGraph,'name')
+            nx.draw_networkx_labels(self.cityGraph,pos=pos, labels = node_labels)
+            plt.savefig("cityGraph.png") # save as png
+            plt.show() # display
+
+
             self.SetState(action="Add edges to graph, compute evaluation", percentage=100)
             self.SetState(action="Create correlation", percentage=0)
             self.season_correlation = createCorrelation(self.G, 'season')
@@ -99,9 +120,12 @@ class Network:
         db_session.remove()
         return new_msgs_count
 
-    def fillGraphWithData(self, osm, db_session):
+    def fillGraphWithData(self, osm, db_session, cityShapes = None):
+        from shapely.geometry import Point as splPoint
         for id, uniq_w in get_tqdm(osm.ways.items(), self.SetState, desc="Add edges to graph, compute evaluation", total=None):
             for w in uniq_w:
+                if not 'highway' in w.tags:
+                    continue
                 self.TestIsRun()
                 incidents = []# w.GetIncidents(db_session)
                 self.total_incidents += len(incidents)
@@ -118,11 +142,102 @@ class Network:
                     params['containers'] = containers
                     self.G.add_path((node_last.id, node_first.id), **params)
 
-                self.G.node[node_first.id] = dict(lon=float(node_first.lon), lat=float(node_first.lat), traffic_lights=node_first.tags.get('highway') == 'traffic_signals')
-                self.G.node[node_last.id] = dict(lon=float(node_last.lon), lat=float(node_last.lat), traffic_lights=node_last.tags.get('highway') == 'traffic_signals')
+                n1 = splPoint(float(node_first.lat), float(node_first.lon))
+                n2 = splPoint(float(node_last.lat), float(node_last.lon))
+                for k, city in cityShapes.items():
+                    if city['shape'].contains(n1):
+                        node_first.city_relation = k
+                    if city['shape'].contains(n2):
+                        node_last.city_relation = k
+
+                self.G.node[node_first.id] = dict(lon=float(node_first.lon), lat=float(node_first.lat), traffic_lights=node_first.tags.get('highway') == 'traffic_signals', city_relation = node_first.city_relation)
+                self.G.node[node_last.id] = dict(lon=float(node_last.lon), lat=float(node_last.lat), traffic_lights=node_last.tags.get('highway') == 'traffic_signals', city_relation = node_last.city_relation)
 
             osm.ways[id] = None
+                
+
+    def inCity(self,cityShapes,g,a,b,d):
+
+
+        a_data = {}
+        b_data = {}
+
+        n1 = self.G.node[a]['city_relation']
+        n2 = self.G.node[b]['city_relation']
+        if n1:
+            n1admin_centre = cityShapes[n1]['admin_centre']
+            a_data['lat'] = float(n1admin_centre.lat)
+            a_data['lon'] = float(n1admin_centre.lon)
+            a_data['name'] = n1admin_centre.tags.get('name')
+        else:
+            a_data['lat'] = self.G.node[a]['lat']
+            a_data['lon'] = self.G.node[a]['lon']
+            a_data['name'] = '-'
+        if n2:
+            n2admin_centre = cityShapes[n2]['admin_centre']
+            b_data['lat'] = float(n2admin_centre.lat)
+            b_data['lon'] = float(n2admin_centre.lon)
+            b_data['name'] = n2admin_centre.tags.get('name')
+        else:
+            b_data['lat'] = self.G.node[b]['lat']
+            b_data['lon'] = self.G.node[b]['lon'] 
+            b_data['name'] = '-'
+
+        if n1 == n2 and n1 != None:
+            #print(d['id'] + ' is in city ' + n1 + ' -> ignore')
+            return None
+        elif n1 != n2 and (n1 != None and n2 != None):
+            #print(d['id'] + ' is in city ' + n1 + ' and ' + n2 + ' -> leave')
+            return (n1admin_centre.id, n2admin_centre.id, d['length'], a_data, b_data)
+        elif n1 == None and n2 == None:
+            print(d['id'] + ' is not in any city -> leave')
+            return (a, b, d['length'], a_data, b_data)
+        else:
+            if n1 == None:
+                print(d['id'] + ' is partly in city ' + n2 + ' -> leave')
+                return (a, n2admin_centre.id, d['length'], a_data, b_data)
+            elif n2 == None:
+                print(d['id'] + ' is partly in city ' + n1 + ' -> leave')
+                return (n1admin_centre.id, b, d['length'], a_data, b_data)
+
+
+        return None
+
+    def supergraph(self, cityShapes, g1, keyfunc, allow_selfloops=True):
+        g2 = nx.DiGraph()
         
+        for (a,b,d) in g1.edges_iter(data=True):
+            result = keyfunc(cityShapes,g1,a,b,d)
+            if result is not None:
+                a2,b2,w,a2_data,b2_data = result
+                if a2 != b2 or allow_selfloops:
+                    g2.add_edge(a2,b2)
+                    try:
+                        g2[a2][b2]['weight'] += w
+                    except:
+                        g2[a2][b2]['weight'] = w
+                    g2.node[a2] = a2_data
+                    g2.node[b2] = b2_data
+                for u2,u in [(a2,a),(b2,b)]:
+                    if not u2 in g2:
+                        g2.add_node(u2, original_nodes=set([u]))
+                    else:
+                        try:
+                            g2.node[u2]['original_nodes'].add(u)
+                        except:
+                            g2.node[u2]['original_nodes'] = set([u])
+        return g2
+
+
+
+    def createCityGraph(self, osm):
+        for id, uniq_city in get_tqdm(osm.city_nodes.items(), self.SetState, desc="Add cities to graph, compute evaluation", total=None):
+            self.TestIsRun()
+            params = {'lon':float(uniq_city.lon), 'lat':float(uniq_city.lat), 'name' : uniq_city.tags['name']}
+            self.Cities.add_node(id, **params)
+        return False
+
+
     def SaveToFile(self, file_path = None):
         if not file_path:
             file_path = join(local_config.folder_graphs_root, '%s.g' % self.GetGraphID())
