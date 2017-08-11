@@ -200,7 +200,7 @@ class TRACE_FN_CALL (object):
         print("Leaving %s%s" % (function_name_prepend, self.func.__name__), LogType.trace)
         return result
 
-prohibited_methods = ['SetState', 'TestIsRun', 'inCity']
+prohibited_methods = ['SetState', 'TestIsRun', '_inCity', '_searchNearby']
 
 def DECORATE_ALL(decorator):
     def decorate(cls):

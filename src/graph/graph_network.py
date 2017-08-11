@@ -58,20 +58,8 @@ class Network:
             self.SetState(action="Add edges to graph, compute evaluation", percentage=0)
             cityShapes = osm.GetLAU2Shapes()
             self.fillGraphWithData(osm, db_session, cityShapes)
-            self.cityGraph = self.supergraph(cityShapes, self.G, self.inCity)
+            self.createCityDistanceMatrix(cityShapes)
 
-
-
-            pos = nx.get_node_attributes(self.cityGraph,'lon')
-            pos_lat = nx.get_node_attributes(self.cityGraph,'lat')
-            for k, v in pos.items():
-                pos[k] = (v, pos_lat[k])
-            nx.draw(self.cityGraph, pos=pos)
-
-            node_labels = nx.get_node_attributes(self.cityGraph,'name')
-            nx.draw_networkx_labels(self.cityGraph,pos=pos, labels = node_labels)
-            plt.savefig("cityGraph.png") # save as png
-            plt.show() # display
 
 
             self.SetState(action="Add edges to graph, compute evaluation", percentage=100)
@@ -149,14 +137,57 @@ class Network:
                         node_first.city_relation = k
                     if city['shape'].contains(n2):
                         node_last.city_relation = k
+                    if node_first.city_relation and node_last.city_relation:
+                        break
 
                 self.G.node[node_first.id] = dict(lon=float(node_first.lon), lat=float(node_first.lat), traffic_lights=node_first.tags.get('highway') == 'traffic_signals', city_relation = node_first.city_relation)
                 self.G.node[node_last.id] = dict(lon=float(node_last.lon), lat=float(node_last.lat), traffic_lights=node_last.tags.get('highway') == 'traffic_signals', city_relation = node_last.city_relation)
 
             osm.ways[id] = None
-                
+          
 
-    def inCity(self,cityShapes,g,a,b,d):
+    def createCityDistanceMatrix(self, cityShapes):
+        from functools import partial
+        from shapely.geometry import Point as splPoint
+        self.cityGraph = self.supergraph(cityShapes, self.G, self._inCity)
+        
+
+        for n1, d1 in self.cityGraph.nodes_iter(data=True):
+            n1closest = self._searchNearby(splPoint(d1['lon'], d1['lat']))
+            for n2 in nx.all_neighbors(self.cityGraph, n1):
+                d2 = self.cityGraph.node[n2]
+                try:
+                    n2closest = self._searchNearby(splPoint(d2['lon'], d2['lat']))
+
+                    if n1closest and n2closest:
+                        eval, path = nx.bidirectional_dijkstra(self.G, n1closest, n2closest, 'evaluation')
+                        self.cityGraph.edge[n1][n2]['length'] = eval
+                    else:
+                        print("Cannot find closest street to admin_centre %s (%s) or %s (%s)!!" % (d1['name'],n1,d2['name'],n2), log_type=LogType.error)
+                        self.cityGraph.edge[n1][n2]['length'] = -1
+                except Exception as e:
+                    print("Exception cannot compute distance between cities %s (%s) and %s (%s): %s" % (d1['name'],n1,d2['name'],n2,str(e)), log_type=LogType.error)
+                    self.cityGraph.edge[n1][n2]['length'] = -1
+
+
+        # Save as image
+
+        pos = nx.get_node_attributes(self.cityGraph,'lon')
+        pos_lat = nx.get_node_attributes(self.cityGraph,'lat')
+        for k, v in pos.items():
+            pos[k] = (v, pos_lat[k])
+
+        nx.draw(self.cityGraph, pos=pos)
+        node_labels = nx.get_node_attributes(self.cityGraph,'name')
+        nx.draw_networkx_labels(self.cityGraph,pos=pos, labels = node_labels)
+        edge_labels = nx.get_edge_attributes(self.cityGraph,'length')
+        nx.draw_networkx_edge_labels(self.cityGraph, pos=pos,edge_labels=edge_labels)
+
+        plt.savefig(join(local_config.folder_export_root, '%s.svg' % self.graphID), format="svg")
+        plt.show() # display
+      
+
+    def _inCity(self,cityShapes,g,a,b,d):
 
 
         a_data = {}

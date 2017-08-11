@@ -374,8 +374,7 @@ class OSMParser:
 
             ls = []
             for way in rel.ways:
-                x = tuple([(float(node.lat), float(node.lon)) for node in way.nodes])
-                ls.append(LineString(x))
+                ls.append(LineString(tuple([(float(node.lat), float(node.lon)) for node in way.nodes])))
             
             ml = MultiLineString(ls).convex_hull
             
