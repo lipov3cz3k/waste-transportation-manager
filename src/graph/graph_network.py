@@ -153,11 +153,11 @@ class Network:
         
 
         for n1, d1 in get_tqdm(self.cityGraph.nodes_iter(data=True), self.SetState, desc="Computing distance between cities", total=self.cityGraph.number_of_nodes()):
-            n1closest = self._searchNearby(splPoint(d1['lon'], d1['lat']))
+            n1closest = self._searchNearby(splPoint(d1['lon'], d1['lat']),['residential','service','living_street','unclassified'])
             for n2 in self.cityGraph.neighbors_iter(n1):
                 d2 = self.cityGraph.node[n2]
                 try:
-                    n2closest = self._searchNearby(splPoint(d2['lon'], d2['lat']))
+                    n2closest = self._searchNearby(splPoint(d2['lon'], d2['lat']),['residential','service','living_street','unclassified'])
 
                     if n1closest and n2closest:
                         eval, path = nx.bidirectional_dijkstra(self.G, n1closest, n2closest, 'evaluation')
@@ -183,7 +183,7 @@ class Network:
         edge_labels = nx.get_edge_attributes(self.cityGraph,'length')
         nx.draw_networkx_edge_labels(self.cityGraph, pos=pos,edge_labels=edge_labels)
 
-        plt.savefig(join(local_config.folder_export_root, '%s.svg' % self.graphID), format="svg")
+        plt.savefig(join(local_config.folder_export_root, '%s.eps' % self.graphID), format="eps", dpi=1200)
         plt.show() # display
       
 
@@ -491,7 +491,7 @@ class Network:
             db_session.commit()
         return result
 
-    def _searchNearby(self, point):
+    def _searchNearby(self, point, ignoreHighway=None):
         from graph.bounding_box import get_bounding_box
         from shapely.geometry import Point as splPoint
         bbox = get_bounding_box(point.y,  point.x, 0.5)
@@ -500,6 +500,8 @@ class Network:
                                                               d['lat'] < bbox.max_latitude and \
                                                               d['lon'] > bbox.min_longitude  and \
                                                               d['lon'] < bbox.max_longitude)
+        if ignoreHighway:
+            nodes = (u for u,v,d in self.G.out_edges(nodes,data=True) if not d['highway'] in ignoreHighway)
         nodes = list(nodes)
         if len(nodes) == 0:
             return None
