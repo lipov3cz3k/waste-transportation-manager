@@ -152,9 +152,9 @@ class Network:
         self.cityGraph = self.supergraph(cityShapes, self.G, self._inCity)
         
 
-        for n1, d1 in self.cityGraph.nodes_iter(data=True):
+        for n1, d1 in get_tqdm(self.cityGraph.nodes_iter(data=True), self.SetState, desc="Computing distance between cities", total=self.cityGraph.number_of_nodes()):
             n1closest = self._searchNearby(splPoint(d1['lon'], d1['lat']))
-            for n2 in nx.all_neighbors(self.cityGraph, n1):
+            for n2 in self.cityGraph.neighbors_iter(n1):
                 d2 = self.cityGraph.node[n2]
                 try:
                     n2closest = self._searchNearby(splPoint(d2['lon'], d2['lat']))
@@ -188,8 +188,6 @@ class Network:
       
 
     def _inCity(self,cityShapes,g,a,b,d):
-
-
         a_data = {}
         b_data = {}
 
@@ -237,26 +235,26 @@ class Network:
     def supergraph(self, cityShapes, g1, keyfunc, allow_selfloops=True):
         g2 = nx.DiGraph()
         
-        for (a,b,d) in g1.edges_iter(data=True):
+        for (a,b,d) in get_tqdm(g1.edges_iter(data=True), self.SetState, desc="Creating city graph:", total=g1.number_of_edges()):
             result = keyfunc(cityShapes,g1,a,b,d)
             if result is not None:
                 a2,b2,w,a2_data,b2_data = result
                 if a2 != b2 or allow_selfloops:
                     g2.add_edge(a2,b2)
-                    try:
-                        g2[a2][b2]['weight'] += w
-                    except:
-                        g2[a2][b2]['weight'] = w
+                    #try:
+                    #    g2[a2][b2]['weight'] += w
+                    #except:
+                    #    g2[a2][b2]['weight'] = w
                     g2.node[a2] = a2_data
                     g2.node[b2] = b2_data
-                for u2,u in [(a2,a),(b2,b)]:
-                    if not u2 in g2:
-                        g2.add_node(u2, original_nodes=set([u]))
-                    else:
-                        try:
-                            g2.node[u2]['original_nodes'].add(u)
-                        except:
-                            g2.node[u2]['original_nodes'] = set([u])
+                #for u2,u in [(a2,a),(b2,b)]:
+                #    if not u2 in g2:
+                #        g2.add_node(u2, original_nodes=set([u]))
+                #    else:
+                #        try:
+                #            g2.node[u2]['original_nodes'].add(u)
+                #        except:
+                #            g2.node[u2]['original_nodes'] = set([u])
         return g2
 
 
