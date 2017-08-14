@@ -2,6 +2,7 @@ from os.path import normpath, join, exists, isfile
 from os import unlink
 from time import gmtime, strftime
 from urllib.request import urlretrieve
+from urllib.parse import urlencode
 from common.config import local_config
 from common.utils import LogType, _print, print, TRACE_FN_CALL, DECORATE_ALL, CheckFolders, progress_hook, removeFile
 from .graph_network import Network
@@ -119,8 +120,13 @@ class GraphManager:
         print("Downloading OSM data", LogType.info)
 
         try:
+            #url = "http://overpass-api.de/api/interpreter"
+            #data = {"data" : "area['name'='Jihomoravský kraj']->.boundaryarea;(way['highway'~'%s'](area.boundaryarea););(._;>;);out;" % (self.highway_cat)}
+            #url = url+"?"+urlencode(data)
+            #print(url)
+            #urlretrieve(url, filename=data_path, reporthook=progress_hook(self.state), data=None)
             url = "http://www.overpass-api.de/api/xapi_meta?way[highway=%s][%s]" % (self.highway_cat, self.BBox.ToURL()) # get only ways
-            urlretrieve(url, filename=data_path, reporthook=progress_hook(self.state), data=None)
+            urlretrieve(urlencode(url), filename=data_path, reporthook=progress_hook(self.state), data=None)
         except Exception as e:
             print("Cannot save osm data to file: %s" % str(e), LogType.error)
             removeFile(data_path)
@@ -129,10 +135,13 @@ class GraphManager:
     def DownloadOSMCities(self, data_path):
         print("Downloading OSM data", LogType.info)
         try:
+            #url = "http://overpass-api.de/api/interpreter"
+            #data = {"data" : "area['name'='Jihomoravský kraj']->.boundaryarea;(relation['boundary'='administrative']['admin_level'='8'](area.boundaryarea););(._;>;);out;"}
+            #url = url+"?"+urlencode(data)
+            #print(url)
+            #urlretrieve(url, filename=data_path, reporthook=progress_hook(self.state), data=None)
             url = "http://overpass-api.de/api/interpreter?data=(relation['boundary'='administrative']['admin_level'='8'](%s););(._;>;);out;"  % (self.BBox.ToXAPIBBox())
-            #url = "http://www.overpass-api.de/api/xapi?relation[place=%s][%s]" % (place_cat, self.BBox.ToURL())
-            print("City shape url: %s" % str(url), LogType.error)
-            urlretrieve(url, filename=data_path, reporthook=progress_hook(self.state), data=None)
+            urlretrieve(urlencode(url), filename=data_path, reporthook=progress_hook(self.state), data=None)
         except Exception as e:
             print("Cannot save osm data to file: %s" % str(e), LogType.error)
             removeFile(data_path)
