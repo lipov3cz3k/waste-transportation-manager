@@ -11,12 +11,13 @@ from .path_finder import PathFinder
 
 @DECORATE_ALL(TRACE_FN_CALL)
 class GraphManager:
-    def __init__(self, BBox):
+    def __init__(self, BBox, processCitiesMap=False):
         print("Initialize GraphManager", LogType.trace)
         self.BBox = BBox
         self.state = {}
         self.SetState(action="init", percentage=0)
         self.graph = None
+        self.processCitiesMap=processCitiesMap
 
         # highway tag values to use, separated by pipes (|), for instance 'motorway|trunk|primary'
         self.highway_cat = '|'.join(local_config.allowed_highway_cat)
@@ -76,7 +77,7 @@ class GraphManager:
 
         graphID = "%s_%s" % (self.BBox.ToName(), strftime("%Y-%m-%d-%H-%M-%S", gmtime()))
         print("New graph id: %s" % (graphID), LogType.trace)
-        self.graph = Network(bbox = self.BBox, state=self.state, run=self.run)
+        self.graph = Network(bbox = self.BBox, state=self.state, run=self.run, processCitiesMap=self.processCitiesMap)
         try:
             self.graph.ConstructGraph(graphID, osm_data_path)
         except Exception as e:
@@ -121,12 +122,13 @@ class GraphManager:
 
         try:
             #url = "http://overpass-api.de/api/interpreter"
-            #data = {"data" : "area['name'='Jihomoravský kraj']->.boundaryarea;(way['highway'~'%s'](area.boundaryarea););(._;>;);out;" % (self.highway_cat)}
+            #data = {"data" : "area['name'='Česko']->.boundaryarea;(way['highway'~'%s'](area.boundaryarea););(._;>;);out;" % (self.highway_cat)}
             #url = url+"?"+urlencode(data)
             #print(url)
             #urlretrieve(url, filename=data_path, reporthook=progress_hook(self.state), data=None)
             url = "http://www.overpass-api.de/api/xapi_meta?way[highway=%s][%s]" % (self.highway_cat, self.BBox.ToURL()) # get only ways
-            urlretrieve(urlencode(url), filename=data_path, reporthook=progress_hook(self.state), data=None)
+            print(url)
+            urlretrieve(url, filename=data_path, reporthook=progress_hook(self.state), data=None)
         except Exception as e:
             print("Cannot save osm data to file: %s" % str(e), LogType.error)
             removeFile(data_path)
@@ -136,12 +138,12 @@ class GraphManager:
         print("Downloading OSM data", LogType.info)
         try:
             #url = "http://overpass-api.de/api/interpreter"
-            #data = {"data" : "area['name'='Jihomoravský kraj']->.boundaryarea;(relation['boundary'='administrative']['admin_level'='8'](area.boundaryarea););(._;>;);out;"}
+            #data = {"data" : "area['name'='Česko']->.boundaryarea;(relation['boundary'='administrative']['admin_level'='8'](area.boundaryarea););(._;>;);out;"}
             #url = url+"?"+urlencode(data)
             #print(url)
             #urlretrieve(url, filename=data_path, reporthook=progress_hook(self.state), data=None)
             url = "http://overpass-api.de/api/interpreter?data=(relation['boundary'='administrative']['admin_level'='8'](%s););(._;>;);out;"  % (self.BBox.ToXAPIBBox())
-            urlretrieve(urlencode(url), filename=data_path, reporthook=progress_hook(self.state), data=None)
+            urlretrieve(url, filename=data_path, reporthook=progress_hook(self.state), data=None)
         except Exception as e:
             print("Cannot save osm data to file: %s" % str(e), LogType.error)
             removeFile(data_path)
@@ -151,7 +153,7 @@ class GraphManager:
         print("Download OSM data if not exists", LogType.trace)
         if not exists(data_path):
             self.DownloadOSMData(data_path)
-        if not exists(data_path+'.city'):
+        if self.processCitiesMap and not exists(data_path+'.city'):
             self.DownloadOSMCities(data_path+'.city')
 
 
@@ -166,7 +168,7 @@ def Run(bbox=None, exportFile=None, processTracks=None):
     if not bbox:
         bbox = BoundingBox(16.606296, 49.203635, 16.618806, 49.210056)
 
-    graph_manager = GraphManager(bbox)
+    graph_manager = GraphManager(bbox, True)
     graph_manager.run[0] = True
     graph = graph_manager.Create()
     if graph:

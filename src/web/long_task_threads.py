@@ -47,11 +47,11 @@ class DDR_thread(Thread):
             return {'action':"none", 'percentage':0}
 
 class GRAPH_thread(Thread):
-    def __init__(self, bbox=None, graph_pool=[]):
+    def __init__(self, bbox=None, graph_pool=[], processCitiesMap=False):
         self.is_running = False
         if not bbox:
             bbox = BoundingBox(16.606296, 49.203635, 16.618806, 49.210056)
-        self.graph_manager = GraphManager(bbox)
+        self.graph_manager = GraphManager(bbox, processCitiesMap)
         self.graph_pool = graph_pool
 
         CheckFolders()

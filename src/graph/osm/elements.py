@@ -133,7 +133,7 @@ class Relation:
 
 class SimpleHandler(ContentHandler):
 
-    def __init__(self, node_histogram, ways, relations, city_nodes, total_size, SetStateFc, run):
+    def __init__(self, node_histogram, ways, relations, total_size, SetStateFc, run):
         ContentHandler.__init__(self)
         self.id = None
         self.lon = None
@@ -150,7 +150,6 @@ class SimpleHandler(ContentHandler):
         self.node_histogram = node_histogram
         self.ways_global = ways
         self.relation_global = relations
-        self.city_nodes = city_nodes
 
         self.total_size = total_size
         self.SetStateFc = SetStateFc
@@ -200,14 +199,11 @@ class SimpleHandler(ContentHandler):
                 if (attrs['type'] == "way"):
                     self.ways.append(self.ways_global[attrs['ref']])
                 if (attrs['type'] == "node" and attrs['role'] == "admin_centre"):
-                    self.admin_centre = self.city_nodes[attrs['ref']]
+                    self.admin_centre = self.nodes_global[attrs['ref']]
 
 
     def endElement(self, name):
         if name == 'node':
-            if 'place' in self.tags:
-                self.city_nodes[self.id] = Node(self.id, self.lon, self.lat, self.tags)
-
             self.nodes_global[self.id] = Node(self.id, self.lon, self.lat, self.tags)
             self.node_histogram[self.id] = 0
             self.reset()

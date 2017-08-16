@@ -21,7 +21,6 @@ class OSMParser:
         self.node_histogram = {}
         self.bbox = bbox
         self.state = state
-        self.city_nodes = {}
         self.relations = {}
         self.run = run
 
@@ -59,28 +58,29 @@ class OSMParser:
 
         self.graphID = tmp_graphID
 
-    def ParseFromXMLFile(self, osm_path_xml_data):
+    def ParseFromXMLFile(self, osm_path_xml_data, processCitiesMap):
         print("Parse OSM data.")
-        self.ParseOSMData(osm_path_xml_data)
+        self.ParseOSMData(osm_path_xml_data, processCitiesMap)
 
         print("Split ways by intersections and remove unused nodes")
 
         self.ways = self.SplitWaysByIntersectionsRemoveUnusedNodes()
         self.node_histogram = None
 
-    def ParseOSMData(self, osm_path_xml_data):
+    def ParseOSMData(self, osm_path_xml_data, processCitiesMap):
         self.SetState(action="Parse OSM Data", percentage=0)
         try:
             total_size = getsize(osm_path_xml_data)
             parser = make_parser()
-            parser.setContentHandler(SimpleHandler(self.node_histogram, self.ways, self.relations, self.city_nodes, total_size, self.SetState, self.run))
-            city_xml_data = osm_path_xml_data+'.city'
+            parser.setContentHandler(SimpleHandler(self.node_histogram, self.ways, self.relations, total_size, self.SetState, self.run))
             print("parsing path xml")
             with open(osm_path_xml_data, 'rb') as osm_data:
                 parser.parse(osm_data)
-            print("parsing city xml")
-            with open(city_xml_data, 'rb') as osm_data:
-                parser.parse(osm_data)
+            if processCitiesMap:
+                print("parsing city xml")
+                city_xml_data = osm_path_xml_data+'.city'
+                with open(city_xml_data, 'rb') as osm_data:
+                    parser.parse(osm_data)
         except Exception as e:
             print("Cannot read or parse stored OSM data file: %s" % str(e), LogType.error)
             raise Exception("")

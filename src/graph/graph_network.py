@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 
 @DECORATE_ALL(TRACE_FN_CALL)
 class Network:
-    def __init__(self, bbox = None, state = None, run = {0: False}):
+    def __init__(self, bbox = None, state = None, run = {0: False}, processCitiesMap=False):
         self.state = state
         self.graphID = None
         self.bbox = bbox
@@ -30,6 +30,7 @@ class Network:
         self.daytime_correlation = None
         self.total_incidents = 0
         self.run = run
+        self.processCitiesMap = processCitiesMap
 
     def TestIsRun(self):
         if not self.run[0]:
@@ -42,7 +43,7 @@ class Network:
 
         try:
             osm = OSMParser(self.graphID, bbox=self.bbox, state=self.state, run=self.run)
-            osm.ParseFromXMLFile(osm_path_xml_data)
+            osm.ParseFromXMLFile(osm_path_xml_data, self.processCitiesMap)
 #            osm.ConnectDDRDataWithWays(db_session)
 #            osm.ConnectContainersWithWays(db_session)
             self.SetState(action="Saving parsed osm to file", percentage=0)
@@ -58,7 +59,8 @@ class Network:
             self.SetState(action="Add edges to graph, compute evaluation", percentage=0)
             cityShapes = osm.GetLAU2Shapes()
             self.fillGraphWithData(osm, db_session, cityShapes)
-            self.createCityDistanceMatrix(cityShapes)
+            if self.processCitiesMap:
+                self.createCityDistanceMatrix(cityShapes)
 
 
 
@@ -146,6 +148,8 @@ class Network:
             osm.ways[id] = None
           
 
+    ################### City distance matrix ###################
+
     def createCityDistanceMatrix(self, cityShapes):
         from functools import partial
         from shapely.geometry import Point as splPoint
@@ -168,24 +172,8 @@ class Network:
                 except Exception as e:
                     print("Exception cannot compute distance between cities %s (%s) and %s (%s): %s" % (d1['name'],n1,d2['name'],n2,str(e)), log_type=LogType.error)
                     self.cityGraph.edge[n1][n2]['length'] = -1
+        self.ExportCityDistanceMatrix()     
 
-
-        # Save as image
-
-        pos = nx.get_node_attributes(self.cityGraph,'lon')
-        pos_lat = nx.get_node_attributes(self.cityGraph,'lat')
-        for k, v in pos.items():
-            pos[k] = (v, pos_lat[k])
-
-        nx.draw(self.cityGraph, pos=pos)
-        node_labels = nx.get_node_attributes(self.cityGraph,'name')
-        nx.draw_networkx_labels(self.cityGraph,pos=pos, labels = node_labels)
-        edge_labels = nx.get_edge_attributes(self.cityGraph,'length')
-        nx.draw_networkx_edge_labels(self.cityGraph, pos=pos,edge_labels=edge_labels)
-
-        plt.savefig(join(local_config.folder_export_root, '%s.eps' % self.graphID), format="eps", dpi=1200)
-        plt.show() # display
-      
 
     def _inCity(self,cityShapes,g,a,b,d):
         a_data = {}
@@ -257,15 +245,44 @@ class Network:
                 #            g2.node[u2]['original_nodes'] = set([u])
         return g2
 
+    def SaveAndShowCitiesMap(self):
+        if not self.cityGraph:
+            print("City graph does not exist.", log_type=LogType.error)
+            return None
+
+        pos = nx.get_node_attributes(self.cityGraph,'lon')
+        pos_lat = nx.get_node_attributes(self.cityGraph,'lat')
+        for k, v in pos.items():
+            pos[k] = (v, pos_lat[k])
+
+        nx.draw(self.cityGraph, pos=pos)
+        node_labels = nx.get_node_attributes(self.cityGraph,'name')
+        nx.draw_networkx_labels(self.cityGraph,pos=pos, labels = node_labels)
+        edge_labels = nx.get_edge_attributes(self.cityGraph,'length')
+        nx.draw_networkx_edge_labels(self.cityGraph, pos=pos,edge_labels=edge_labels)
+
+        plt.savefig(join(local_config.folder_export_root, '%s.eps' % self.graphID), format="eps", dpi=1200)
+        plt.show() # display
+
+    def ExportCityDistanceMatrix(self):
+        if not self.cityGraph:
+            print("City graph does not exist.", log_type=LogType.error)
+            return None
+        file_path = join(local_config.folder_export_root, '%s' % self.graphID)
+        matrix = nx.to_dict_of_dicts(self.cityGraph)
+        numpy = nx.to_numpy_matrix(self.cityGraph, weight='length')
+        np.savetxt(file_path+"_city_d.csv", numpy, fmt="%i", delimiter=",")
+
+        with open(file_path+"_city_n.csv", 'w',newline="\n", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(['node','lat', 'lon','name'])
+            for n, d in self.cityGraph.nodes_iter(data=True):
+                writer.writerow([n, d.get('lat'), d.get('lon'), d.get('name')])
+
+        return matrix
 
 
-    def createCityGraph(self, osm):
-        for id, uniq_city in get_tqdm(osm.city_nodes.items(), self.SetState, desc="Add cities to graph, compute evaluation", total=None):
-            self.TestIsRun()
-            params = {'lon':float(uniq_city.lon), 'lat':float(uniq_city.lat), 'name' : uniq_city.tags['name']}
-            self.Cities.add_node(id, **params)
-        return False
-
+###################  ###################
 
     def SaveToFile(self, file_path = None):
         if not file_path:
@@ -282,6 +299,8 @@ class Network:
             tmp_dict = pickle_load(input)
             self.__dict__.update(tmp_dict)
 
+
+################### Getters / Setters ###################
 
     def GetGraphID(self):
         return self.graphID
@@ -384,6 +403,9 @@ class Network:
 
         details = {'id' : edge['id'], 'length': edge['length'], 'multiplicator' : edge['penalty_multiplicator'], 'msgs' : msgs}
         return details
+
+    def HasCitiesGraph(self):
+        return self.processCitiesMap
 
 ############# Export functions ################
     def ExportSimple(self):

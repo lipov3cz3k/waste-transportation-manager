@@ -71,7 +71,7 @@ def run_graph():
 
             bbox = BoundingBox(longitude[0], latitude[0], longitude[1], latitude[1])
 
-            app.thread = GRAPH_thread(bbox, app.graph_pool)
+            app.thread = GRAPH_thread(bbox, app.graph_pool, True)
             app.thread_name = "GRAPH"
             app.thread.start()
 
@@ -134,6 +134,10 @@ def status():
 @app.route('/graph/list')
 def graphGetList():
     return jsonify(graphs=getGraphList())
+
+def _graphGetAttributes(graphID):
+    graph = loadGraph(app.graph_pool, graphID)
+    return {"hasCitiesMap":graph.HasCitiesGraph()}
 
 @app.route('/graph/<graphID>/nodes')
 def graphGetNodes(graphID):
@@ -215,6 +219,17 @@ def graphExportTracks(graphID):
     graph = loadGraph(app.graph_pool, graphID)
     return str(graph.ExportTracksWithPaths())
 
+@app.route('/graph/<graphID>/export/showCitiesMap', methods=['POST', 'GET'])
+def graphSaveAndShowCitiesMap(graphID):
+    graph = loadGraph(app.graph_pool, graphID)
+    return str(graph.SaveAndShowCitiesMap())
+
+@app.route('/graph/<graphID>/export/cityDistanceMatrix', methods=['POST', 'GET'])
+def graphExportCityDistanceMatrix(graphID):
+    graph = loadGraph(app.graph_pool, graphID)
+    return str(graph.ExportCityDistanceMatrix())
+
+
 ############################
 @app.route('/graph/<graphID>/affected')
 def graphGetAffectedEdges(graphID):
@@ -261,7 +276,7 @@ def graphList():
 @app.route('/graph/<graphID>')
 def graphDetail(graphID):
     coords = graphID.split("_")[1:-1]
-    return render_template('pages/graphWTM.html', graphID=graphID, bbox=coords, paths=getImportList(graphID, 'path'), frequencies=getImportList(graphID, 'freq'))
+    return render_template('pages/graphWTM.html', graphID=graphID, bbox=coords, paths=getImportList(graphID, 'path'), frequencies=getImportList(graphID, 'freq'), attributes=_graphGetAttributes(graphID))
 
 @app.route('/contact', methods=['POST', 'GET'])
 def contact():

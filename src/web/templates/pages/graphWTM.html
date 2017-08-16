@@ -44,6 +44,13 @@
         <input type="button" name="export" class="btn btn-default" value="Export to CSV (simple graph)" onclick="exportGraph('{{ url_for('graphExportSimple', graphID=graphID) }}');">
         <input type="button" name="export" class="btn btn-default" value="Export to CSV (containers)" onclick="exportGraph('{{ url_for('graphExportContainers', graphID=graphID) }}');">
         <input type="button" name="export" class="btn btn-default" value="Export tracks (to DB)" onclick="exportGraph('{{ url_for('graphExportTracks', graphID=graphID) }}');">
+        
+        <label for="citiesMap" class="control-label input-group {{'label-success' if attributes.hasCitiesMap else 'label-danger' }}">Cities map:</label>
+        {% if attributes.hasCitiesMap %}
+        <input type="button" name="export" class="btn btn-default" value="Save and show cities map)" onclick="exportGraph('{{ url_for('graphSaveAndShowCitiesMap', graphID=graphID) }}');">
+        <input type="button" name="export" class="btn btn-default" value="Export distance matrix (CSV))" onclick="exportGraph('{{ url_for('graphExportCityDistanceMatrix', graphID=graphID) }}');">
+        {% endif %}
+
     </div>
     <div class="col-md-5">
         <div class="form-group">
