@@ -72,7 +72,7 @@ class Way:
             first, last = self.GetFirstLastNodeId()
             if opposite:
                 first, last = last, first
-            if first.id != direction[0] or last.id != direction[1]:
+            if direction and (first.id != direction[0] or last.id != direction[1]):
                 continue
 
             containers.append({'id' : container.id, 
