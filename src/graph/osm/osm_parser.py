@@ -300,12 +300,14 @@ class OSMParser:
         dist = lambda way: point.distance(self._Geometry(way))
         all_ways = [item for sublist in self.ways.values() for item in sublist]
         containers_obj = local_db_session.query(Container).join(Address) \
-                                                          .join(Address.location) \
+                                                          .join(Address.location, isouter=True) \
                                                           .filter((Address.latitude > self.bbox.min_latitude) | (OSMLocation.latitude > self.bbox.min_latitude)) \
                                                           .filter((Address.latitude < self.bbox.max_latitude) | (OSMLocation.latitude < self.bbox.max_latitude)) \
                                                           .filter((Address.longitude > self.bbox.min_longitude) | (OSMLocation.longitude > self.bbox.min_longitude)) \
                                                           .filter((Address.longitude < self.bbox.max_longitude) | (OSMLocation.longitude < self.bbox.max_longitude)) \
                                                           .all()
+
+        xx = len(containers_obj)
         if len(containers_obj) == 0:
             return
 
