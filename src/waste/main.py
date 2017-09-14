@@ -1,8 +1,8 @@
-from waste.importer import Cheb, Jihlava
+from waste.importer import Cheb, Jihlava, Stavanger
 from common.utils import LogType, print
 
 def GuessCity(importFile):
-    supported_cities = ['cheb', 'jihlava']
+    supported_cities = ['cheb', 'jihlava','stavanger']
     indices = [s for i, s in enumerate(supported_cities) if s in importFile.name.lower()]
     if indices:
         return indices[0]
@@ -18,6 +18,8 @@ def Run(importFile=None, sourceCity=None):
         importer = Cheb()
     elif sourceCity.lower() == 'jihlava':
         importer = Jihlava()
+    elif sourceCity.lower() == 'stavanger':
+        importer = Stavanger()
     else:
         pass
     try:

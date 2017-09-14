@@ -46,8 +46,8 @@ class Container(Base) :
                                          house_number=str(data['house_number']),
                                          postal=int(data.get('postal')) if data.get('postal') else None, 
                                          country=str(data.get('country')) if data.get('country') else None, 
-                                         longitude=float(data.get('latitude')) if data.get('latitude') else None, 
-                                         latitude=float(data.get('longitude')) if data.get('longitude') else None
+                                         latitude=float(data.get('latitude')) if data.get('latitude') else None, 
+                                         longitude=float(data.get('longitude')) if data.get('longitude') else None
                                          )
         self.population = int(data.get('population')) if data.get('population') else None
         self.name = data['name']
@@ -169,3 +169,32 @@ class Jihlava(UniqueMixin, Container) :
         return query.filter(Jihlava.object_id == kwargs['data']['object_id'])
 
 jihlava_object_id_index = Index('Jihlava_object_id_index', Jihlava.object_id)
+
+class Stavanger(UniqueMixin, Container) :
+    __tablename__ = 'Stavanger'
+    id = Column(Integer, ForeignKey('Container.id'), primary_key=True)
+    object_id = Column(Integer, unique=True)
+    counter = Column(Integer)
+    fillheight = Column(Integer)
+    date = Column(Text)
+    __mapper_args__ = {'polymorphic_identity':'Stavanger'}
+
+    def __init__(self, **kwargs):
+        data = kwargs['data']
+        if data == None :
+            return
+        super().__init__(**kwargs)
+        self.object_id = data.get('object_id')
+        self.counter = data.get('counter')
+        self.fillheight = data.get('fillheight')
+        self.date = data.get('date')
+
+    @classmethod
+    def unique_hash(cls, **kwargs):
+        return kwargs['data']['object_id']
+
+    @classmethod
+    def unique_filter(cls, query, **kwargs):
+        return query.filter(Stavanger.object_id == kwargs['data']['object_id'])
+stavanger_object_id_index = Index('Stavanger_object_id_index', Stavanger.object_id)
+    

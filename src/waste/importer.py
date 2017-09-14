@@ -1,4 +1,5 @@
 from openpyxl import load_workbook
+import csv
 from common.utils import LogType, print, get_tqdm
 
 interval_types = {'unknown' : -10, 
@@ -71,7 +72,9 @@ class Importer:
     def _GetAddressesWithoutLocation(self):
         from models.location import Address
 
-        addresses_obj = self.db_session.query(Address).filter(Address.location == None, Address.country == 'CZ').all()
+        addresses_obj = self.db_session.query(Address).filter(Address.location == None) \
+                                                      .filter((Address.country == 'CZ_XXX') | (Address.country == 'Norway')) \
+                                                       .all()
         return addresses_obj
 
     def _GetLocationsForAddresses(self, addresses_array):
@@ -278,7 +281,7 @@ class Jihlava(Importer):
                 record['house_number'] = ''
             record['city'] = 'Jihlava'
             record['country'] = 'Czech republic'
-            record['latitude'], record['longitude'] = transform(sjtsk, wgs84, row.get('X'), row.get('Y'))
+            record['longitude'], record['latitude'] = transform(sjtsk, wgs84, row.get('X'), row.get('Y'))
             record['population'] = row.get('OBYVATEL')
             record['name'] = row.get('NAZEV')
             record['waste_type'] = 'TKO'
@@ -320,3 +323,82 @@ class Jihlava(Importer):
         for row in get_tqdm(table, self.SetState, desc="loading separ_hnizda", total=None):
             record = {}
             data.append(record)
+
+class Stavanger(Importer):
+    def __init__(self):
+        super().__init__()
+        self.source = "Stavanger"
+
+    def Import(self, file):
+        super().Import()
+
+        data = None
+        try:
+            data = self._ParseCSV(file)
+        except KeyboardInterrupt:
+            self.RemoveDBSession()
+            print("KeyboardInterrupt", LogType.error)
+            raise KeyboardInterrupt
+        except Exception as e:
+            self.RemoveDBSession()
+            print("Exception reading source data: %s" % str(e), LogType.error)
+            return
+        self.SaveAllRecordsToDatabase(data)
+        self.LoadOSMLocation()
+
+    def _ParseCSV(self, file):
+        from models.waste import Stavanger
+        data = []
+
+        waste_codes = {'Bio' : 200201,
+                        'Bio-næring' : 200201,
+                        'Glass/metall' : 200102,
+                        'Hytter Papir' : 200101,
+                        'Hytter Rest' : 200301,
+                        'Papir' : 200101,
+                        'Papir-næring' : 200101,
+                        'Plast' : 200139,
+                        'Plast-næring' : 200139,
+                        'Restavfall' : 200301,
+                        'Rest-næring' : 200301,
+                        'Rest-vask' : 200301,
+                        'Tekstil' : 200111}
+
+        with open(file, encoding='utf-8') as csvfile:
+            numline = len(csvfile.readlines())
+            csvfile.seek(0)
+            reader = csv.DictReader(csvfile, delimiter=',', quotechar='\'', quoting=csv.QUOTE_ALL)
+            for row in get_tqdm(reader, self.SetState, desc="loading Stavanger csv", total=numline):
+                if not row['LATITUDE'] or not row['LONGITUDE']:
+                    continue
+                record = {}
+                
+                record['object_id'] = int(row['CONTAINERNUMBER'])
+
+                record['street'] = row['ADDRESS']
+                record['house_number'] = ''
+
+                record['city'] = 'Stavanger'
+                record['country'] = 'Norway'
+                record['latitude'] = float(row['LATITUDE'])
+                record['longitude'] = float(row['LONGITUDE'])
+                record['waste_name'] = row['FRACTION']
+
+                record['name'] = None
+                record['waste_type'] = None
+                record['waste_code'] = waste_codes.get(row['FRACTION'], 0)
+                record['quantity'] = None
+                record['quantity_unit'] = None
+                record['capacity'] = None
+                record['days_orig'] = record['days_even'] = record['days_odd'] = None
+                record['start'] = None
+                record['end'] = None
+                record['interval'] = None
+                record['note'] = None
+
+                record['counter'] = int(row['COUNTER'])
+                record['fillheight'] = int(row['FILLHEIGHT'])
+                record['date'] = row['DATE']
+
+                data.append(Stavanger.as_unique(self.db_session, db_session=self.db_session, data=record))
+        return data
