@@ -307,7 +307,6 @@ class OSMParser:
                                                           .filter((Address.longitude < self.bbox.max_longitude) | (OSMLocation.longitude < self.bbox.max_longitude)) \
                                                           .all()
 
-        xx = len(containers_obj)
         if len(containers_obj) == 0:
             return
 
@@ -317,6 +316,7 @@ class OSMParser:
             for container in get_tqdm(containers_obj, self.SetState, desc="Connecting containers to streets", total=None):
             #for container in containers_obj:
                 self.TestIsRun()
+
                 location = container.address.location
                 if container.address.latitude:
                     if location:

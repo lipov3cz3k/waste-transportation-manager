@@ -78,7 +78,7 @@ def print(what, log_type=LogType.info, has_EOL=True, only_Message=False) :
     if not has_EOL:
         end = ""
 
-    with open(file_path, "a") as myfile:
+    with open(file_path, "a", encoding="utf-8") as myfile:
         time_stamp = strftime("%Y-%m-%d %H:%M:%S", gmtime())
         message = "%s" % what
         if not only_Message:
