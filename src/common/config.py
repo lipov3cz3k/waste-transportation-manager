@@ -39,7 +39,8 @@ class local_config:
     allowed_place_tags = ['city','town','village']
     allowed_relation_tags = ['name', 'admin_level']
     allowed_members = ['way', 'node']
-    allowed_highway_cat = ['motorway','trunk','primary','secondary','tertiary','road','residential','service','motorway_link','trunk_link','primary_link','secondary_link','teriary_link','living_street','unclassified']
+    allowed_highway_cat = ['motorway','trunk','primary','secondary','tertiary','road','residential','service','motorway_link','trunk_link','primary_link','secondary_link','teriary_link','living_street','unclassified','track']
+    excluded_highway_cat = ['track']
     not_allowed_evi = [TMCUpdateClass.parking]
     thread_pool_size_for_mapping = 10
     number_of_stochastic_experiments = 100

@@ -11,7 +11,7 @@ from common.config import local_config
 from common.alertc import TMCUpdateClass
 from common.utils import LogType, _print, print, TRACE_FN_CALL, DECORATE_ALL, get_tqdm, Season, SeasonCoefficient, DayTime, DayTimeCoefficient, removeFile
 from .osm.osm_parser import OSMParser
-from .routing import RoutingType, GetPenaltyMul
+from .routing import RoutingType, GetPenaltyMul, GetHighwayPenalty
 from .statistics import createCorrelation, correlationVisualize
 
 import matplotlib.pyplot as plt
@@ -31,6 +31,7 @@ class Network:
         self.total_incidents = 0
         self.run = run
         self.processCitiesMap = processCitiesMap
+        self.last_routing_type = None
 
     def TestIsRun(self):
         if not self.run[0]:
@@ -123,7 +124,7 @@ class Network:
                 if penalty_multiplicator > self.max_penalty:
                     self.max_penalty = penalty_multiplicator
                 containers = w.GetContainers(db_session, False)
-                params = {'id':w.id, 'length':w.length, 'evaluation':w.length, 'highway':w.tags['highway'], 'msgs':w.msgs, 'incidents':incidents, 'ref':w.tags.get('ref'), 'penalty_multiplicator':penalty_multiplicator, 'containers' : containers}
+                params = {'id':w.id, 'length':w.length, 'evaluation':w.length * GetHighwayPenalty(w.tags['highway']), 'highway':w.tags['highway'], 'msgs':w.msgs, 'incidents':incidents, 'ref':w.tags.get('ref'), 'penalty_multiplicator':penalty_multiplicator, 'containers' : containers}
                 node_first, node_last = w.GetFirstLastNodeId()
                 self.G.add_path((node_first.id, node_last.id), **params)
 
@@ -154,7 +155,6 @@ class Network:
         from functools import partial
         from shapely.geometry import Point as splPoint
         self.cityGraph = self.supergraph(cityShapes, self.G, self._inCity)
-        
 
         for n1, d1 in get_tqdm(self.cityGraph.nodes_iter(data=True), self.SetState, desc="Computing distance between cities", total=self.cityGraph.number_of_nodes()):
             n1closest = self._searchNearby(splPoint(d1['lon'], d1['lat']),['residential','service','living_street','unclassified'])
@@ -163,12 +163,16 @@ class Network:
                 try:
                     n2closest = self._searchNearby(splPoint(d2['lon'], d2['lat']),['residential','service','living_street','unclassified'])
 
-                    if n1closest and n2closest:
-                        eval, path = nx.bidirectional_dijkstra(self.G, n1closest, n2closest, 'evaluation')
-                        self.cityGraph.edge[n1][n2]['length'] = eval
-                    else:
-                        print("Cannot find closest street to admin_centre %s (%s) or %s (%s)!!" % (d1['name'],n1,d2['name'],n2), log_type=LogType.error)
+                    if not n1closest:
+                        print("Cannot find closest street to admin_centre %s (%s)!!" % (d1['name'],n1), log_type=LogType.error)
                         self.cityGraph.edge[n1][n2]['length'] = -1
+                    elif not n2closest:
+                        print("Cannot find closest street to admin_centre %s (%s)!!" % (d2['name'],n2), log_type=LogType.error)
+                        self.cityGraph.edge[n1][n2]['length'] = -1
+                    else:
+                        route = self.Route(n1closest, n2closest)
+                        self.cityGraph.edge[n1][n2]['length'] = route['paths']['features'][0]['properties']['length']
+
                 except Exception as e:
                     print("Exception cannot compute distance between cities %s (%s) and %s (%s): %s" % (d1['name'],n1,d2['name'],n2,str(e)), log_type=LogType.error)
                     self.cityGraph.edge[n1][n2]['length'] = -1
@@ -222,8 +226,14 @@ class Network:
 
     def supergraph(self, cityShapes, g1, keyfunc, allow_selfloops=True):
         g2 = nx.DiGraph()
-        
+        #nodelist=list(set(sum([(u,v) for u,v,d in self.G.edges_iter(data=True) if d['highway']=='track'], ())))
+        #xx = len(nodelist)
+        #yy = self.G.nodes()
         for (a,b,d) in get_tqdm(g1.edges_iter(data=True), self.SetState, desc="Creating city graph:", total=g1.number_of_edges()):
+            # We don't want track category in our supergraph
+            if d['highway'] in local_config.excluded_highway_cat:
+                continue
+
             result = keyfunc(cityShapes,g1,a,b,d)
             if result is not None:
                 a2,b2,w,a2_data,b2_data = result
@@ -412,7 +422,9 @@ class Network:
         
         file_path = join(local_config.folder_export_root, '%s' % self.graphID)
 
+
         #return nx.adjacency_matrix(self.G, weight='length')
+        # nodelist=list(set(sum([(u,v) for u,v,d in self.G.edges_iter(data=True) if not d['highway'] in local_config.excluded_highway_cat], ())))
         matrix = nx.to_numpy_matrix(self.G, weight='length')
         np.savetxt(file_path+"_d.csv", matrix, fmt="%i", delimiter=",")
         
@@ -434,6 +446,9 @@ class Network:
                 writer = csv.writer(f)
                 writer.writerow(['edge','n1', 'n2','length','highway','contaniners'])
                 for n1, n2, e in self.G.edges(data=True):
+                    # We don't want track category in our supergraph
+                    if e['highway'] in local_config.excluded_highway_cat:
+                        continue
                     containers = [d for d in e['containers'] if d.get('waste_code') == waste_code[0]]
                     if not containers:
                         continue
@@ -548,7 +563,7 @@ class Network:
         number_of_experiments = 1
         paths_pool = {}
         for i in range(number_of_experiments):
-            print("DijkstraPath experiment: %d/%d" % (i+1, number_of_experiments))
+            #print("DijkstraPath experiment: %d/%d" % (i+1, number_of_experiments))
             # Set new evaluation based on probability, road type etc.
             self._ReloadGraphEvaluation(routingType, simulatedSeason, simulatedDayTime)
                 
@@ -585,13 +600,18 @@ class Network:
 
 
     def _ReloadGraphEvaluation(self, routingType, simulatedSeason = Season(datetime.now()), simulatedDayTime = DayTime(datetime.now())):
-        if routingType == RoutingType.basic:
+        if routingType == self.last_routing_type:
             return
+        print('Reload evaluation %s vs %s' % (routingType, self.last_routing_type), log_type=LogType.info)
         today_diff = (datetime.now() - datetime(2015, 11, 14)).days
         today_diff = max([today_diff, 1])
 
         for n1, n2, edge in self.G.edges(data=True):
-            if routingType == RoutingType.worstCase:
+            if routingType == RoutingType.lengthOnly:
+                edge['evaluation'] = edge['length']
+            elif routingType == RoutingType.basic:
+                edge['evaluation'] = edge['length'] * GetHighwayPenalty(edge['highway'])
+            elif routingType == RoutingType.worstCase:
                 edge['evaluation'] = edge['length'] * edge['penalty_multiplicator']
             elif routingType == RoutingType.stochasticWS or routingType == RoutingType.stochasticWad:
                 pen_mul = 1
@@ -614,6 +634,7 @@ class Network:
                 edge['evaluation'] = edge['length'] * pen_mul
             else:
                 print('Routing type is not supported', log_type=LogType.error)
+        self.last_routing_type = routingType
 
 
 
