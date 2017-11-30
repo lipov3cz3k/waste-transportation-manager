@@ -66,6 +66,7 @@ class OSMParser:
 
         self.ways = self.SplitWaysByIntersectionsRemoveUnusedNodes()
         self.node_histogram = None
+        print("Split ways by intersections DONE")
 
     def ParseOSMData(self, osm_path_xml_data, processCitiesMap):
         self.SetState(action="Parse OSM Data", percentage=0)
@@ -79,6 +80,7 @@ class OSMParser:
             if processCitiesMap:
                 print("parsing city xml")
                 city_xml_data = osm_path_xml_data+'.city'
+                city_xml_data = local_config.city_map_file
                 with open(city_xml_data, 'rb') as osm_data:
                     parser.parse(osm_data)
         except Exception as e:
@@ -381,6 +383,13 @@ class OSMParser:
             ml = MultiLineString(ls).convex_hull
             
             result[k] = {'id' : k, 'shape' : ml, 'tags' : rel.tags, 'admin_centre' : rel.admin_centre}
+        for k, rel in self.relations.items():
+            if not 'admin_level' in rel.tags:
+                continue
+            if rel.tags['admin_level'] != '7':
+                continue
+            for sub in rel.subareas:
+                sub.parent = rel
         return result
                     
                     

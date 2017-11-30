@@ -1,6 +1,6 @@
 geopy==1.11.0
 networkx==1.11
-nominatim==0.
+nominatim==0.1
 SQLAlchemy==1.1.9
 tqdm==3.7.1
 Flask==0.10.1
@@ -9,3 +9,4 @@ iso8601==0.1.11
 pandas==0.18.1
 shapely=1.5.17
 openpyxl=2.4.5
+matplotlib=2.1.0

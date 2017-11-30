@@ -6,17 +6,18 @@ from xml.sax.handler import ContentHandler
 from xml.sax import SAXException
 from sqlalchemy import inspect
 
+
 class Node:
-    def __init__(self, id, lon, lat, tags = {}):
+    def __init__(self, id, lon, lat, tags={}):
         self.id = id
         self.lon = lon
         self.lat = lat
         self.tags = tags
         self.city_relation = None
 
-class Way:
 
-    def __init__(self, id, nodes = [], tags = {}):
+class Way:
+    def __init__(self, id, nodes=[], tags={}):
         self.id = id
         self.nodes = nodes
         self.tags = tags
@@ -35,13 +36,13 @@ class Way:
             if inspect(msg).detached:
                 msg = db_session.merge(msg)
             if msg.type == 'TI':
-                #TSTA =  msg.MTIME.TSTA.value
+                # TSTA =  msg.MTIME.TSTA.value
                 tsta = db_session.query(TSTA.value).filter(msg.MTIME_id == MTIME.obj_id,
                                                            MTIME.TSTA_id == TSTA.obj_id).limit(1).one()
                 tsta = tsta.value
                 if not any(d.get('TSTA', None) == tsta for d in incidents):
                     daytime = parse_date(tsta)
-                    #evi = msg.MEVT.TMCE.EVI
+                    # evi = msg.MEVT.TMCE.EVI
                     evi = db_session.query(EVI).filter(msg.MEVT_id == MEVT.obj_id,
                                                        MEVT.TMCE_id == EVI.TMCE_id).limit(3).all()
 
@@ -49,12 +50,14 @@ class Way:
                     for e in evi:
                         for tmcClass, tmcPen in TMCUpdateClass.ClassToPenalization.items():
                             if int(e.updateclass) == tmcClass:
-                                worstTMCclass = tmcClass if TMCUpdateClass.ClassToPenalization[worstTMCclass] < tmcPen else worstTMCclass
+                                worstTMCclass = tmcClass if TMCUpdateClass.ClassToPenalization[
+                                                                worstTMCclass] < tmcPen else worstTMCclass
 
                     tsto = db_session.query(TSTO.value).filter(msg.MTIME_id == MTIME.obj_id,
                                                                MTIME.TSTO_id == TSTO.obj_id).limit(1).one()
                     tsto = tsto.value
-                    incidents.append({'class' : worstTMCclass, 'TSTA' : tsta, 'TSTO' : tsto, 'season' : Season(daytime), 'daytime' : DayTime(daytime)})
+                    incidents.append({'class': worstTMCclass, 'TSTA': tsta, 'TSTO': tsto, 'season': Season(daytime),
+                                      'daytime': DayTime(daytime)})
         return incidents
 
     def GetContainers(self, db_session, opposite):
@@ -75,14 +78,14 @@ class Way:
             if direction and (first.id != direction[0] or last.id != direction[1]):
                 continue
 
-            containers.append({'id' : container.id, 
-                               'container_type' : container.container_type, 
-                               'waste_code' : container.waste_code, 
-                               'lat' : coords[0], 
-                               'lon' : coords[1],
-                               'quantity' : container.quantity,
-                               'capacity' : container.capacity,
-                               'interval' : container.interval })
+            containers.append({'id': container.id,
+                               'container_type': container.container_type,
+                               'waste_code': container.waste_code,
+                               'lat': coords[0],
+                               'lon': coords[1],
+                               'quantity': container.quantity,
+                               'capacity': container.capacity,
+                               'interval': container.interval})
         return containers
 
     def reductive_split(self, dividers):
@@ -91,7 +94,7 @@ class Way:
             right = None
             for node in ar[1:-1]:
                 if dividers[node.id] > 1:
-                    left = ar[:ar.index(node)+1]
+                    left = ar[:ar.index(node) + 1]
                     right = ar[ar.index(node):]
                     result += [left]
                     ar = right
@@ -103,36 +106,39 @@ class Way:
                 result = [ar]
 
             return result
+
         slices = slice_array(self.nodes, dividers)
 
         # create a way object for each node-array slice
         ret = []
-        i=0
+        i = 0
         for slice in slices:
             new_id = "%s-%d" % (self.id, i)
             new_way = Way(new_id)
             new_way.nodes = slice
             new_way.tags = self.tags
-            ret.append( new_way )
+            ret.append(new_way)
             i += 1
         return ret
 
     def set_direction(self):
         try:
             self.forward = self.nodes[0].lat < self.nodes[1].lat
-            self.forward = True if self.nodes[0].lat == self.nodes[1].lat and self.nodes[0].lon < self.nodes[1].lon else self.forward
+            self.forward = True if self.nodes[0].lat == self.nodes[1].lat and self.nodes[0].lon < self.nodes[
+                1].lon else self.forward
         except Exception as e:
             self.forward = True
 
+
 class Relation:
-    def __init__(self, id, ways = [], tags = {}, admin_centre = None):
+    def __init__(self, id, ways=[], tags={}, admin_centre=None):
         self.id = id
         self.ways = ways
         self.tags = tags
         self.admin_centre = admin_centre
 
-class SimpleHandler(ContentHandler):
 
+class SimpleHandler(ContentHandler):
     def __init__(self, node_histogram, ways, relations, total_size, SetStateFc, run):
         ContentHandler.__init__(self)
         self.id = None
@@ -141,6 +147,7 @@ class SimpleHandler(ContentHandler):
         self.nodes = []
         self.ways = []
         self.tags = {}
+        self.subareas = []
         self.admin_centre = None
 
         self.allowed_tags = None
@@ -162,7 +169,7 @@ class SimpleHandler(ContentHandler):
 
     def startElement(self, name, attrs):
         self.TestIsRun()
-        percentage = int((float(self._locator._ref._source._InputSource__bytefile.raw.tell())/self.total_size)*100)
+        percentage = int((float(self._locator._ref._source._InputSource__bytefile.raw.tell()) / self.total_size) * 100)
         if self.percentage != percentage:
             self.percentage = percentage
             self.SetStateFc(percentage=self.percentage)
@@ -200,7 +207,9 @@ class SimpleHandler(ContentHandler):
                     self.ways.append(self.ways_global[attrs['ref']])
                 if (attrs['type'] == "node" and attrs['role'] == "admin_centre"):
                     self.admin_centre = self.nodes_global[attrs['ref']]
-
+                if (attrs['type'] == "relation" and attrs['role'] == "subarea"):
+                    rel = self.relation_global.get(attrs['ref'], None)
+                    self.subareas.append(rel)
 
     def endElement(self, name):
         if name == 'node':
@@ -215,7 +224,7 @@ class SimpleHandler(ContentHandler):
             if len(self.ways) > 1 and self.admin_centre:
                 self.relation_global[self.id] = Relation(self.id, self.ways, self.tags, self.admin_centre)
             else:
-                print("Relation has no admin centre or any connected ways. (id:"+self.id+")")
+                print("Relation has no admin centre or any connected ways. (id:" + self.id + ")")
             self.reset()
 
     def reset(self):
@@ -225,6 +234,7 @@ class SimpleHandler(ContentHandler):
         self.nodes = []
         self.ways = []
         self.tags = {}
+        self.subareas = []
         self.admin_centre = None
         self.allowed_tags = None
         self.allowed_members = None
