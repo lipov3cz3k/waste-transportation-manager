@@ -1,36 +1,27 @@
-from os.path import normpath, join, exists, isfile
-from os import unlink
+from os.path import normpath, join, exists
 from time import gmtime, strftime
 from urllib.request import urlretrieve
-from urllib.parse import urlencode
 from common.config import local_config
 from common.utils import LogType, _print, print, TRACE_FN_CALL, DECORATE_ALL, CheckFolders, progress_hook, removeFile
+from common.service_base import ServiceBase
 from .graph_network import Network
 from .bounding_box import BoundingBox
 from .path_finder import PathFinder
 
 @DECORATE_ALL(TRACE_FN_CALL)
-class GraphManager:
+class GraphManager(ServiceBase):
     def __init__(self, BBox, processCitiesMap=False):
         print("Initialize GraphManager", LogType.trace)
         self.BBox = BBox
-        self.state = {}
-        self.SetState(action="init", percentage=0)
         self.graph = None
         self.processCitiesMap=processCitiesMap
 
         # highway tag values to use, separated by pipes (|), for instance 'motorway|trunk|primary'
         self.highway_cat = '|'.join(local_config.allowed_highway_cat)
         self.place_cat = '|'.join(local_config.allowed_place_tags)
-        self.run = {0: False}
         self.is_gui = False
 
-
-    def TestIsRun(self):
-        if not self.run[0]:
-            raise Exception("Service not running")
-
-    def IsBBOXValid(self):
+    def _is_bbox_valid(self):
         if not self.BBox:
             print("Missing boundig box", LogType.error)
             raise
@@ -41,13 +32,8 @@ class GraphManager:
             print("%s" % str(e), LogType.error)
             raise
 
-
-
     def SetState(self, action = None, percentage = None):
-        if action != None:
-            self.state['action'] = action
-        if percentage != None:
-            self.state['percentage'] = int(percentage)
+        ServiceBase.SetState(self, action, percentage)
         self.state['bbox'] = self.BBox.ToList()
 
     def Create(self):
@@ -57,7 +43,7 @@ class GraphManager:
             return self.graph
 
         try:
-            self.IsBBOXValid()
+            self._is_bbox_valid()
         except:
             return None
 
@@ -65,7 +51,7 @@ class GraphManager:
         # get OSM DATA fike
 
         try:
-            self.GetOSMData(osm_data_path)
+            self._get_osm_data(osm_data_path)
             self.TestIsRun()
         except Exception as e:
             print("EXCEPTION: %s" % str(e), log_type=LogType.error)
@@ -96,7 +82,7 @@ class GraphManager:
             return None, None
 
         try:
-            self.IsBBOXValid()
+            self._is_bbox_valid()
         except:
             return None, None
 
@@ -117,7 +103,7 @@ class GraphManager:
 
         return self.graph, new_msgs_count
 
-    def DownloadOSMData(self, data_path):
+    def _download_osm_data(self, data_path):
         print("Downloading OSM data", LogType.info)
 
         try:
@@ -134,7 +120,7 @@ class GraphManager:
             removeFile(data_path)
             raise
 
-    def DownloadOSMCities(self, data_path):
+    def _download_osm_cities(self, data_path):
         print("Downloading OSM data", LogType.info)
         try:
             #url = "http://overpass-api.de/api/interpreter"
@@ -149,12 +135,12 @@ class GraphManager:
             removeFile(data_path)
             raise
 
-    def GetOSMData(self, data_path):
+    def _get_osm_data(self, data_path):
         print("Download OSM data if not exists", LogType.trace)
         if not exists(data_path):
-            self.DownloadOSMData(data_path)
+            self._download_osm_data(data_path)
         if self.processCitiesMap and not exists(data_path+'.city'):
-            self.DownloadOSMCities(data_path+'.city')
+            self._download_osm_cities(data_path+'.city')
 
 
 def Run(bbox=None, exportFile=None, processTracks=None):
@@ -185,6 +171,3 @@ def Run(bbox=None, exportFile=None, processTracks=None):
         print("Nodes <%d>:" % (len(graph.GetNodes())))
         print("Edges <%d>:" % (len(graph.GetEdges())))
         _print("DONE")
-
-if __name__ == '__main__':
-    Run()
