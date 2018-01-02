@@ -1,5 +1,5 @@
 from argparse import ArgumentParser, FileType
-from graph.main import Run as run_graph
+from graph.graph_factory import Run as run_graph
 from waste.main import Run as run_import
 from graph.bounding_box import BoundingBox
 from common.config import local_config

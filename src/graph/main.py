@@ -11,6 +11,7 @@ from .path_finder import PathFinder
 @DECORATE_ALL(TRACE_FN_CALL)
 class GraphManager(ServiceBase):
     def __init__(self, BBox, processCitiesMap=False):
+        ServiceBase.__init__(self)
         print("Initialize GraphManager", LogType.trace)
         self.BBox = BBox
         self.graph = None

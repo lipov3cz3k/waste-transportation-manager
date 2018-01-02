@@ -220,8 +220,6 @@ class Network:
             elif n2 == None:
                 print(d['id'] + ' is partly in city ' + n1 + ' -> leave')
                 return (n1admin_centre.id, b, d['length'], a_data, b_data)
-
-
         return None
 
     def supergraph(self, cityShapes, g1, keyfunc, allow_selfloops=True):

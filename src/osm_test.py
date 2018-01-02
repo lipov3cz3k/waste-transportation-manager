@@ -81,9 +81,9 @@ class Way:
                 self.nodes.append(Node(n_id, n.lat, n.lon))
 
     def _setDirection(self, nodes_map):
-        n0 = nodes_map.get(self.nodes_id[0])
-        n1 = nodes_map.get(self.nodes_id[1])
         try:
+            n0 = nodes_map.get(self.nodes_id[0])
+            n1 = nodes_map.get(self.nodes_id[1])
             self.forward = n0.lat < n1.lat
             self.forward = True if n0.lat == n1.lat and n0.lon < n1.lon else self.forward
         except Exception as e:
@@ -145,12 +145,10 @@ class GraphHandler(osmium.SimpleHandler):
             tags[t.k] = t.v 
         self.ways[w.id] = Way(w.id, nodes, tags)
 
-    def splitWaysByIntersectionsRemoveUnusedNodes(self, graph=None, ways=None):
+    def get_graph(self, graph):
         #use that histogram to split all ways, replacing the member set of ways
-        new_ways = {}
         for id, way in tqdm(self.ways.items()):
             split_ways = way.reductive_split(self.node_histogram)
-            new_ways[way.id] = []
             # if 'name' in way.tags:
             #     self.streetNames.setdefault(way.tags.get('name'), []).append(way.id)
             for split_way in split_ways:
@@ -187,10 +185,6 @@ class GraphHandler(osmium.SimpleHandler):
                                              )
 
 
-                #split_way._setNodesFromIds(self.nodes_map)
-                #new_ways[way.id].append(split_way)
-        return new_ways
-
 
 
 
@@ -208,16 +202,16 @@ if __name__ == '__main__':
     #x = osmium.index.create_map("sparse_mem_array")
 
     G = nx.DiGraph()
-    ways = {}
+    ways = defaultdict(list)
 
     gh = GraphHandler(bbox)
     #gh.apply_file("czech-republic-latest.osm.pbf", locations=True)
     gh.apply_file("albania-latest.osm.pbf", locations=True)
     print(gh.nodes_map.used_memory())
-    gh.splitWaysByIntersectionsRemoveUnusedNodes(graph=G)
+    gh.get_graph(graph=G)
 
-    h = CounterHandler(bbox)
-    h.apply_file("czech-republic-latest.osm.pbf", locations=True)
+    #h = CounterHandler(bbox)
+    #h.apply_file("czech-republic-latest.osm.pbf", locations=True)
     #h.apply_file("albania-latest.osm.pbf", locations=True)
 
     for district in h.districts.values():

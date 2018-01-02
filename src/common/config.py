@@ -37,7 +37,7 @@ class local_config:
     city_map_file = normpath(join(folder_osm_data_root, "jihomoravsky.city" ))
     allowed_tags_node = ['highway','place','name']
     allowed_tags_way = ['oneway', 'highway', 'name', 'ref']
-    allowed_place_tags = ['city','town','village']
+    allowed_place_tags = ['city','town','village', 'hamlet']
     allowed_relation_tags = ['name', 'admin_level']
     allowed_members = ['way', 'node', 'relation']
     allowed_highway_cat = ['motorway','trunk','primary','secondary','tertiary','road','residential','service','motorway_link','trunk_link','primary_link','secondary_link','teriary_link','living_street','unclassified','track']
