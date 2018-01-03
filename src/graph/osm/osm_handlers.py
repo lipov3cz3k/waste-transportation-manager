@@ -131,20 +131,24 @@ class RouteHandler(osmium.SimpleHandler):
                         params = dict(id=split_way.id,
                                     length=split_way.length,
                                     highway=split_way.tags['highway'])
-                        graph.add_path((first, last), **params)
+                        graph.add_path((int(first), int(last)), **params)
                         if split_way.tags['highway'] != 'motorway' and ( \
                             ('oneway' not in split_way.tags) or \
                             ('oneway' in split_way.tags and split_way.tags['oneway'] != 'yes' and split_way.tags['oneway'] != '-1')):
-                            graph.add_path((last, first), **params)
-            
-                        graph.node[first] = dict(lon=float(node_first.lon), lat=float(node_first.lat), 
-                                                #traffic_lights = node_first.tags.get('highway') == 'traffic_signals',
-                                                #city_relation = node_first.city_relation
-                                                )
-                        graph.node[last] = dict(lon=float(node_last.lon), lat=float(node_last.lat), 
-                                                #traffic_lights = node_last.tags.get('highway') == 'traffic_signals',
-                                                #city_relation = node_last.city_relation
-                                                )
+                            graph.add_path((int(last), int(first)), **params)
+
+                        graph.nodes[first].update(dict(lon=float(node_first.lon),
+                                                       lat=float(node_first.lat), 
+                                                       #traffic_lights = node_first.tags.get('highway') == 'traffic_signals',
+                                                       #city_relation = node_first.city_relation
+                                                  ))
+
+                        graph.nodes[last].update(dict(lon=float(node_last.lon),
+                                                      lat=float(node_last.lat), 
+                                                     #traffic_lights = node_last.tags.get('highway') == 'traffic_signals',
+                                                     #city_relation = node_last.city_relation
+                                                ))
+                                                
                     except osmium.InvalidLocationError as eee:
                         print("Way %s has invalid start or end node (%s)" % (split_way.id, eee))
 
