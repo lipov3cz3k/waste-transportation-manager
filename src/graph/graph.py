@@ -1,5 +1,6 @@
 from logging import getLogger
 import networkx as nx
+from geojson import Point, Feature, FeatureCollection, LineString
 
 from common.service_base import ServiceBase
 from .osm.osm_handlers import RouteHandler, CitiesHandler
@@ -11,8 +12,12 @@ logger = getLogger(__name__)
 class Graph(ServiceBase):
     def __init__(self):
         ServiceBase.__init__(self)
+        self.graph_id = None
         self.G = nx.DiGraph()
         self.boundary = None
+
+    def save_to_file(self):
+        pass
 
     def construct_graph(self, graph_id, source_pbf):
         rh = RouteHandler()
@@ -25,9 +30,52 @@ class Graph(ServiceBase):
         ch.connect_regions()
 
         cityGraph = self._supergraph(ch.cities, self.G, self._inCity)
-        self.SaveAndShowCitiesMap(cityGraph)
+        #self.SaveAndShowCitiesMap(cityGraph)
 
 
+    ################# API #################
+    def get_graph_id(self):
+        return self.graph_id
+
+    def get_nodes_geojson(self):
+        """
+        Vrati seznam uzlu silnicni site ve formatu GeoJSON
+        """
+
+        features = []
+        for n_id, n_d in self.G.nodes(data=True):
+            features.append(Feature(id=n_id,
+                                    geometry=Point(float(n_d.get('lon')), float(n_d.get['lat']))))
+        return FeatureCollection(features)
+
+    def get_edges(self):
+        return self.G.edges(data=True)
+
+    def get_edge_details(self, n1, n2):
+        pass
+
+    def has_city_graph(self):
+        pass
+
+# GetEdgesWithContainers
+# GetContainersGeoJSON
+# GetContainerDetails
+## GetEdges
+## GetEdgeDetails
+# LoadPath
+# LoadAndFillFrequecy
+
+# ExportSimple
+# ExportConainers
+# ExportTracksWithPaths
+# SaveAndShowCitiesMap
+# ExportCityDistanceMatrix
+
+# GetAffectedEdges
+# Route
+
+
+#########################
 
     def SaveAndShowCitiesMap(self, city_graph):
         import matplotlib.pyplot as plt
@@ -47,10 +95,6 @@ class Graph(ServiceBase):
         nx.draw_networkx_edge_labels(city_graph, pos=pos,edge_labels=edge_labels)
 
         plt.show() # display
-
-
-
-
 
 
 

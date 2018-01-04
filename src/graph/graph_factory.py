@@ -14,8 +14,8 @@ class GraphFactory(ServiceBase):
         self.graph = None
 
 
-    def Create(self):
-        logger.info('Create')
+    def create(self):
+        logger.info('Create region %s', self.region)
         # prepare sourece
         region_source_data = get_region_pbf("czech-republic-latest.osm.pbf", self.region)
 
@@ -27,6 +27,9 @@ class GraphFactory(ServiceBase):
 
         return self.graph
 
+    def load_from_file(self):
+        pass
+
 
 
 def Run(bbox=None, exportFile=None, processTracks=None):
@@ -35,4 +38,4 @@ def Run(bbox=None, exportFile=None, processTracks=None):
 
     graph_factory = GraphFactory(region)
     graph_factory.run[0] = True
-    graph = graph_factory.Create()
+    graph = graph_factory.create()

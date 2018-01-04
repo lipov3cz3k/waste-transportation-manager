@@ -5,10 +5,11 @@ from time import strptime, mktime
 import json
 
 def dijkstraPath(graphID, start, end):
-    from graph.graph_network import Network
-    graph = Network()
-    graph.LoadFromFile(graphID)
-    print(graph.Route(start,end))
+    pass
+    # from graph.graph_network import Network
+    # graph = Network()
+    # graph.LoadFromFile(graphID)
+    # print(graph.Route(start,end))
 
 def getGraphList():
     result = []
@@ -37,14 +38,15 @@ def getOSMList():
     return result
 
 def loadGraph(graph_pool, graphID=None):
-    from graph.graph_network import Network
-    graph = next((i for i in graph_pool if i.GetGraphID() == graphID), None)
-    if graph:
-        return graph
-    graph = Network()
-    graph.LoadFromFile(graphID)
-    graph_pool.append(graph)
-    return graph
+    pass
+    # from graph.graph_network import Network
+    # graph = next((i for i in graph_pool if i.GetGraphID() == graphID), None)
+    # if graph:
+    #     return graph
+    # graph = Network()
+    # graph.LoadFromFile(graphID)
+    # graph_pool.append(graph)
+    # return graph
 
 def getImportList(graphID=None, suffix="path"):
     result = []
