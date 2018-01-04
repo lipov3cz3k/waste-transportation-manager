@@ -29,7 +29,7 @@ def _download_region_poly(region_id, data_path):
         removeFile(data_path)
         raise
 
-def _extract_from_poly(inputFile, outputFile, polyFile):
+def _apply_poly_to_pbf(inputFile, outputFile, polyFile):
     progress_re = re.compile(r"INFO:.*(?P<type>Node|Way) (?P<id>\d+), (?P<ops>\d+.\d+)")
 
     for line in _execute([OSMOSIS_BIN,
@@ -58,18 +58,25 @@ def get_region_poly(region_id):
     return poly
 
 def get_region_pbf(input_file_name, region_id):
-    output_file = (normpath(join(local_config.folder_osm_data_root, "%s.ways.pbf" % region_id)), 
+    output_file = (normpath(join(local_config.folder_osm_data_root, "%s.ways.pbf" % region_id)),
                    normpath(join(local_config.folder_osm_data_root, "%s.city.pbf" % region_id)))
     if not exists(output_file[0]) or not exists(output_file[1]):
         poly = get_region_poly(region_id)
         input_file = normpath(join(local_config.folder_osm_data_root, input_file_name))
         if not exists(input_file):
             raise Exception("Missing source PBF file")
-        _extract_from_poly(input_file, output_file, poly)
+        _apply_poly_to_pbf(input_file, output_file, poly)
 
     return output_file
 
-def parse_poly(lines):
+def get_region_shape(region_id):
+    poly_file = get_region_poly(region_id)
+    shape = None
+    with open(poly_file, 'r') as f:
+            shape = _parse_poly(f)
+    return shape
+
+def _parse_poly(lines):
     """ Parse an Osmosis polygon filter file.
 
         Accept a sequence of lines from a polygon file, return a shapely.geometry.MultiPolygon object.
@@ -78,43 +85,40 @@ def parse_poly(lines):
     """
     in_ring = False
     coords = []
-    
+
     for (index, line) in enumerate(lines):
-        if index <= 1:
+        if index == 0:
             # first line is junk.
             continue
-        
-        elif index == 2:
-            # second line is the first polygon ring.
-            coords.append([[], []])
-            ring = coords[-1][0]
-            in_ring = True
-        
+
         elif in_ring and line.strip() == 'END':
             # we are at the end of a ring, perhaps with more to come.
             in_ring = False
-    
+
         elif in_ring:
             # we are in a ring and picking up new coordinates.
-            ring.append(map(float, line.split()))
-    
+            ring.append(tuple(map(float, line.split())))
+
         elif not in_ring and line.strip() == 'END':
             # we are at the end of the whole polygon.
             break
-    
+
         elif not in_ring and line.startswith('!'):
             # we are at the start of a polygon part hole.
-            coords[-1][1].append([])
-            ring = coords[-1][1][-1]
+            coords[-1].append([])
+            ring = coords[-1][-1]
             in_ring = True
-    
+
         elif not in_ring:
             # we are at the start of a polygon part.
-            coords.append([[], []])
+            coords.append([[]])
             ring = coords[-1][0]
             in_ring = True
-    
-    return MultiPolygon(coords)
+    result = []
+    for pp in coords:
+        for p in pp:
+            result.append(Polygon(p))
+    return MultiPolygon(result)
 
 if __name__ == '__main__':
     print(get_region_pbf("albania-latest.osm.pbf", 442460))

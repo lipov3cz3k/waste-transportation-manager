@@ -1,8 +1,8 @@
 from threading import Thread
 from logging import getLogger
 
-from common.utils import LogType, print as trace_print, CheckFolders
-from ddr.main import DDRManager
+from common.utils import CheckFolders
+#from ddr.main import DDRManager
 from graph.api import loadGraph
 #from graph.main import GraphManager
 from graph.bounding_box import BoundingBox
@@ -14,41 +14,43 @@ logger = getLogger(__name__)
 class DDR_thread(Thread):
     def __init__(self):
         self.is_running = False
-        self.ddr_manager = DDRManager()
-        self.ddr_manager.is_gui = True
+        # self.ddr_manager = DDRManager()
+        # self.ddr_manager.is_gui = True
 
-        CheckFolders()
+        # CheckFolders()
         Thread.__init__(self)
 
     def stop(self):
         self.is_running = False
-        self.ddr_manager.run = False
+        #self.ddr_manager.run = False
 
     def run(self):
-        self.is_running = True
-        self.ddr_manager.run = True
-        logger.info("Running from web ...")
+        pass
+        # self.is_running = True
+        # self.ddr_manager.run = True
+        # logger.info("Running from web ...")
 
-        try:
-            logger.info("Manage started")
-            self.ddr_manager.Manage()
-        except KeyboardInterrupt:
-            self.ddr_manager.run = False
-            logger.warning("KeyboardInterrupt")
-        except Exception as e:
-            logger.error("Console exception: %s ", str(e))
+        # try:
+        #     logger.info("Manage started")
+        #     self.ddr_manager.Manage()
+        # except KeyboardInterrupt:
+        #     self.ddr_manager.run = False
+        #     logger.warning("KeyboardInterrupt")
+        # except Exception as e:
+        #     logger.error("Console exception: %s ", str(e))
 
-        logger.info("Manage ended")
+        # logger.info("Manage ended")
 
-        self.is_running = False
-        self.ddr_manager.run = False
-        logger.info("Web running stopped")
+        # self.is_running = False
+        # self.ddr_manager.run = False
+        # logger.info("Web running stopped")
 
     def status(self):
-        if self.ddr_manager:
-            return self.ddr_manager.state
-        else:
-            return {'action':"none", 'percentage':0}
+        pass
+        # if self.ddr_manager:
+        #     return self.ddr_manager.state
+        # else:
+        #     return {'action':"none", 'percentage':0}
 
 class GRAPH_thread(Thread):
     def __init__(self, bbox=None, graph_pool=[], processCitiesMap=False):
@@ -56,7 +58,7 @@ class GRAPH_thread(Thread):
         if not bbox:
             bbox = BoundingBox(16.606296, 49.203635, 16.618806, 49.210056)
         #self.graph_manager = GraphManager(bbox, processCitiesMap)
-        self.graph_factory = GraphFactory(442463)
+        self.graph_factory = GraphFactory()
         self.graph_pool = graph_pool
 
         CheckFolders()
@@ -70,7 +72,7 @@ class GRAPH_thread(Thread):
         self.is_running = True
         self.graph_factory.run[0] = True
         logger.info("Running from web ...")
-        graph = self.graph_factory.create()
+        graph = self.graph_factory.create(442463)
         if graph:
             graph.save_to_file()
             self.graph_pool.append(graph)

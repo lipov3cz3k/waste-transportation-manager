@@ -37,23 +37,21 @@ def getOSMList():
             result.append({"id" : id, "coords" : coords})
     return result
 
-def loadGraph(graph_pool, graphID=None):
-    pass
-    # from graph.graph_network import Network
-    # graph = next((i for i in graph_pool if i.GetGraphID() == graphID), None)
-    # if graph:
-    #     return graph
-    # graph = Network()
-    # graph.LoadFromFile(graphID)
-    # graph_pool.append(graph)
-    # return graph
+def loadGraph(graph_pool, graph_id=None):
+    from graph.graph_factory import GraphFactory
+    graph = next((i for i in graph_pool if i.get_graph_id() == graph_id), None)
+    if graph:
+        return graph
+    graph = GraphFactory().load_from_file(graph_id)
+    graph_pool.append(graph)
+    return graph
 
 def getImportList(graphID=None, suffix="path"):
     result = []
     if not exists(local_config.folder_paths_root):
         return result
     for file in listdir(local_config.folder_paths_root):
-        if graphID and "_".join(graphID.split("_")[1:-1]) not in file:
+        if graphID and "_".join(graphID.split("_")[0:-1]) not in file:
                 continue
         if file.endswith(suffix):
             result.append({"id": splitext(file)[0], "filename" : file})

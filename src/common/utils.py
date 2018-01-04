@@ -6,25 +6,7 @@ from tqdm import tqdm
 from datetime import date, time, datetime
 from time import gmtime, strftime, strptime
 from .config import local_config
-from multiprocessing import Lock
 
-_print = print
-mutex = Lock()
-
-class LogType :
-    info = 1
-    warning = 2
-    debug = 3
-    trace = 4
-    error = 5
-
-    LogTypeToString = {
-        info : "[I]",
-        warning : "[W]",
-        debug : "[D]",
-        trace : "[T]",
-        error : "[E]"
-    }
 
 
 def removeFile(path):
@@ -33,58 +15,6 @@ def removeFile(path):
             unlink(path)
     except Exception as e:
         print(e, LogType.error)
-
-def get_last_log_archive_counter():
-    counter = 1
-    for filename in listdir(local_config.folder_log_files):
-        filename = basename(filename)
-        if not filename.endswith('.bz2'): continue
-        filename_array = filename.split(".")
-        file_counter = int(filename_array[2])
-        if counter < file_counter:
-            counter = file_counter
-
-    return counter
-
-# function to archive large log file
-def archive_logfile(file_path):
-    file_path = join(local_config.folder_log_files, local_config.log_filename)
-    log_counter = get_last_log_archive_counter() + 1
-    if isfile(file_path):
-        statinfo = stat(file_path)
-        if statinfo.st_size > local_config.log_file_maxsize:
-            with open(file_path, 'rb') as input:
-                bz_file_name = "%s.%d.bz2" % (file_path, log_counter)
-                with BZ2File(bz_file_name, 'wb', compresslevel=9) as output:
-                    copyfileobj(input, output)
-
-            remove(file_path)
-
-# use print function to save message into file with timestamp
-def print(what, log_type=LogType.info, has_EOL=True, only_Message=False) :
-    from inspect import stack
-
-    file_path = join(local_config.folder_log_files, local_config.log_filename)
-
-    with mutex:
-        archive_logfile(file_path)
-
-    indent_level = len(stack()) - 3
-    call_in_stack = sum([stck[3].count("__call__") for stck in stack()])
-    indent_level -= int(call_in_stack - 1)
-
-    indentation = '  ' * indent_level
-    end = "\n"
-    if not has_EOL:
-        end = ""
-
-    with open(file_path, "a", encoding="utf-8") as myfile:
-        time_stamp = strftime("%Y-%m-%d %H:%M:%S", gmtime())
-        message = "%s" % what
-        if not only_Message:
-            message = "%s: %s: %s%s" % (time_stamp, LogType.LogTypeToString[log_type], indentation, what)
-        _print(message, file=myfile, end=end)
-        myfile.flush()
 
 # parse filename to list
 # 2015-11-14_-1.xml => {'date':'2015-11-14', 'index':'-1', 'suffix':'xml'}

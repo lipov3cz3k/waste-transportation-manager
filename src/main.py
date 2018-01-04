@@ -1,7 +1,7 @@
 import logging
 from argparse import ArgumentParser, FileType
 from graph.graph_factory import Run as run_graph
-from waste.main import Run as run_import
+#from waste.main import Run as run_import
 from graph.bounding_box import BoundingBox
 from common.config import local_config
 
@@ -46,7 +46,8 @@ if __name__ == '__main__':
 
 
     if args.import_containers:
-        run_import(args.import_containers, args.import_city)
+        pass
+        #run_import(args.import_containers, args.import_city)
     elif(args.graph == True):
         run_graph(bbox, exportFile = args.exportCSV, processTracks = args.processTracks)
     else:

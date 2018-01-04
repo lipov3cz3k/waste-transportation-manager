@@ -1,3 +1,4 @@
+import logging
 from flask import Flask, request, redirect, url_for, render_template, jsonify
 
 from common.config import ftp_config, local_config
@@ -5,6 +6,8 @@ from graph.api import getOSMList, getGraphList, loadGraph, getImportList
 from graph.bounding_box import BoundingBox
 from common.utils import get_float_coord, CheckFolders
 from web.long_task_threads import DDR_thread, GRAPH_thread, GRAPH_update_thread
+
+logger = logging.getLogger(__name__)
 
 
 ######################################## FLASK APPLICATION INITIALIZATION #############################################
@@ -133,16 +136,17 @@ def status():
 ######################################## GRAPH OPERATIONS ##############################################################
 @app.route('/graph/list')
 def graphGetList():
+    logger.info("graphGetList")
     return jsonify(graphs=getGraphList())
 
 def _graphGetAttributes(graphID):
     graph = loadGraph(app.graph_pool, graphID)
-    return {"hasCitiesMap":graph.HasCitiesGraph()}
+    return {"hasCitiesMap":graph.has_city_graph()}
 
 @app.route('/graph/<graphID>/nodes')
 def graphGetNodes(graphID):
     graph = loadGraph(app.graph_pool, graphID)
-    return str(graph.GetNodesGeoJSON())
+    return str(graph.get_nodes_geojson())
 
 @app.route('/graph/<graphID>/<suffix>/list')
 def graphGetPaths(graphID, suffix):
@@ -151,7 +155,7 @@ def graphGetPaths(graphID, suffix):
 @app.route('/graph/<graphID>/edges-containers')
 def graphGetEdgesWithContainers(graphID):
     graph = loadGraph(app.graph_pool, graphID)
-    return str(graph.GetEdgesWithContainers())
+    return str(graph.get_edges_with_containers())
 
 @app.route('/graph/<graphID>/containers', methods=['POST', 'GET'], defaults={'n1': None, 'n2': None})
 @app.route('/graph/<graphID>/containers/<n1>/<n2>', methods=['GET'])
@@ -174,7 +178,7 @@ def graphGetContainerDetails(graphID):
 @app.route('/graph/<graphID>/edges')
 def graphGetEdges(graphID):
     graph = loadGraph(app.graph_pool, graphID)
-    return str(graph.GetEdges())
+    return str(graph.get_edges())
 
 @app.route('/graph/<graphID>/edge/details', methods=['POST'])
 def graphGetEdgeDetails(graphID):
@@ -182,7 +186,7 @@ def graphGetEdgeDetails(graphID):
         n1 = request.form['n1']
         n2 =  request.form['n2']
         graph = loadGraph(app.graph_pool, graphID)
-        details = graph.GetEdgeDetails(n1, n2)
+        details = graph.get_edge_details(n1, n2)
         return jsonify(**details)
     return redirect(url_for('graphDetail', graphID=graphID))
 
@@ -191,7 +195,7 @@ def graphGetPathFromFile(graphID):
     if request.method == 'POST':
         pathID = request.form['pathID']
         graph = loadGraph(app.graph_pool, graphID)
-        return jsonify(graph.LoadPath(pathID))
+        return jsonify(graph.get_path_from_file_geojson(pathID))
     return redirect(url_for('graphDetail', graphID=graphID))
 
 @app.route('/graph/<graphID>/updateFrequencyFile', methods=['POST'])
@@ -276,7 +280,9 @@ def graphList():
 @app.route('/graph/<graphID>')
 def graphDetail(graphID):
     coords = graphID.split("_")[1:-1]
-    return render_template('pages/graphWTM.html', graphID=graphID, bbox=coords, paths=getImportList(graphID, 'path'), frequencies=getImportList(graphID, 'freq'), attributes=_graphGetAttributes(graphID))
+    graph = loadGraph(app.graph_pool, graphID)
+
+    return render_template('pages/graphWTM.html', graphID=graphID, bbox=graph.get_bounding_box(), paths=getImportList(graphID, 'path'), frequencies=getImportList(graphID, 'freq'), attributes=_graphGetAttributes(graphID))
 
 @app.route('/contact', methods=['POST', 'GET'])
 def contact():
@@ -300,6 +306,16 @@ def gitUpdate():
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
+
+    logging.basicConfig(
+        format="%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s",
+        handlers=[
+            logging.FileHandler("{0}/{1}.log".format(local_config.folder_log_files, local_config.log_filename)),
+            logging.StreamHandler()
+        ],
+        level=logging.INFO)
+    logging.info('Started')
+
     parser = ArgumentParser(description='Waste transportation manager ...')
     parser.add_argument("-r", "--release",
                         action="store_true", dest="release_config", default=None,

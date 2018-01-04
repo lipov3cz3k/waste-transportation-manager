@@ -1,5 +1,7 @@
 from logging import getLogger
 import networkx as nx
+from pickle import dump as pickle_dump, load as pickle_load
+from os.path import join, isfile, exists
 from geojson import Point, Feature, FeatureCollection, LineString
 
 from common.service_base import ServiceBase
@@ -10,19 +12,33 @@ from common.config import local_config
 logger = getLogger(__name__)
 
 class Graph(ServiceBase):
-    def __init__(self):
+    def __init__(self, graph_id):
         ServiceBase.__init__(self)
-        self.graph_id = None
+        self.graph_id = graph_id
+        self.shape = None
         self.G = nx.DiGraph()
-        self.boundary = None
 
-    def save_to_file(self):
-        pass
 
-    def construct_graph(self, graph_id, source_pbf):
+
+    def save_to_file(self, file_path = None):
+        if not file_path:
+            file_path = join(local_config.folder_graphs_root, '%s.g' % self.get_graph_id())
+        logger.info("Saving graph %s to file %s", self.graph_id, file_path)
+        with open(file_path, 'wb') as output:
+            pickle_dump(self.__dict__, output)
+
+    def load_from_file(self, file_path):
+        logger.info("Loading graph from %s", file_path)
+        with open(file_path, 'rb') as input:
+            tmp_dict = pickle_load(input)
+            self.__dict__.update(tmp_dict)
+
+    def construct_graph(self, source_pbf, shape):
+        logger.info("Constructing graph from %s bounds: %s", source_pbf, shape.bounds)
         rh = RouteHandler()
         rh.apply_file(source_pbf, locations=True)
         rh.get_graph(self.G)
+        self.shape = shape
 
     def construct_cities_graph(self, source_pbf):
         ch = CitiesHandler()
@@ -37,27 +53,52 @@ class Graph(ServiceBase):
     def get_graph_id(self):
         return self.graph_id
 
+    def get_bounding_box(self):
+        return self.shape.bounds
+
     def get_nodes_geojson(self):
         """
         Vrati seznam uzlu silnicni site ve formatu GeoJSON
         """
-
         features = []
         for n_id, n_d in self.G.nodes(data=True):
             features.append(Feature(id=n_id,
-                                    geometry=Point(float(n_d.get('lon')), float(n_d.get['lat']))))
+                                    geometry=Point((float(n_d['lon']), float(n_d['lat'])))
+                                   ))
         return FeatureCollection(features)
 
     def get_edges(self):
         return self.G.edges(data=True)
 
     def get_edge_details(self, n1, n2):
-        pass
+        logger.warning("Not Implemented")
+
+    #####
 
     def has_city_graph(self):
-        pass
+        logger.warning("Not Implemented")
 
-# GetEdgesWithContainers
+    #### API: Containers
+
+    def get_edges_with_containers(self):
+        logger.warning("Not Implemented")
+
+    #### Api: Import
+
+    def get_path_from_file_geojson(self, path_id):
+        import json
+        with open(join(local_config.folder_paths_root, '%s.path' % path_id), "r") as myfile:
+            paths_pool = {}
+            source = json.load(myfile)
+            for path in source:
+                points = []
+                for n in path.get('path'):
+                    n = str(n)
+                    points.append(((float(self.G.nodes[n]['lon']), float(self.G.nodes[n]['lat']))))
+                paths_pool[path.get('id')] = Feature(geometry=LineString(points), style={'color':path.get('color', '#00FF00')})
+            fc = FeatureCollection([ v for v in paths_pool.values() ])
+            return {'succeded' : True, 'paths' : fc, 'name' : path_id}
+
 # GetContainersGeoJSON
 # GetContainerDetails
 ## GetEdges
