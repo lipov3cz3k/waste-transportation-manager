@@ -21,7 +21,7 @@ class local_config:
     folder_log_files = normpath(join(root_folder, "logs"))
     folder_database = normpath(join(root_folder, "db"))
     db_filename = 'data.db'
-    log_filename = 'trace.log'
+    log_filename = 'wtm'
     dump_filename = 'graph.g'
     path_db_file = normpath(join(folder_database, db_filename))
     data_count_per_iteration = 500

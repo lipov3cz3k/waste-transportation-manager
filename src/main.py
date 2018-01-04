@@ -1,15 +1,24 @@
+import logging
 from argparse import ArgumentParser, FileType
 from graph.graph_factory import Run as run_graph
 from waste.main import Run as run_import
 from graph.bounding_box import BoundingBox
 from common.config import local_config
 
+
 if __name__ == '__main__':
+    logging.basicConfig(
+        format="%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s",
+        handlers=[
+            logging.FileHandler("{0}/{1}.log".format(local_config.folder_log_files, local_config.log_filename)),
+            logging.StreamHandler()
+        ],
+        level=logging.INFO)
+    logging.info('Started')
 
     local_config.tqdm_console_disabled = False
-    
-    parser = ArgumentParser(description='Waste transportation manager ...')
 
+    parser = ArgumentParser(description='Waste transportation manager ...')
     parser.add_argument("-i", "--import",
                          type=FileType('rb'), dest="import_containers", default=False,
                          help="Import container data from various source")

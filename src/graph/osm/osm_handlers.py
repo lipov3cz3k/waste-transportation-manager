@@ -1,3 +1,4 @@
+from logging import getLogger
 from collections import defaultdict
 from geopy.distance import vincenty
 #from tqdm import tqdm
@@ -5,6 +6,8 @@ import osmium
 import shapely.wkb
 from tqdm import tqdm
 from common.config import local_config
+
+logger = getLogger(__name__)
 
 class Node:
     def __init__(self, id, lat, lon, tags={}):
@@ -119,7 +122,7 @@ class RouteHandler(osmium.SimpleHandler):
                         distance += vincenty((past.lat, past.lon), (current.lat, current.lon)).meters
                         past = current
                     except osmium.InvalidLocationError as eee:
-                        print("Distance counter error - skipping node %s (%s)" % (current_id, eee))
+                        logger.warning("Distance counter error - skipping node %s (%s)" % (current_id, eee))
                         break
                 split_way.length = round(distance)
                 split_way._setDirection(self.nodes_map)
@@ -150,7 +153,7 @@ class RouteHandler(osmium.SimpleHandler):
                                                 ))
                                                 
                     except osmium.InvalidLocationError as eee:
-                        print("Way %s has invalid start or end node (%s)" % (split_way.id, eee))
+                        logger.warning("Way %s has invalid start or end node (%s)" % (split_way.id, eee))
 
 
 class CitiesHandler(osmium.SimpleHandler):
@@ -179,7 +182,6 @@ class CitiesHandler(osmium.SimpleHandler):
                     admin_centre = next(member for member in r.members if member.role == "admin_centre")
                 except StopIteration:
                     admin_centre = None
-                #print("%s %s" % (r.tags.get('name', '-'), admin_centre))
                 c = self.cities.get(r.id, {})
                 c["name"] = r.tags.get("name", None)
                 if admin_centre:
@@ -214,9 +216,9 @@ class CitiesHandler(osmium.SimpleHandler):
                         city["admin_centre"] = Node(city["admin_centre_id"], admin_node.lat, admin_node.lon)
                         city["admin_centre"].city_relation = city
                     except osmium.NotFoundError:
-                        print("Admin centre of %s (%s) was not resolved" % (city['name'], city["admin_centre_id"]))
+                        logger.info("Admin centre of %s (%s) was not resolved" % (city['name'], city["admin_centre_id"]))
                         city["admin_centre"] = None
                 else:
-                    print("Admin centre of %s is not defined" % (city['name']))
+                    logger.info("Admin centre of %s is not defined" % (city['name']))
                     city["admin_centre"] = None
         self.places.clear()

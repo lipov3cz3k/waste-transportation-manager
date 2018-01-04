@@ -1,8 +1,11 @@
-from time import gmtime, strftime
+from logging import getLogger
 
+from time import gmtime, strftime
 from common.service_base import ServiceBase
 from .map_tool import get_region_pbf
 from .graph import Graph
+
+logger = getLogger(__name__)
 
 class GraphFactory(ServiceBase):
     def __init__(self, region):
@@ -12,6 +15,7 @@ class GraphFactory(ServiceBase):
 
 
     def Create(self):
+        logger.info('Create')
         # prepare sourece
         region_source_data = get_region_pbf("czech-republic-latest.osm.pbf", self.region)
 
@@ -26,9 +30,8 @@ class GraphFactory(ServiceBase):
 
 
 def Run(bbox=None, exportFile=None, processTracks=None):
-    pass
-
     region = 442463
+    logger.info('Create region %s', region)
 
     graph_factory = GraphFactory(region)
     graph_factory.run[0] = True

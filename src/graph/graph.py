@@ -1,8 +1,12 @@
+from logging import getLogger
+import networkx as nx
+
 from common.service_base import ServiceBase
 from .osm.osm_handlers import RouteHandler, CitiesHandler
-import networkx as nx
 from common.utils import get_tqdm
 from common.config import local_config
+
+logger = getLogger(__name__)
 
 class Graph(ServiceBase):
     def __init__(self):
@@ -20,7 +24,7 @@ class Graph(ServiceBase):
         ch.apply_file(source_pbf, locations=True)
         ch.connect_regions()
 
-        cityGraph = self.supergraph(ch.cities, self.G, self._inCity)
+        cityGraph = self._supergraph(ch.cities, self.G, self._inCity)
         self.SaveAndShowCitiesMap(cityGraph)
 
 
@@ -28,7 +32,7 @@ class Graph(ServiceBase):
     def SaveAndShowCitiesMap(self, city_graph):
         import matplotlib.pyplot as plt
         if not city_graph:
-            print("City graph does not exist.")
+            logger.info("City graph does not exist.")
             return None
 
         pos = nx.get_node_attributes(city_graph,'lon')
@@ -43,6 +47,12 @@ class Graph(ServiceBase):
         nx.draw_networkx_edge_labels(city_graph, pos=pos,edge_labels=edge_labels)
 
         plt.show() # display
+
+
+
+
+
+
 
     def _inCity(self,cityShapes,g,a,b,d):
         a_data = {}
@@ -76,20 +86,18 @@ class Graph(ServiceBase):
             #print(d['id'] + ' is in city ' + n1 + ' and ' + n2 + ' -> leave')
             return (n1admin_centre.id, n2admin_centre.id, d['length'], a_data, b_data)
         elif n1 == None and n2 == None:
-            #print(d['id'] + ' is not in any city -> leave')
+            logger.debug(d['id'] + ' is not in any city -> leave')
             return (a, b, d['length'], a_data, b_data)
         else:
             if n1 == None:
-                #print(d['id'] + ' is partly in city ' + n2 + ' -> leave')
+                logger.debug(d['id'] + ' is partly in city ' + n2 + ' -> leave')
                 return (a, n2admin_centre.id, d['length'], a_data, b_data)
             elif n2 == None:
-                #print(d['id'] + ' is partly in city ' + n1 + ' -> leave')
+                logger.debug(d['id'] + ' is partly in city ' + n1 + ' -> leave')
                 return (n1admin_centre.id, b, d['length'], a_data, b_data)
         return None
 
-
-
-    def supergraph(self, cityShapes, g1, keyfunc, allow_selfloops=True):
+    def _supergraph(self, cityShapes, g1, keyfunc, allow_selfloops=True):
         from shapely.geometry import Point as splPoint
         g2 = nx.DiGraph()
         #nodelist=list(set(sum([(u,v) for u,v,d in self.G.edges_iter(data=True) if d['highway']=='track'], ())))
