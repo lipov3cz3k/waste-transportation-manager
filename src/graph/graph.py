@@ -3,6 +3,7 @@ import networkx as nx
 from pickle import dump as pickle_dump, load as pickle_load
 from os.path import join, isfile, exists
 from geojson import Point, Feature, FeatureCollection, LineString
+from tqdm import tqdm
 
 from common.service_base import ServiceBase
 from .osm.osm_handlers import RouteHandler, CitiesHandler
@@ -17,6 +18,7 @@ class Graph(ServiceBase):
         self.graph_id = graph_id
         self.shape = None
         self.G = nx.DiGraph()
+        self.fullG = None
 
 
 
@@ -34,11 +36,17 @@ class Graph(ServiceBase):
             self.__dict__.update(tmp_dict)
 
     def construct_graph(self, source_pbf, shape):
+        from database import init_db, db_session
+        init_db()
         logger.info("Constructing graph from %s bounds: %s", source_pbf, shape.bounds)
+        self.shape = shape
         rh = RouteHandler()
         rh.apply_file(source_pbf, locations=True)
-        rh.get_graph(self.G)
-        self.shape = shape
+        rh.split()
+        #rh.get_graph(self.G)
+        self.fullG = nx.DiGraph()
+        rh.get_full_graph(self.fullG)
+        self.fullG
 
     def construct_cities_graph(self, source_pbf):
         ch = CitiesHandler()
@@ -48,6 +56,59 @@ class Graph(ServiceBase):
         cityGraph = self._supergraph(ch.cities, self.G, self._inCity)
         #self.SaveAndShowCitiesMap(cityGraph)
 
+
+    def connect_with_containers(self):
+        from database import db_session
+        from graph.container_tool import get_db_container_objects, container_location, get_closest_path, get_direction_for_point
+        from collections import defaultdict
+        if self.fullG is None:
+            return
+
+        local_db_session = db_session()
+        containers_obj = get_db_container_objects(local_db_session, self.shape.bounds)
+
+        street_names = defaultdict(list)
+        for u, v, name in tqdm(self.fullG.edges(data='name')):
+            street_names[name].append((u, v))
+
+        for container, point in tqdm(container_location(containers_obj, self.shape.minimum_rotated_rectangle), total=len(containers_obj)):
+            #logger.info("%s at street %s", container, point[1])
+            path = get_closest_path(self.fullG, street_names, point)
+            if not path:
+                continue
+            a_node = self.fullG.nodes[path[0]]
+            b_node = self.fullG.nodes[path[1]]
+            direction = get_direction_for_point((path[0], a_node), (path[1], b_node), point[0])
+            if not direction:
+                continue
+            if not self.fullG.has_edge(*direction):
+                logger.debug("Edge %s -> %s is not exists, try to reverse", *direction)
+                direction = tuple(reversed(direction))
+                if not self.fullG.has_edge(*direction):
+                    logger.error("Cannot connect (%s) %s -> %s - even reversed not exists, wtf?", container.id, *direction)
+                    continue
+
+            #logger.info("(%s) %s -> %s (%s)", container.id, *direction, self.fullG.edges[direction]['id'])
+
+        # wanted_keys = self.streetNames.get(street)
+        # if wanted_keys is None or not optimalization:
+        #     if not optimalization:
+        #         logger.info("Address %s %s, %s has no road loading all roads." % (container.address.street, container.address.house_number, container.address.city))
+        #     ways = all_ways
+        # else:
+        #     ways = [self.ways[x] for x in wanted_keys]
+        #     ways = [item for sublist in ways for item in sublist]
+
+        # if len(ways) == 1:
+        #     direction = self._Direction(ways[0], point, container.id)
+        #     ways[0].containers.append((container, direction))
+        # elif len(ways) > 1:
+        #     near_way = min(ways, key=dist)
+        #     direction = self._Direction(near_way, point, container.id)
+        #     near_way.containers.append((container, direction))
+
+
+        #rh.connect_with_containers(shape)
 
     ################# API #################
     def get_graph_id(self):

@@ -7,7 +7,8 @@ from shapely.geometry import MultiPolygon, Polygon
 from common.config import local_config
 from common.utils import removeFile
 
-OSMOSIS_BIN = "S:/_projects/waste-transportation-manager/tools/osmosis/bin/osmosis.bat"
+#OSMOSIS_BIN = "S:/_projects/waste-transportation-manager/tools/osmosis/bin/osmosis.bat"
+OSMOSIS_BIN = "D:/_projects/waste-transportation-manager/tools/osmosis/bin/osmosis.bat"
 POLYGONS_URL = "http://polygons.openstreetmap.fr/get_poly.py?id=%s&params=0"
 
 def _execute(cmd):

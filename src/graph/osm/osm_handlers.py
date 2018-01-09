@@ -30,16 +30,6 @@ class Way:
     def getFirstLastNodeId(self):
         return (self.nodes_id[0], self.nodes_id[-1])
 
-    def _setNodesFromIds(self, nodes_map):
-        selected_nodes = [0, len(self.nodes_id)-1]
-        self.nodes = []
-        for idx, n_id in enumerate(self.nodes_id):
-            if idx not in selected_nodes:
-                self.nodes.append(None)
-            else:
-                n = nodes_map.get(n_id)
-                self.nodes.append(Node(n_id, n.lat, n.lon))
-
     def _setDirection(self, nodes_map):
         try:
             n0 = nodes_map.get(self.nodes_id[0])
@@ -88,6 +78,7 @@ class RouteHandler(osmium.SimpleHandler):
         self.node_histogram = defaultdict(int)
         self.ways = {}
         self.nodes_map = osmium.index.create_map("sparse_mem_map")
+        self.split_ways = []
 
     def way(self, w):
         if not 'highway' in w.tags:
@@ -103,19 +94,14 @@ class RouteHandler(osmium.SimpleHandler):
         tags = {}
         for t in w.tags:
             tags[t.k] = t.v 
-        self.ways[w.id] = Way(w.id, nodes, tags)
+        self.ways[w.id] = Way(w.id, list(map(int, nodes)), tags)
 
-    def get_graph(self, graph):
-        #use that histogram to split all ways, replacing the member set of ways
-        for id, way in tqdm(self.ways.items()):
-            split_ways = way.reductive_split(self.node_histogram)
-            # if 'name' in way.tags:
-            #     self.streetNames.setdefault(way.tags.get('name'), []).append(way.id)
-            for split_way in split_ways:
-
-                first, last = split_way.getFirstLastNodeId()
-                distance = 0
+    def split(self):
+        for id, way in tqdm(self.ways.items(), desc="Spliting ways"):
+            for split_way in way.reductive_split(self.node_histogram):
+                first, _ = split_way.getFirstLastNodeId()
                 past = self.nodes_map.get(first)
+                distance = 0
                 for current_id in split_way.nodes_id:
                     try:
                         current = self.nodes_map.get(current_id)
@@ -126,35 +112,68 @@ class RouteHandler(osmium.SimpleHandler):
                         break
                 split_way.length = round(distance)
                 split_way._setDirection(self.nodes_map)
-                if graph is not None:
-                    try:
-                        node_first = self.nodes_map.get(first)
-                        node_last = self.nodes_map.get(last)
+                self.split_ways.append(split_way)
 
-                        params = dict(id=split_way.id,
-                                    length=split_way.length,
-                                    highway=split_way.tags['highway'])
-                        graph.add_path((int(first), int(last)), **params)
-                        if split_way.tags['highway'] != 'motorway' and ( \
-                            ('oneway' not in split_way.tags) or \
-                            ('oneway' in split_way.tags and split_way.tags['oneway'] != 'yes' and split_way.tags['oneway'] != '-1')):
-                            graph.add_path((int(last), int(first)), **params)
+    def get_graph(self, graph):
+        #use that histogram to split all ways, replacing the member set of ways
+        if graph is None:
+            return
+        for split_way in tqdm(self.split_ways, desc="Generating simplified graph"):
+            try:
+                first, last = split_way.getFirstLastNodeId()
+                node_first = self.nodes_map.get(first)
+                node_last = self.nodes_map.get(last)
 
-                        graph.nodes[first].update(dict(lon=float(node_first.lon),
-                                                       lat=float(node_first.lat), 
-                                                       #traffic_lights = node_first.tags.get('highway') == 'traffic_signals',
-                                                       #city_relation = node_first.city_relation
-                                                  ))
+                params = dict(id=split_way.id,
+                            length=split_way.length,
+                            highway=split_way.tags['highway'])
+                graph.add_path((first, last), **params)
+                if split_way.tags['highway'] != 'motorway' and ( \
+                    ('oneway' not in split_way.tags) or \
+                    ('oneway' in split_way.tags and split_way.tags['oneway'] != 'yes' and split_way.tags['oneway'] != '-1')):
+                    graph.add_path((last, first), **params)
 
-                        graph.nodes[last].update(dict(lon=float(node_last.lon),
-                                                      lat=float(node_last.lat), 
-                                                     #traffic_lights = node_last.tags.get('highway') == 'traffic_signals',
-                                                     #city_relation = node_last.city_relation
-                                                ))
-                                                
-                    except osmium.InvalidLocationError as eee:
-                        logger.warning("Way %s has invalid start or end node (%s)" % (split_way.id, eee))
+                graph.nodes[first].update(dict(lon=float(node_first.lon),
+                                                lat=float(node_first.lat), 
+                                                #traffic_lights = node_first.tags.get('highway') == 'traffic_signals',
+                                                #city_relation = node_first.city_relation
+                                            ))
 
+                graph.nodes[last].update(dict(lon=float(node_last.lon),
+                                                lat=float(node_last.lat), 
+                                                #traffic_lights = node_last.tags.get('highway') == 'traffic_signals',
+                                                #city_relation = node_last.city_relation
+                                        ))
+                                        
+            except osmium.InvalidLocationError as eee:
+                logger.warning("Way %s has invalid start or end node (%s)" % (split_way.id, eee))
+
+    def get_full_graph(self, graph):
+        if graph is None:
+            return
+        for split_way in tqdm(self.split_ways, desc="Generating full graph"):
+            try:
+                if len(split_way.nodes_id) <= 1:
+                    logger.warning("Way: %s has only one node: %s", split_way.id, split_way.nodes_id)
+                    continue
+                params = dict(id=split_way.id,
+                            length=split_way.length,
+                            highway=split_way.tags['highway'],
+                            name=split_way.tags.get('name', None))
+                graph.add_path(split_way.nodes_id, **params)
+                if split_way.tags['highway'] != 'motorway' and ( \
+                    ('oneway' not in split_way.tags) or \
+                    ('oneway' in split_way.tags and split_way.tags['oneway'] != 'yes' and split_way.tags['oneway'] != '-1')):
+                    graph.add_path(reversed(split_way.nodes_id), **params)
+
+                for node_id in split_way.nodes_id:
+                    node = self.nodes_map.get(node_id)
+                    graph.nodes[node_id].update(dict(lon=float(node.lon),
+                                                     lat=float(node.lat)))
+            except KeyError as eee:
+                logger.warning("Way: %s nodes: %s (KeyError: %s)", split_way.id, split_way.nodes_id, str(eee))    
+            except osmium.InvalidLocationError as eee:
+                logger.warning("Way %s has invalid start or end node (%s)" % (split_way.id, eee))
 
 class CitiesHandler(osmium.SimpleHandler):
     def __init__(self):
