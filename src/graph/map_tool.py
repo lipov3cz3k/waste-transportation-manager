@@ -7,8 +7,6 @@ from shapely.geometry import MultiPolygon, Polygon
 from common.config import local_config
 from common.utils import removeFile
 
-#OSMOSIS_BIN = "S:/_projects/waste-transportation-manager/tools/osmosis/bin/osmosis.bat"
-OSMOSIS_BIN = "D:/_projects/waste-transportation-manager/tools/osmosis/bin/osmosis.bat"
 POLYGONS_URL = "http://polygons.openstreetmap.fr/get_poly.py?id=%s&params=0"
 
 def _execute(cmd):
@@ -33,7 +31,7 @@ def _download_region_poly(region_id, data_path):
 def _apply_poly_to_pbf(inputFile, outputFile, polyFile):
     progress_re = re.compile(r"INFO:.*(?P<type>Node|Way) (?P<id>\d+), (?P<ops>\d+.\d+)")
 
-    for line in _execute([OSMOSIS_BIN,
+    for line in _execute([local_config.osmosis_bin,
                           "--read-pbf-fast", inputFile,
                           "--bounding-polygon", "file=%s"%polyFile, "completeRelations=yes", "completeWays=yes",
                           "--tee", "outPipe.0=w", "outPipe.1=r",

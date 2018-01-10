@@ -46,5 +46,5 @@ def Run(bbox=None, exportFile=None, processTracks=None):
     graph_factory.run[0] = True
     #graph = graph_factory.create(region)
     #graph.save_to_file()
-    graph = graph_factory.load_from_file("442314_2018-01-07-11-35-38")
+    graph = graph_factory.load_from_file("442314_2018-01-09-21-30-37")
     graph.connect_with_containers()

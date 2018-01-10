@@ -24,6 +24,8 @@ class local_config:
     log_filename = 'wtm'
     dump_filename = 'graph.g'
     path_db_file = normpath(join(folder_database, db_filename))
+    osmosis_bin = 'S:/_projects/waste-transportation-manager/tools/osmosis/bin/osmosis.bat'
+    #osmosis_bin = "D:/_projects/waste-transportation-manager/tools/osmosis/bin/osmosis.bat"
     data_count_per_iteration = 500
     location_count_per_iteration = 500 # TODO: use it
     sleep_between_iteration = 1000 * 1 * 60 * 10 # 10 minutes

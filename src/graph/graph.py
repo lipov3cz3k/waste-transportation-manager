@@ -43,10 +43,11 @@ class Graph(ServiceBase):
         rh = RouteHandler()
         rh.apply_file(source_pbf, locations=True)
         rh.split()
-        #rh.get_graph(self.G)
+        rh.get_graph(self.G)
+        logger.info("Reduced graph: %s edges, %s nodes", self.G.number_of_edges(), self.G.number_of_nodes())
         self.fullG = nx.DiGraph()
         rh.get_full_graph(self.fullG)
-        self.fullG
+        logger.info("Full graph: %s edges, %s nodes", self.fullG.number_of_edges(), self.fullG.number_of_nodes())
 
     def construct_cities_graph(self, source_pbf):
         ch = CitiesHandler()
@@ -61,54 +62,36 @@ class Graph(ServiceBase):
         from database import db_session
         from graph.container_tool import get_db_container_objects, container_location, get_closest_path, get_direction_for_point
         from collections import defaultdict
-        if self.fullG is None:
+        graph = self.fullG
+        if graph is None:
             return
 
         local_db_session = db_session()
         containers_obj = get_db_container_objects(local_db_session, self.shape.bounds)
 
         street_names = defaultdict(list)
-        for u, v, name in tqdm(self.fullG.edges(data='name')):
+        for u, v, name in tqdm(graph.edges(data='name')):
             street_names[name].append((u, v))
 
         for container, point in tqdm(container_location(containers_obj, self.shape.minimum_rotated_rectangle), total=len(containers_obj)):
             #logger.info("%s at street %s", container, point[1])
-            path = get_closest_path(self.fullG, street_names, point)
+            path = get_closest_path(graph, street_names, point)
             if not path:
                 continue
-            a_node = self.fullG.nodes[path[0]]
-            b_node = self.fullG.nodes[path[1]]
+            a_node = graph.nodes[path[0]]
+            b_node = graph.nodes[path[1]]
             direction = get_direction_for_point((path[0], a_node), (path[1], b_node), point[0])
             if not direction:
                 continue
-            if not self.fullG.has_edge(*direction):
+            if not graph.has_edge(*direction):
                 logger.debug("Edge %s -> %s is not exists, try to reverse", *direction)
                 direction = tuple(reversed(direction))
-                if not self.fullG.has_edge(*direction):
+                if not graph.has_edge(*direction):
                     logger.error("Cannot connect (%s) %s -> %s - even reversed not exists, wtf?", container.id, *direction)
                     continue
 
-            #logger.info("(%s) %s -> %s (%s)", container.id, *direction, self.fullG.edges[direction]['id'])
+            #logger.info("(%s) %s -> %s (%s)", container.id, *direction, graph.edges[direction]['id'])
 
-        # wanted_keys = self.streetNames.get(street)
-        # if wanted_keys is None or not optimalization:
-        #     if not optimalization:
-        #         logger.info("Address %s %s, %s has no road loading all roads." % (container.address.street, container.address.house_number, container.address.city))
-        #     ways = all_ways
-        # else:
-        #     ways = [self.ways[x] for x in wanted_keys]
-        #     ways = [item for sublist in ways for item in sublist]
-
-        # if len(ways) == 1:
-        #     direction = self._Direction(ways[0], point, container.id)
-        #     ways[0].containers.append((container, direction))
-        # elif len(ways) > 1:
-        #     near_way = min(ways, key=dist)
-        #     direction = self._Direction(near_way, point, container.id)
-        #     near_way.containers.append((container, direction))
-
-
-        #rh.connect_with_containers(shape)
 
     ################# API #################
     def get_graph_id(self):

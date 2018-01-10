@@ -43,6 +43,15 @@ def container_location(containers_obj, bounary):
         yield container, (point, street)
 
 
+def _edge_candidates(graph, point):
+    result = []
+    boundary = point.buffer(0.0005)
+    for (u, v, d) in tqdm(graph.edges(data=True), leave=False):
+        if boundary.contains(Point(graph.nodes[u]['lon'], graph.nodes[u]['lat'])) or \
+           boundary.contains(Point(graph.nodes[v]['lon'], graph.nodes[v]['lat'])):
+           result.append( (u, v) )
+    return result
+
 def _geometry(graph, path):
     u = graph.nodes[path[0]]
     v = graph.nodes[path[1]]
@@ -52,19 +61,16 @@ def get_closest_path(graph, street_names, point):
     #bbox = point[0].buffer(0.01, cap_style=3)
     path_candidates = street_names.get(point[1], [])
     if not path_candidates or not point[1]:
-        #logger.warning("Nemam kandidaty pro %s na ulici %s", point[0], point[1])
+        logger.warning("Nemam kandidaty pro %s na ulici %s", point[0], point[1])
         #TODO zkus hledat pres vsechny
-        return None
+        path_candidates = _edge_candidates(graph, point[0])
 
     
     dist = lambda path: point[0].distance(_geometry(graph, path))
     near_way = min(path_candidates, key=dist)    
     return near_way
 
-    # for (u, v, d) in tqdm(graph.edges(data=True)):
-    #     if bbox.contains(Point(graph.nodes[u]['lat'], graph.nodes[u]['lon'])) or \
-    #        bbox.contains(Point(graph.nodes[v]['lat'], graph.nodes[v]['lon'])):
-    #        logger.info("edge %s is near point %s", d.id, point[0])
+
 
 def get_direction_for_point(a_node, b_node, point, point_id=None):
     """
