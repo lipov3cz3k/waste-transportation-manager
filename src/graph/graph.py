@@ -19,6 +19,7 @@ class Graph(ServiceBase):
         self.shape = None
         self.G = nx.DiGraph()
         self.fullG = None
+        self.cityGraph = None
 
 
 
@@ -54,7 +55,7 @@ class Graph(ServiceBase):
         ch.apply_file(source_pbf, locations=True)
         ch.connect_regions()
 
-        cityGraph = self._supergraph(ch.cities, self.G, self._inCity)
+        self.cityGraph = self._supergraph(ch.cities, self.G, self._inCity)
         #self.SaveAndShowCitiesMap(cityGraph)
 
 
@@ -162,26 +163,50 @@ class Graph(ServiceBase):
 
 #########################
 
-    def SaveAndShowCitiesMap(self, city_graph):
+    def SaveAndShowCitiesMap(self):
         import matplotlib.pyplot as plt
-        if not city_graph:
+        if not self.cityGraph:
             logger.info("City graph does not exist.")
             return None
 
-        pos = nx.get_node_attributes(city_graph,'lon')
-        pos_lat = nx.get_node_attributes(city_graph,'lat')
+        pos = nx.get_node_attributes(self.cityGraph,'lon')
+        pos_lat = nx.get_node_attributes(self.cityGraph,'lat')
         for k, v in pos.items():
             pos[k] = (v, pos_lat[k])
 
-        nx.draw(city_graph, pos=pos)
-        node_labels = nx.get_node_attributes(city_graph,'name')
-        nx.draw_networkx_labels(city_graph,pos=pos, labels = node_labels)
-        edge_labels = nx.get_edge_attributes(city_graph,'length')
-        nx.draw_networkx_edge_labels(city_graph, pos=pos,edge_labels=edge_labels)
+        nx.draw(self.cityGraph, pos=pos)
+        node_labels = nx.get_node_attributes(self.cityGraph,'name')
+        nx.draw_networkx_labels(self.cityGraph,pos=pos, labels = node_labels)
+        edge_labels = nx.get_edge_attributes(self.cityGraph,'length')
+        nx.draw_networkx_edge_labels(self.cityGraph, pos=pos,edge_labels=edge_labels)
 
         plt.show() # display
 
+    def createCityDistanceMatrix(self):
+        from functools import partial
+        from shapely.geometry import Point as splPoint
 
+        for n1, d1 in get_tqdm(self.cityGraph.nodes(data=True), self.SetState, desc="Computing distance between cities", total=self.cityGraph.number_of_nodes()):
+            n1closest = self._searchNearby(splPoint(d1['lon'], d1['lat']),['residential','service','living_street','unclassified'])
+            for n2 in self.cityGraph.neighbors(n1):
+                d2 = self.cityGraph.node[n2]
+                try:
+                    n2closest = self._searchNearby(splPoint(d2['lon'], d2['lat']),['residential','service','living_street','unclassified'])
+
+                    if not n1closest:
+                        logger.error("Cannot find closest street to admin_centre %s (%s)!!" % (d1['name'],n1))
+                        self.cityGraph.edges[(n1,n2)]['length'] = -1
+                    elif not n2closest:
+                        logger.error("Cannot find closest street to admin_centre %s (%s)!!" % (d2['name'],n2))
+                        self.cityGraph.edges[(n1,n2)]['length'] = -1
+                    else:
+                        route = self._route(n1closest, n2closest)
+                        self.cityGraph.edges[(n1,n2)]['length'] = route['paths']['features'][0]['properties']['length']
+
+                except Exception as e:
+                    logger.error("Exception cannot compute distance between cities %s (%s) and %s (%s): %s" % (d1['name'],n1,d2['name'],n2,str(e)))
+                    self.cityGraph.edges[(n1,n2)]['length'] = -1
+        self.ExportCityDistanceMatrix() 
 
     def _inCity(self,cityShapes,g,a,b,d):
         a_data = {}
@@ -264,3 +289,72 @@ class Graph(ServiceBase):
                 #        except:
                 #            g2.node[u2]['original_nodes'] = set([u])
         return g2
+
+
+
+
+    def _searchNearby(self, point, ignoreHighway=None):
+        from graph.bounding_box import get_bounding_box
+        from shapely.geometry import Point as splPoint
+        bbox = get_bounding_box(point.y,  point.x, 0.5)
+
+        nodes = (n for n,d in self.G.nodes(data=True) if d['lat'] > bbox.min_latitude and \
+                                                              d['lat'] < bbox.max_latitude and \
+                                                              d['lon'] > bbox.min_longitude  and \
+                                                              d['lon'] < bbox.max_longitude)
+        if ignoreHighway:
+            nodes = (u for u,v,d in self.G.out_edges(nodes,data=True) if not d['highway'] in ignoreHighway)
+        nodes = list(nodes)
+        if len(nodes) == 0:
+            return None
+        try:
+            dist = lambda node: point.distance(splPoint(self.G.node[node]['lon'], self.G.node[node]['lat']))
+            near_node = min(nodes, key=dist)
+            return near_node
+        except Exception as e:
+            print(str(e), log_type=LogType.error)
+            raise e
+
+
+
+
+
+
+############## Routing #####################
+    def _route(self, startNode, endNode):
+        if not startNode or not endNode:
+            return {"succeded" : "false", "message" : "Missing start or end point."}
+        number_of_experiments = 1
+        paths_pool = {}
+        for i in range(number_of_experiments):
+                
+            # Compute path
+            try:
+                eval, path = nx.bidirectional_dijkstra(self.G, startNode, endNode, 'length')
+            except nx.NetworkXNoPath as e:
+                return {"succeded" : "false", "message" : str(e.args[0])}
+            except nx.NetworkXError as e:
+                return {"succeded" : "false", "message" : str(e.args[0])}
+
+            # Save path if not already saved
+            h = hash(tuple(path))
+            if not h in paths_pool:
+                points = []
+                edges = []
+                length = 0
+                for n1,n2 in zip(path[0:], path[1:]):
+                    e = self.G.edges[(n1,n2)]
+                    length += e['length']
+                    edges.append({'id' : e['id'], 'length': e['length'], 'highway' :  e['highway']})
+
+                for n in path:
+                    points.append(((float(self.G.nodes[n]['lon']), float(self.G.nodes[n]['lat']))))
+                paths_pool[h] = Feature(geometry=LineString(points), properties={"length" : length, "eval": eval, "count" : 1, "ids" : path, "edges" : edges})
+            else:
+                paths_pool[h].properties['count'] += 1
+
+        # Set path line weight
+        for path in paths_pool.values():
+            path.properties['weight'] = ((path.properties['count'] * 5) / number_of_experiments) + 5
+        fc = FeatureCollection([ v for v in paths_pool.values() ])
+        return {"succeded" : "true", "paths" : fc, "number_of_experiments" : number_of_experiments}

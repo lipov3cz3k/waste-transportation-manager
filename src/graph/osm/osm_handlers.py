@@ -217,6 +217,7 @@ class CitiesHandler(osmium.SimpleHandler):
                 wkb = self.wkbfab.create_multipolygon(a)
                 c = self.cities.get(a.orig_id(), {})
                 c['polygon'] = shapely.wkb.loads(wkb, hex=True)
+                c['nuts5'] = a.tags['ref']
                 self.cities[a.orig_id()] = c
                 self.num_areas += 1
 

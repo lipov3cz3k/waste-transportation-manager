@@ -10,6 +10,7 @@ from common.utils import removeFile
 POLYGONS_URL = "http://polygons.openstreetmap.fr/get_poly.py?id=%s&params=0"
 
 def _execute(cmd):
+    print(cmd)
     popen = subprocess.Popen(cmd, stderr=subprocess.PIPE, universal_newlines=True)
     for stdout_line in iter(popen.stderr.readline, ""):
         yield stdout_line

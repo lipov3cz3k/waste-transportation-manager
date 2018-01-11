@@ -37,6 +37,23 @@ class GraphFactory(ServiceBase):
         return G
 
 
+def create_save(region):
+    logger.info('Create region %s', region)
+
+    graph_factory = GraphFactory()
+    graph_factory.run[0] = True
+    graph = graph_factory.create(region)
+    graph.save_to_file()
+
+def load(file):
+    logger.info('Load from file %s', file)
+
+    graph_factory = GraphFactory()
+    graph_factory.run[0] = True
+    graph = graph_factory.load_from_file(file)
+    #graph.connect_with_containers()
+    graph.SaveAndShowCitiesMap()
+    #graph.createCityDistanceMatrix()
 
 def Run(bbox=None, exportFile=None, processTracks=None):
     region = 442314
