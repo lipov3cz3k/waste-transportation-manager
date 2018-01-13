@@ -37,12 +37,18 @@ class GraphFactory(ServiceBase):
         return G
 
 
-def create_save(region):
-    logger.info('Create region %s', region)
-
+def create_save(region=None, bbox=None):
     graph_factory = GraphFactory()
-    graph_factory.run[0] = True
-    graph = graph_factory.create(region)
+    if bbox:
+        logger.info('Create with bouning box %s', region)
+        graph_factory.run[0] = True
+        #graph = graph_factory.create(region)
+    elif region:
+        logger.info('Create region %s', region)
+        graph_factory.run[0] = True
+        graph = graph_factory.create(region)
+    else:
+        raise Exception('Region or bounding box are not entered')
     graph.save_to_file()
 
 def load(file):

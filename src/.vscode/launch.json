@@ -23,11 +23,12 @@
             "request": "launch",
             "stopOnEntry": true,
             "pythonPath": "${config:python.pythonPath}",
-            "program": "${workspaceFolder}/main.py",
+            "program": "${workspaceFolder}/cli.py",
             "cwd": "",
             "args": [
-                "-g",
-                "-bbox", "16.463013", "49.109838", "16.770630", "49.281244"
+                "-v",
+                "load",
+                "442314_2018-01-10-18-08-16"
             ],
             "console": "integratedTerminal",
             "env": {},
