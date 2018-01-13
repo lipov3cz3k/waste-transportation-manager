@@ -2,8 +2,8 @@ import logging
 import argparse
 import sys
 from graph.graph_factory import create_save, load
+from importer.import_factory import container_import, streetnet_import
 #from waste.main import Run as run_import
-#from importer.main import Run as run_import
 from common.config import local_config
 
 
@@ -34,7 +34,7 @@ def arg_parse():
     subparser_import = subparsers.add_parser('import', help='Import various data to database')
     subparser_import.add_argument('--streetnet', type=argparse.FileType('rb'), help='Import StreetNet xsls data')
     subparser_import.add_argument('--containers', type=argparse.FileType('rb'), help='Import containers data')
-    subparser_import.add_argument('--city', required='--containers' in sys.argv, help='Specify city of importing containers')
+    subparser_import.add_argument('--city', help='Specify city of importing containers')
 
     # parser.add_argument("-t", "--tracks",
     #                     action="store_true", dest="processTracks", default=False,
@@ -65,7 +65,9 @@ def main():
         load(args.graph_name)
     elif args.action == 'import':
         if args.streetnet:
-            logging.info(args.streetnet)
+            streetnet_import(args.streetnet)
+        if args.containers:
+            container_import(args.containers, args.city)
 
 if __name__ == '__main__':
     main()

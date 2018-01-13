@@ -1,10 +1,10 @@
-from database import Base
+from database import Base, UniqueMixin
 from sqlalchemy import Column, Integer, Text, Float, Boolean
 
 
-class StreetnetSections(Base):
+class StreetnetSections(UniqueMixin, Base):
     """ streetnet trasy """
-    __tablename__ = 'CDV_edges'
+    __tablename__ = 'StreetnetSections'
 
     id = Column(Integer, primary_key=True) # ROAD_ID
 
@@ -25,4 +25,14 @@ class StreetnetSections(Base):
     start_Y = Column(Float)
     end_X = Column(Float)
     end_Y = Column(Float)
-    		
+
+    @classmethod
+    def unique_hash(cls, **kwargs):
+        return kwargs['id']
+
+    @classmethod
+    def unique_filter(cls, query, **kwargs):
+        return query.filter(StreetnetSections.id == kwargs['id'])
+
+    def __repr__(self):
+        return '%s' % (self.id)

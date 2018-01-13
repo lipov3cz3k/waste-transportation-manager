@@ -1,6 +1,9 @@
+from logging import getLogger
 from openpyxl import load_workbook
 import csv
-from common.utils import LogType, print, get_tqdm
+from common.utils import get_tqdm
+from importer.base import Importer
+logger = getLogger(__name__)
 
 interval_types = {'unknown' : -10, 
                   'on_request' : -11}
@@ -29,111 +32,6 @@ def DayStringToNumber(day):
         else:
             return None, None
 
-
-class Importer:
-    def __init__(self):
-        self.state = {}
-        self.SetState(action="init", percentage=0)
-        self.source = None
-        self.workbook = None
-        self.run = False
-        self.db_session = None
-
-    def RemoveDBSession(self):
-        if self.db_session:
-            self.db_session.remove()
-
-    def SetState(self, action = None, percentage = None):
-        if action != None:
-            self.state['action'] = action
-        if percentage != None:
-            self.state['percentage'] = int(percentage)
-
-    def TestIsRun(self):
-        if not self.run:
-            raise Exception("Service not running")
-
-    def Import(self):
-        from database import init_db, db_session
-        init_db()
-        self.db_session = db_session
-        print("start import %s" % self.source)
-        
-    def SaveAllRecordsToDatabase(self, records):
-        print("Saving records to database")#), LogType.trace)
-        self.db_session.add_all(records)
-        self.db_session.commit()
-
-    def LoadOSMLocation(self):
-        print("Start reversing Addresses.")#, LogType.info)
-        addresses_without_location = self._GetAddressesWithoutLocation()
-        self._GetLocationsForAddresses(addresses_without_location)
-
-    def _GetAddressesWithoutLocation(self):
-        from models.location import Address
-
-        addresses_obj = self.db_session.query(Address).filter(Address.location == None) \
-                                                      .filter((Address.country == 'CZ_XXX') | (Address.country == 'Norway')) \
-                                                       .all()
-        return addresses_obj
-
-    def _GetLocationsForAddresses(self, addresses_array):
-        from time import sleep
-        from geopy.geocoders import Nominatim
-        from geopy.exc import GeocoderTimedOut
-        from models.location import OSMLocation
-        print("Getting locations for Addresses <%d> (use Nominatim)" % len(addresses_array))#, LogType.trace)
-
-        geolocator = Nominatim()
-        for addr_obj in get_tqdm(addresses_array, self.SetState, desc="getting locations", total=None):
-            #print("getting new by nominatim ...", LogType.trace, only_Message=True)
-            successful = False
-            while not successful:
-                location = self.db_session.query(OSMLocation).filter(OSMLocation.road == addr_obj.street,
-                                                                     OSMLocation.house_number == addr_obj.house_number,
-                                                                     ((OSMLocation.city == addr_obj.city) | (OSMLocation.town == addr_obj.city))).first()
-                if location:
-                    osm_id=location.osm_id
-                    address = []
-                    successful = True
-                else:
-                    try:
-                        query = {'street':''}
-                        if addr_obj.house_number:
-                            query['street'] = addr_obj.house_number
-                        if addr_obj.street:
-                            if query['street']:
-                                query['street'] += ' '
-                            query['street'] += addr_obj.street
-                        if addr_obj.city:
-                            query['city'] = addr_obj.city
-                        if addr_obj.postal:
-                            query['postal'] = addr_obj.postal
-                        if addr_obj.country:
-                            query['country'] = addr_obj.country
-                        location = geolocator.geocode(query,
-                                                      addressdetails=True)
-                    except GeocoderTimedOut as e:
-                        print("Service timed out, waiting a little bit")
-                        sleep(10)
-                    except Exception as e:
-                        raise e
-                    else:
-                        successful = True
-                    if location == None:
-                        continue
-                    address = location.raw['address']
-                    osm_id = location.raw['osm_id']
-                    sleep(1)
-                location_obj = OSMLocation.as_unique(self.db_session,
-                                                  address=address, 
-                                                  osm_id=osm_id, 
-                                                  latitude=location.latitude, 
-                                                  longitude=location.longitude)
-                addr_obj.set_location(location_obj)
-                self.db_session.commit()
-
-
 class Cheb(Importer):
     def __init__(self):
         super().__init__()
@@ -150,11 +48,11 @@ class Cheb(Importer):
                 data = self._ParseSheet(sheet)
             except KeyboardInterrupt:
                 self.RemoveDBSession()
-                print("KeyboardInterrupt", LogType.error)
+                logger.error("KeyboardInterrupt")
                 raise KeyboardInterrupt
             except e:
                 self.RemoveDBSession()
-                print("Exception reading source data: %s" % str(e), LogType.error)
+                logger.error("Exception reading source data: %s" % str(e))
                 return
             #save to database
             self.SaveAllRecordsToDatabase(data)
@@ -248,11 +146,11 @@ class Jihlava(Importer):
                 data = self._ParseSepar(filename)
         except KeyboardInterrupt:
             self.RemoveDBSession()
-            print("KeyboardInterrupt", LogType.error)
+            logger.error("KeyboardInterrupt")
             raise KeyboardInterrupt
         except Exception as e:
             self.RemoveDBSession()
-            print("Exception reading source data: %s" % str(e), LogType.error)
+            logger.error("Exception reading source data: %s" % str(e))
             return
 
         self.SaveAllRecordsToDatabase(data)
@@ -337,11 +235,11 @@ class Stavanger(Importer):
             data = self._ParseCSV(file)
         except KeyboardInterrupt:
             self.RemoveDBSession()
-            print("KeyboardInterrupt", LogType.error)
+            logger.error("KeyboardInterrupt")
             raise KeyboardInterrupt
         except Exception as e:
             self.RemoveDBSession()
-            print("Exception reading source data: %s" % str(e), LogType.error)
+            logger.error("Exception reading source data: %s" % str(e))
             return
         self.SaveAllRecordsToDatabase(data)
         self.LoadOSMLocation()
