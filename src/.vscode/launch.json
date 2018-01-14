@@ -27,8 +27,8 @@
             "cwd": "",
             "args": [
                 "-v",
-                "load",
-                "442314_2018-01-10-18-08-16"
+                "import",
+                "--streetnet", "D:/WTM/streetnet/useky.xlsx"
             ],
             "console": "integratedTerminal",
             "env": {},
