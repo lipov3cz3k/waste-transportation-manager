@@ -3,7 +3,7 @@ from openpyxl import load_workbook
 from logging import getLogger
 from tqdm import tqdm
 LOGGER = getLogger(__name__)
-from models.cdv import StreetnetSections
+from models.cdv import StreetnetSegments
 
 class StreetNet(Importer):
     def __init__(self):
@@ -58,5 +58,5 @@ class StreetNet(Importer):
                     record[normalize.get(key, key)] = cell.value.strip()
                 else:
                     record[normalize.get(key, key)] = cell.value
-            data.append(StreetnetSections.as_unique(self.db_session, **record))
+            data.append(StreetnetSegments.as_unique(self.db_session, **record))
         return data
