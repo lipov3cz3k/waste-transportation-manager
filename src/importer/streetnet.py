@@ -44,10 +44,10 @@ class StreetNet(Importer):
                      'tunel' : 'tunnel',
                      'MIN_nosnost' : 'min_load_capacity',
                      'MIN_vyska' : 'min_height',
-                     'X_start' : 'start_X',
-                     'Y_start' : 'start_Y',
-                     'X_end' : 'end_X',
-                     'Y_end' : 'end_Y'}
+                     'X_start' : 'start_longitude',
+                     'Y_start' : 'start_latitude',
+                     'X_end' : 'end_longitude',
+                     'Y_end' : 'end_latitude'}
         data = []
         rows = sheet.rows
         first_row = [cell.value for cell in next(rows)]

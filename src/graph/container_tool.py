@@ -118,7 +118,7 @@ def _searchNearby(self, point, ignoreHighway=None):
         near_node = min(nodes, key=dist)
         return near_node
     except Exception as e:
-        print(str(e), log_type=LogType.error)
+        logger.error(str(e))
         raise e
 
 

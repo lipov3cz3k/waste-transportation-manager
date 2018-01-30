@@ -20,6 +20,7 @@ class Graph(ServiceBase):
         self.G = nx.DiGraph()
         self.fullG = None
         self.cityGraph = None
+        self.containers_connected = False
 
 
 
@@ -71,28 +72,65 @@ class Graph(ServiceBase):
         containers_obj = get_db_container_objects(local_db_session, self.shape.bounds)
 
         street_names = defaultdict(list)
-        for u, v, name in tqdm(graph.edges(data='name')):
+        for u, v, name in tqdm(graph.edges(data='name'), desc="Preloading street names"):
             street_names[name].append((u, v))
 
-        for container, point in tqdm(container_location(containers_obj, self.shape.minimum_rotated_rectangle), total=len(containers_obj)):
+        for container, point in tqdm(container_location(containers_obj, self.shape.minimum_rotated_rectangle), desc="Connecting with containers", total=len(containers_obj)):
             #logger.info("%s at street %s", container, point[1])
             path = get_closest_path(graph, street_names, point)
             if not path:
                 continue
-            a_node = graph.nodes[path[0]]
-            b_node = graph.nodes[path[1]]
-            direction = get_direction_for_point((path[0], a_node), (path[1], b_node), point[0])
+
+            # switch to simplified graph
+            id = graph.edges[path]['id']
+            
+            simple_paths = [(x, y) for x,y,d in self.G.edges(data='id') if d==id]
+            if not simple_paths:
+                logger.error("Cannot find edge id %s in simplified graph (%s)", id, path)
+            simple_path = simple_paths[0]
+            a_node = self.G.nodes[simple_path[0]]
+            b_node = self.G.nodes[simple_path[1]]
+            direction = get_direction_for_point((simple_path[0], a_node), (simple_path[1], b_node), point[0])
             if not direction:
                 continue
-            if not graph.has_edge(*direction):
+            if not self.G.has_edge(*direction):
                 logger.debug("Edge %s -> %s is not exists, try to reverse", *direction)
                 direction = tuple(reversed(direction))
-                if not graph.has_edge(*direction):
+                if not self.G.has_edge(*direction):
                     logger.error("Cannot connect (%s) %s -> %s - even reversed not exists, wtf?", container.id, *direction)
                     continue
+            
+            self.G.edges[direction[0], direction[1]]['containers'].append(container.id)
+            logger.info("(%s) %s -> %s (%s)", container.id, *direction, id)
+            
 
-            #logger.info("(%s) %s -> %s (%s)", container.id, *direction, graph.edges[direction]['id'])
+    def connect_with_streetnet(self):
+        from database import db_session
+        from graph.streetnet_tool import get_db_streetnet_segment_objects, get_closest_path
+        from models.cdv import StreetnetOSMRelation
+        from shapely.geometry import Point as splPoint
+        graph = self.fullG
+        if graph is None:
+            return
 
+        # pro vsechny useky streetnet najdi nejblizsi osm way
+        local_db_session = db_session()
+        segment_objs = get_db_streetnet_segment_objects(local_db_session)
+        nodes_points = {}
+        data = []
+        for (n_id, n_d) in tqdm(graph.nodes(data=True), desc="Optimalizing graph for search", leave=False):
+            nodes_points[n_id] = splPoint(n_d['lon'], n_d['lat'])
+        for segment in tqdm(segment_objs, desc="Paring streetnet with OSM", total=len(segment_objs)):
+            path = get_closest_path(graph, nodes_points, splPoint(segment.start_longitude, segment.start_latitude), splPoint(segment.end_longitude, segment.end_latitude))
+            if not path:
+                logger.error("segment ID %s cannot pair (start node out of range)", segment.id)
+                continue
+            logger.info("segment ID %s <=> OSM ID %s", segment.id, path['id'])
+            data.append(StreetnetOSMRelation(version=1, osm_way_id=path['id'], streetnet=segment))
+            if len(data) % 10:
+                local_db_session.add_all(data)
+                local_db_session.commit()
+                data = []
 
     ################# API #################
     def get_graph_id(self):
@@ -121,7 +159,7 @@ class Graph(ServiceBase):
     #####
 
     def has_city_graph(self):
-        logger.warning("Not Implemented")
+        return self.cityGraph != None
 
     #### API: Containers
 
@@ -258,13 +296,13 @@ class Graph(ServiceBase):
         #xx = len(nodelist)
         #yy = self.G.nodes()
 
-        for n, d in get_tqdm(g1.nodes(data=True), self.SetState, desc="", total=g1.number_of_nodes()):
+        for n, d in get_tqdm(g1.nodes(data=True), self.SetState, desc="Filling city relation", total=g1.number_of_nodes()):
             node = splPoint(float(d['lon']), float(d['lat']))
             for k, city in cityShapes.items():
-                if 'polygon ' in city and city['polygon'].contains(node):
+                if 'polygon' in city and city['polygon'].contains(node):
                     g1.nodes[n]['city_relation'] = k
                     break
-        for (a,b,d) in get_tqdm(g1.edges(data=True), self.SetState, desc="Creating city graph:", total=g1.number_of_edges()):
+        for (a,b,d) in get_tqdm(g1.edges(data=True), self.SetState, desc="Creating city graph", total=g1.number_of_edges()):
             # We don't want track category in our supergraph
             if d['highway'] in local_config.excluded_highway_cat:
                 continue
@@ -289,9 +327,6 @@ class Graph(ServiceBase):
                 #        except:
                 #            g2.node[u2]['original_nodes'] = set([u])
         return g2
-
-
-
 
     def _searchNearby(self, point, ignoreHighway=None):
         from graph.bounding_box import get_bounding_box

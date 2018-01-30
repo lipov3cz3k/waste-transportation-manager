@@ -1,5 +1,6 @@
 from database import Base, UniqueMixin
-from sqlalchemy import Column, Integer, Text, Float, Boolean
+from sqlalchemy import Column, Integer, Text, Float, Boolean, ForeignKey, Index
+from sqlalchemy.orm import relationship, backref
 
 
 class StreetnetSegments(UniqueMixin, Base):
@@ -20,10 +21,13 @@ class StreetnetSegments(UniqueMixin, Base):
 
     min_load_capacity = Column(Float) # MIN_nosnost
     min_height = Column(Float) # MIN_vyska
-    start_X = Column(Float)
-    start_Y = Column(Float)
-    end_X = Column(Float)
-    end_Y = Column(Float)
+    start_longitude = Column(Float)
+    start_latitude = Column(Float)
+    end_longitude = Column(Float)
+    end_latitude = Column(Float)
+
+    OSMRelations = relationship("StreetnetOSMRelation", cascade="all", backref="StreetnetSegments")
+
 
     @classmethod
     def unique_hash(cls, **kwargs):
@@ -36,10 +40,14 @@ class StreetnetSegments(UniqueMixin, Base):
     def __repr__(self):
         return '%s' % (self.id)
 
+segments_start_coords_index = Index('Segments_start_coords_index', StreetnetSegments.start_latitude, StreetnetSegments.start_longitude)
+segments_end_coords_index = Index('Segments_end_coords_index', StreetnetSegments.end_latitude, StreetnetSegments.end_longitude)
+
 class StreetnetOSMRelation(Base):
     __tablename__ = 'StreetnetOSMRelation'
 
     id = Column(Integer, primary_key=True)
     version = Column(Integer)
-    streetnet_id = Column(Integer)
-    osm_way_id = Column(Integer)
+    streetnet_id = Column(Integer, ForeignKey('StreetnetSegments.id'))
+    streetnet = relationship("StreetnetSegments")
+    osm_way_id = Column(Text)

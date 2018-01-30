@@ -1,7 +1,7 @@
 from common.config import local_config
 from os import listdir
-from os.path import exists, splitext, join
-from time import strptime, mktime
+from os.path import exists, splitext, join, getctime
+from operator import itemgetter
 import json
 
 def dijkstraPath(graphID, start, end):
@@ -19,15 +19,15 @@ def getGraphList():
     for file in listdir(local_config.folder_graphs_root):
         if file.endswith(suffix):
             id = file[:len(suffix)*-1]
-            time = id.split("_")[-1]
+            time = getctime(join(local_config.folder_graphs_root, file))
             coords = id.split("_")[1:-1]
             result.append({"id": id, "coords" : coords, "timestamp" : time})
-    result.sort(key=lambda x: mktime(strptime(x['timestamp'],"%Y-%m-%d-%H-%M-%S")), reverse=True)
+    result.sort(key=itemgetter('timestamp'), reverse=True)
     return result
 
 def getOSMList():
     result = []
-    suffix = ".xml"
+    suffix = ".polyX"
     if not exists(local_config.folder_osm_data_root):
         return result
     for file in listdir(local_config.folder_osm_data_root):
@@ -36,15 +36,6 @@ def getOSMList():
             coords = id.split("_")[1:]
             result.append({"id" : id, "coords" : coords})
     return result
-
-def loadGraph(graph_pool, graph_id=None):
-    from graph.graph_factory import GraphFactory
-    graph = next((i for i in graph_pool if i.get_graph_id() == graph_id), None)
-    if graph:
-        return graph
-    graph = GraphFactory().load_from_file(graph_id)
-    graph_pool.append(graph)
-    return graph
 
 def getImportList(graphID=None, suffix="path"):
     result = []
@@ -56,3 +47,12 @@ def getImportList(graphID=None, suffix="path"):
         if file.endswith(suffix):
             result.append({"id": splitext(file)[0], "filename" : file})
     return result
+
+def loadGraph(graph_pool, graph_id=None):
+    from graph.graph_factory import GraphFactory
+    graph = next((i for i in graph_pool if i.get_graph_id() == graph_id), None)
+    if graph:
+        return graph
+    graph = GraphFactory().load_from_file(graph_id)
+    graph_pool.append(graph)
+    return graph

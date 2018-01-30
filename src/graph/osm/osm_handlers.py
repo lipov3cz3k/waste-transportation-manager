@@ -1,7 +1,6 @@
 from logging import getLogger
 from collections import defaultdict
 from geopy.distance import vincenty
-#from tqdm import tqdm
 import osmium
 import shapely.wkb
 from tqdm import tqdm
@@ -126,7 +125,8 @@ class RouteHandler(osmium.SimpleHandler):
 
                 params = dict(id=split_way.id,
                             length=split_way.length,
-                            highway=split_way.tags['highway'])
+                            highway=split_way.tags['highway'],
+                            containers=[])
                 graph.add_path((first, last), **params)
                 if split_way.tags['highway'] != 'motorway' and ( \
                     ('oneway' not in split_way.tags) or \
