@@ -115,7 +115,7 @@ class Graph(ServiceBase):
 
         # pro vsechny useky streetnet najdi nejblizsi osm way
         local_db_session = db_session()
-        segment_objs = get_db_streetnet_segment_objects(local_db_session)
+        segment_objs = get_db_streetnet_segment_objects(local_db_session, self.shape.bounds)
         nodes_points = {}
         data = []
         for (n_id, n_d) in tqdm(graph.nodes(data=True), desc="Optimalizing graph for search", leave=False):
@@ -198,6 +198,46 @@ class Graph(ServiceBase):
 # GetAffectedEdges
 # Route
 
+    def _search_by_nuts5(self, nuts5):
+        for n_id, n_d in self.cityGraph.nodes(data=True):
+            if 'polygon' in n_d:
+                pass
+            if nuts5 == n_d.get('nuts5', None):
+                return n_id
+
+    def route_by_NUTS5(self, start, end):
+        if not self.cityGraph:
+            return None
+        start_node = self._search_by_nuts5(start)
+        end_node = self._search_by_nuts5(end)
+        try:
+            eval, path = nx.bidirectional_dijkstra(self.fullG, start_node, end_node, 'length')
+        except nx.NodeNotFound as e:
+            logger.error(e.args[0])
+        except nx.NetworkXNoPath as e:
+            logger.error(e.args[0])
+        except nx.NetworkXError as e:
+            logger.error(e.args[0])
+        return self.route_response(self.fullG, path, eval)
+
+    def route_response(self, g, path, eval):
+        points = []
+        edges = []
+        length = 0
+        for n1,n2 in zip(path[0:], path[1:]):
+            e = g.edges[(n1,n2)]
+            length += e['length']
+            edges.append({'id' : e['id'], 'length': e['length'], 'highway' :  e['highway']})
+        
+        for n in path:
+            points.append(((float(g.nodes[n]['lon']), float(g.nodes[n]['lat']))))
+        f = Feature(geometry=LineString(points), properties={"length" : length, "eval": eval, "ids" : path, "edges" : edges})
+        fc = FeatureCollection([f])    
+        return {"succeded" : "true", "paths" : fc}
+
+
+
+
 
 #########################
 
@@ -250,42 +290,46 @@ class Graph(ServiceBase):
         a_data = {}
         b_data = {}
 
-        n1 = self.G.nodes[a].get('city_relation')
-        n2 = self.G.nodes[b].get('city_relation')
-        if n1:
+        n1 = g.nodes[a].get('city_relation')
+        n2 = g.nodes[b].get('city_relation')
+        if n1 and cityShapes[n1]['admin_centre']:
             n1admin_centre = cityShapes[n1]['admin_centre']
             a_data['lat'] = float(n1admin_centre.lat)
             a_data['lon'] = float(n1admin_centre.lon)
             a_data['name'] = n1admin_centre.tags.get('name')
+            a_data['nuts5'] = n1admin_centre.tags.get('nuts5', None)
         else:
-            a_data['lat'] = self.G.nodes[a]['lat']
-            a_data['lon'] = self.G.nodes[a]['lon']
+            a_data['lat'] = g.nodes[a]['lat']
+            a_data['lon'] = g.nodes[a]['lon']
             a_data['name'] = '-'
-        if n2:
+            a_data['nuts5'] = None
+        if n2 and cityShapes[n2]['admin_centre']:
             n2admin_centre = cityShapes[n2]['admin_centre']
             b_data['lat'] = float(n2admin_centre.lat)
             b_data['lon'] = float(n2admin_centre.lon)
             b_data['name'] = n2admin_centre.tags.get('name')
+            b_data['nuts5'] = n2admin_centre.tags.get('nuts5', None)
         else:
-            b_data['lat'] = self.G.nodes[b]['lat']
-            b_data['lon'] = self.G.nodes[b]['lon'] 
+            b_data['lat'] = g.nodes[b]['lat']
+            b_data['lon'] = g.nodes[b]['lon'] 
             b_data['name'] = '-'
+            b_data['nuts5'] = None
 
         if n1 == n2 and n1 != None:
             #print(d['id'] + ' is in city ' + n1 + ' -> ignore')
             return None
-        elif n1 != n2 and (n1 != None and n2 != None):
+        elif n1 != n2 and (n1 != None and n2 != None) and n1admin_centre and n2admin_centre:
             #print(d['id'] + ' is in city ' + n1 + ' and ' + n2 + ' -> leave')
             return (n1admin_centre.id, n2admin_centre.id, d['length'], a_data, b_data)
         elif n1 == None and n2 == None:
-            logger.debug(d['id'] + ' is not in any city -> leave')
+            logger.debug("%s is not in any city -> leave", d['id'])
             return (a, b, d['length'], a_data, b_data)
         else:
-            if n1 == None:
-                logger.debug(d['id'] + ' is partly in city ' + n2 + ' -> leave')
+            if n1 == None and n2admin_centre:
+                logger.debug("%s is partly in city %s -> leave", d['id'], n2)
                 return (a, n2admin_centre.id, d['length'], a_data, b_data)
-            elif n2 == None:
-                logger.debug(d['id'] + ' is partly in city ' + n1 + ' -> leave')
+            elif n2 == None and n1admin_centre:
+                logger.debug("%s is partly in city %s -> leave", d['id'], n1)
                 return (n1admin_centre.id, b, d['length'], a_data, b_data)
         return None
 

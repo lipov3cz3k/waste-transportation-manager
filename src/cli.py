@@ -2,6 +2,7 @@ import logging
 import argparse
 import sys
 from graph.graph_factory import create_save, load
+from graph.graph_operations import trackinfo
 from importer.import_factory import container_import, streetnet_import
 #from waste.main import Run as run_import
 from common.config import local_config
@@ -28,6 +29,7 @@ def arg_parse():
     # Load
     subparser_load = subparsers.add_parser('load', help='Load existing graph')
     subparser_load.add_argument('graph_name', help='Name of graph, it should be in WTM/graph dir')
+    subparser_load.add_argument('--trackinfo')
     #Export
 
     #Import
@@ -62,7 +64,10 @@ def main():
     if args.action == 'create':
         create_save(args.region_id, args.bbox)
     elif args.action == 'load':
-        load(args.graph_name)
+        if args.trackinfo:
+            trackinfo(args.graph_name, args.trackinfo)
+        else:
+            load(args.graph_name)
     elif args.action == 'import':
         if args.streetnet:
             streetnet_import(args.streetnet)

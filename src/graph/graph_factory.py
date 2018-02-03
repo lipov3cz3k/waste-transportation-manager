@@ -57,10 +57,11 @@ def load(file):
     graph_factory = GraphFactory()
     graph_factory.run[0] = True
     graph = graph_factory.load_from_file(file)
-    graph.connect_with_streetnet()
+    #graph.connect_with_streetnet()
     #graph.connect_with_containers()
     #graph.SaveAndShowCitiesMap()
     #graph.createCityDistanceMatrix()
+    return graph
 
 def Run(bbox=None, exportFile=None, processTracks=None):
     region = 442314

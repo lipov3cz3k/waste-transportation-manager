@@ -5,10 +5,13 @@ from shapely.geometry import Point
 logger = getLogger(__name__)
 
 
-def get_db_streetnet_segment_objects(db_session):
-
-    min_latitude, max_latitude, min_longitude, max_longitude = (50.1, 50.2, 12.7, 12.8)
-    segments_obj = db_session.query(StreetnetSegments).limit(100).all()
+def get_db_streetnet_segment_objects(db_session, bounds):
+    min_latitude, max_latitude, min_longitude, max_longitude = bounds
+    segments_obj = db_session.query(StreetnetSegments).filter((StreetnetSegments.start_latitude > min_latitude) | (StreetnetSegments.end_latitude > min_latitude)) \
+                                                        .filter((StreetnetSegments.start_latitude < max_latitude) | (StreetnetSegments.end_latitude < max_latitude)) \
+                                                        .filter((StreetnetSegments.start_longitude > min_longitude) | (StreetnetSegments.end_longitude > min_longitude)) \
+                                                        .filter((StreetnetSegments.start_longitude < max_longitude) | (StreetnetSegments.end_longitude < max_longitude)) \
+                                                        .all()
     return segments_obj
 
 def _edge_candidates(graph, point):
@@ -28,7 +31,10 @@ def get_closest_path(graph, nodes_points, start, end):
     near_start = min(node_candidates, key=dist_start)
 
     dist_end = lambda node: end.distance(Point(graph.nodes[node]['lon'], graph.nodes[node]['lat']))
-    near_end = min([n for n in graph[near_start]], key=dist_end)
+    end_candidates = [n for n in graph[near_start]]
+    if not end_candidates:
+        return None
+    near_end = min(end_candidates, key=dist_end)
 
     near_edge = graph.edges[(near_start, near_end)]
     return near_edge
