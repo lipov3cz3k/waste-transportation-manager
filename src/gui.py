@@ -332,4 +332,4 @@ if __name__ == '__main__':
             DEBUG=True,
             SECRET_KEY='development key secret'
         ))
-    app.run()
+    app.run(host='0.0.0.0')

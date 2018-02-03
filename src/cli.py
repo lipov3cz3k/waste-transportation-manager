@@ -6,6 +6,7 @@ from graph.graph_operations import trackinfo
 from importer.import_factory import container_import, streetnet_import
 #from waste.main import Run as run_import
 from common.config import local_config
+from common.utils import CheckFolders as init_data_dirs
 
 
 def arg_parse():
@@ -50,6 +51,7 @@ def arg_parse():
     return args
 
 def main():
+    init_data_dirs()
     logging.basicConfig(
         format="%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s",
         handlers=[
