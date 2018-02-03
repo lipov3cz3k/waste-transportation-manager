@@ -13,7 +13,7 @@ class ftp_config:
 
 class local_config:
     if system() == "Linux":
-        root_folder = normpath(join(environ['HOME'], "/mnt/d/WTM"))
+        root_folder = normpath(join(environ['HOME'], "/www/wtm-data"))
     else:
         root_folder = normpath("D:\\WTM")
 
