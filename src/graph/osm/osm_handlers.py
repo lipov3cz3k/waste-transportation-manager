@@ -217,7 +217,11 @@ class CitiesHandler(osmium.SimpleHandler):
                 wkb = self.wkbfab.create_multipolygon(a)
                 c = self.cities.get(a.orig_id(), {})
                 c['polygon'] = shapely.wkb.loads(wkb, hex=True)
-                c['nuts5'] = a.tags['ref']
+                if 'ref' in a.tags:
+                    c['nuts5'] = a.tags['ref']
+                else:
+                    c['nuts5'] = None
+                    logger.info("City %s (%s) does not have NUTS5 id", a.tags['name'], a.orig_id())
                 self.cities[a.orig_id()] = c
                 self.num_areas += 1
 
@@ -228,6 +232,8 @@ class CitiesHandler(osmium.SimpleHandler):
                 continue
             for subarea in district['subareas']:
                 city = self.cities.get(subarea, None)
+                if not city:
+                    continue
                 district['cities'].append(city)
                 city['district']=district
                 if 'admin_centre_id' in city:

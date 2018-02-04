@@ -27,12 +27,12 @@ def arg_parse():
                               metavar=('min_lat', 'min_lon', 'max_lat', 'max_lon'),
                               help='Boundaries of region')
 
-    # Load
-    subparser_load = subparsers.add_parser('load', help='Load existing graph')
-    subparser_load.add_argument('graph_name', help='Name of graph, it should be in WTM/graph dir')
-    subparser_load.add_argument('--trackinfo')
-    #Export
-
+    # Export
+    subparser_export = subparsers.add_parser('export', help='Export from existing graph')
+    subparser_export.add_argument('graph_name', help='Name of graph, it should be in WTM/graph dir')
+    subparser_export.add_argument('--trackinfo')
+    subparser_export.add_argument('--citygraph')
+    
     #Import
     subparser_import = subparsers.add_parser('import', help='Import various data to database')
     subparser_import.add_argument('--streetnet', type=argparse.FileType('rb'), help='Import StreetNet xsls data')
@@ -65,9 +65,12 @@ def main():
 
     if args.action == 'create':
         create_save(args.region_id, args.bbox)
-    elif args.action == 'load':
+    elif args.action == 'export':
         if args.trackinfo:
             trackinfo(args.graph_name, args.trackinfo)
+        elif args.citygraph:
+            g = load(args.graph_name)
+            g.SaveAndShowCitiesMap()
         else:
             load(args.graph_name)
     elif args.action == 'import':

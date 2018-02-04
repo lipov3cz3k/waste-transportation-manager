@@ -199,11 +199,16 @@ class Graph(ServiceBase):
 # Route
 
     def _search_by_nuts5(self, nuts5):
+        from shapely.geometry import Point as splPoint
+        from graph.streetnet_tool import get_closest_node
+        p = None
         for n_id, n_d in self.cityGraph.nodes(data=True):
-            if 'polygon' in n_d:
-                pass
             if nuts5 == n_d.get('nuts5', None):
-                return n_id
+                p = splPoint(n_d.get('lon'), n_d.get('lat'))
+                break
+        else:
+            return None
+        return get_closest_node(self.G, p)
 
     def route_by_NUTS5(self, start, end):
         if not self.cityGraph:
@@ -289,26 +294,29 @@ class Graph(ServiceBase):
     def _inCity(self,cityShapes,g,a,b,d):
         a_data = {}
         b_data = {}
+        n1admin_centre = n2admin_centre = None
 
         n1 = g.nodes[a].get('city_relation')
         n2 = g.nodes[b].get('city_relation')
-        if n1 and cityShapes[n1]['admin_centre']:
-            n1admin_centre = cityShapes[n1]['admin_centre']
+        if n1:
+            n1city = cityShapes[n1]
+            n1admin_centre = n1city['admin_centre']
             a_data['lat'] = float(n1admin_centre.lat)
             a_data['lon'] = float(n1admin_centre.lon)
-            a_data['name'] = n1admin_centre.tags.get('name')
-            a_data['nuts5'] = n1admin_centre.tags.get('nuts5', None)
+            a_data['name'] = n1city.get('name')
+            a_data['nuts5'] = n1city.get('nuts5')
         else:
             a_data['lat'] = g.nodes[a]['lat']
             a_data['lon'] = g.nodes[a]['lon']
             a_data['name'] = '-'
             a_data['nuts5'] = None
-        if n2 and cityShapes[n2]['admin_centre']:
-            n2admin_centre = cityShapes[n2]['admin_centre']
+        if n2:
+            n2city = cityShapes[n2]
+            n2admin_centre = n2city['admin_centre']
             b_data['lat'] = float(n2admin_centre.lat)
             b_data['lon'] = float(n2admin_centre.lon)
-            b_data['name'] = n2admin_centre.tags.get('name')
-            b_data['nuts5'] = n2admin_centre.tags.get('nuts5', None)
+            b_data['name'] = n2city.get('name')
+            b_data['nuts5'] = n2city.get('nuts5')
         else:
             b_data['lat'] = g.nodes[b]['lat']
             b_data['lon'] = g.nodes[b]['lon'] 
@@ -318,17 +326,17 @@ class Graph(ServiceBase):
         if n1 == n2 and n1 != None:
             #print(d['id'] + ' is in city ' + n1 + ' -> ignore')
             return None
-        elif n1 != n2 and (n1 != None and n2 != None) and n1admin_centre and n2admin_centre:
+        elif n1 != n2 and (n1 != None and n2 != None):
             #print(d['id'] + ' is in city ' + n1 + ' and ' + n2 + ' -> leave')
             return (n1admin_centre.id, n2admin_centre.id, d['length'], a_data, b_data)
         elif n1 == None and n2 == None:
             logger.debug("%s is not in any city -> leave", d['id'])
             return (a, b, d['length'], a_data, b_data)
         else:
-            if n1 == None and n2admin_centre:
+            if n1 == None:
                 logger.debug("%s is partly in city %s -> leave", d['id'], n2)
                 return (a, n2admin_centre.id, d['length'], a_data, b_data)
-            elif n2 == None and n1admin_centre:
+            elif n2 == None:
                 logger.debug("%s is partly in city %s -> leave", d['id'], n1)
                 return (n1admin_centre.id, b, d['length'], a_data, b_data)
         return None
@@ -344,7 +352,7 @@ class Graph(ServiceBase):
             node = splPoint(float(d['lon']), float(d['lat']))
             for k, city in cityShapes.items():
                 if 'polygon' in city and city['polygon'].contains(node):
-                    g1.nodes[n]['city_relation'] = k
+                    g1.nodes[n].update({'city_relation' : k})
                     break
         for (a,b,d) in get_tqdm(g1.edges(data=True), self.SetState, desc="Creating city graph", total=g1.number_of_edges()):
             # We don't want track category in our supergraph

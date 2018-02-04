@@ -14,7 +14,7 @@ def get_db_streetnet_segment_objects(db_session, bounds):
                                                         .all()
     return segments_obj
 
-def _edge_candidates(graph, point):
+def _node_candidates(graph, point):
     result = []
     boundary = point.buffer(0.0005)
     for (n_id, n_d) in tqdm(graph.items(), leave=False):
@@ -24,7 +24,7 @@ def _edge_candidates(graph, point):
 
 
 def get_closest_path(graph, nodes_points, start, end):
-    node_candidates = _edge_candidates(nodes_points, start)
+    node_candidates = _node_candidates(nodes_points, start)
     if not node_candidates:
         return None
     dist_start = lambda node: start.distance(Point(graph.nodes[node]['lon'], graph.nodes[node]['lat']))
@@ -38,3 +38,12 @@ def get_closest_path(graph, nodes_points, start, end):
 
     near_edge = graph.edges[(near_start, near_end)]
     return near_edge
+
+def get_closest_node(graph, point):
+    nodes_points = {}
+    for (n_id, n_d) in tqdm(graph.nodes(data=True), desc="Optimalizing graph for search", leave=False):
+            nodes_points[n_id] = Point(n_d['lon'], n_d['lat'])
+    node_candidates = _node_candidates(nodes_points, point)
+
+    dist = lambda node: point.distance(Point(graph.nodes[node]['lon'], graph.nodes[node]['lat']))
+    return min(node_candidates, key=dist)
