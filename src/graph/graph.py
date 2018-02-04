@@ -289,6 +289,7 @@ class Graph(ServiceBase):
     def _inCity(self,cityShapes,g,a,b,d):
         a_data = {}
         b_data = {}
+        n1admin_centre = n2admin_centre = None
 
         n1 = g.nodes[a].get('city_relation')
         n2 = g.nodes[b].get('city_relation')
