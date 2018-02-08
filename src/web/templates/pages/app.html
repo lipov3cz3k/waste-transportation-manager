@@ -110,7 +110,7 @@
     }
     {% for item in osmList %}
         // MAP {{ loop.index }}
-        var bounds_{{ loop.index }} = [[{{ item.coords[0] }}, {{ item.coords[3] }}], [{{ item.coords[2] }}, {{ item.coords[1] }}]];
+        var bounds_{{ loop.index }} = [[{{ item.bounds[3] }}, {{ item.bounds[0] }}], [{{ item.bounds[1] }}, {{ item.bounds[2] }}]];
         var map_{{ loop.index }} = L.map('{{ item.id }}', list_map_options);
         map_{{ loop.index }}.fitBounds(bounds_{{ loop.index }});
 

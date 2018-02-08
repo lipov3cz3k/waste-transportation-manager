@@ -1,8 +1,12 @@
+from logging import getLogger
 from common.config import local_config
 from os import listdir
 from os.path import exists, splitext, join, getctime
 from operator import itemgetter
+from graph.map_tool import load_region_shape
 import json
+
+logger = getLogger(__name__)
 
 def dijkstraPath(graphID, start, end):
     pass
@@ -13,28 +17,31 @@ def dijkstraPath(graphID, start, end):
 
 def getGraphList():
     result = []
-    suffix = ".g"
+    suffix = ".meta"
     if not exists(local_config.folder_graphs_root):
         return result
     for file in listdir(local_config.folder_graphs_root):
         if file.endswith(suffix):
-            id = file[:len(suffix)*-1]
-            time = getctime(join(local_config.folder_graphs_root, file))
-            coords = id.split("_")[1:-1]
-            result.append({"id": id, "coords" : coords, "timestamp" : time})
+            with open(join(local_config.folder_graphs_root, file), 'r') as meta_file:
+                data = json.load(meta_file)
+                if exists(join(local_config.folder_graphs_root, data.get('graph_file'))):
+                    data['timestamp'] = getctime(join(local_config.folder_graphs_root, file))
+                    result.append(data)
+                else:
+                    pass
     result.sort(key=itemgetter('timestamp'), reverse=True)
     return result
 
 def getOSMList():
     result = []
-    suffix = ".polyX"
+    suffix = ".poly"
     if not exists(local_config.folder_osm_data_root):
         return result
     for file in listdir(local_config.folder_osm_data_root):
         if file.endswith(suffix):
             id = file[:len(suffix)*-1]
-            coords = id.split("_")[1:]
-            result.append({"id" : id, "coords" : coords})
+            shape = load_region_shape(join(local_config.folder_osm_data_root, file))
+            result.append({"id" : id, "bounds" : shape.bounds})
     return result
 
 def getImportList(graphID=None, suffix="path"):

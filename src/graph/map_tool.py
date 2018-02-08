@@ -72,6 +72,9 @@ def get_region_pbf(input_file_name, region_id):
 
 def get_region_shape(region_id):
     poly_file = get_region_poly(region_id)
+    return load_region_shape(poly_file)
+
+def load_region_shape(poly_file):
     shape = None
     with open(poly_file, 'r') as f:
             shape = _parse_poly(f)

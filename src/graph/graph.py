@@ -4,6 +4,7 @@ from pickle import dump as pickle_dump, load as pickle_load
 from os.path import join, isfile, exists
 from geojson import Point, Feature, FeatureCollection, LineString
 from tqdm import tqdm
+import json
 
 from common.service_base import ServiceBase
 from .osm.osm_handlers import RouteHandler, CitiesHandler
@@ -24,12 +25,20 @@ class Graph(ServiceBase):
 
 
 
-    def save_to_file(self, file_path = None):
-        if not file_path:
-            file_path = join(local_config.folder_graphs_root, '%s.g' % self.get_graph_id())
+    def save_to_file(self):
+        file_path = join(local_config.folder_graphs_root, '%s.g' % self.get_graph_id())
+        meta_file_path = join(local_config.folder_graphs_root, '%s.meta' % self.get_graph_id())
         logger.info("Saving graph %s to file %s", self.graph_id, file_path)
         with open(file_path, 'wb') as output:
             pickle_dump(self.__dict__, output)
+        logger.info("Saving graph %s meta", self.graph_id)
+        with open(meta_file_path, 'w') as output:
+            data = dict(id = self.get_graph_id(),
+                        graph_file = '%s.g' % self.get_graph_id(),
+                        bounds = self.shape.bounds,
+                        shape = Feature(geometry=self.shape, properties={})
+                        )
+            json.dump(data, output)
 
     def load_from_file(self, file_path):
         logger.info("Loading graph from %s", file_path)
