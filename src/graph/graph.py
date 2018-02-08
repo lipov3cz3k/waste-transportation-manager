@@ -54,10 +54,10 @@ class Graph(ServiceBase):
         rh = RouteHandler()
         rh.apply_file(source_pbf, locations=True)
         rh.split()
-        rh.get_graph(self.G)
+        rh.get_graph(self.G, shape)
         logger.info("Reduced graph: %s edges, %s nodes", self.G.number_of_edges(), self.G.number_of_nodes())
         self.fullG = nx.DiGraph()
-        rh.get_full_graph(self.fullG)
+        rh.get_full_graph(self.fullG, shape)
         logger.info("Full graph: %s edges, %s nodes", self.fullG.number_of_edges(), self.fullG.number_of_nodes())
 
     def construct_cities_graph(self, source_pbf):
