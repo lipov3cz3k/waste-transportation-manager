@@ -34,13 +34,14 @@ def _apply_poly_to_pbf(inputFile, outputFile, polyFile):
 
     for line in _execute([local_config.osmosis_bin,
                           "--read-pbf-fast", inputFile,
-                          "--bounding-polygon", "file=%s"%polyFile, "completeRelations=yes", "completeWays=yes",
+                          "--bounding-polygon", "file=%s"%polyFile, "completeRelations=no", "completeWays=yes",
                           "--tee", "outPipe.0=w", "outPipe.1=r",
                           "--tf", "inPipe.0=w", "accept-ways", "highway=%s" % ','.join(local_config.allowed_highway_cat),
                           "--tf", "reject-relations",
                           "--lp",
                           "--used-node",
                           "--write-pbf", outputFile[0],
+                          "--bounding-polygon", "inPipe.0=r", "outPipe.0=r", "file=%s"%polyFile, "completeRelations=yes", "completeWays=no",
                           "--tf", "inPipe.0=r", "outPipe.0=r", "accept-relations", "admin_level=7,8",
                            "--used-way", "inPipe.0=r", "outPipe.0=r",
                            "--used-node", "inPipe.0=r", "outPipe.0=r",
@@ -71,6 +72,9 @@ def get_region_pbf(input_file_name, region_id):
 
 def get_region_shape(region_id):
     poly_file = get_region_poly(region_id)
+    return load_region_shape(poly_file)
+
+def load_region_shape(poly_file):
     shape = None
     with open(poly_file, 'r') as f:
             shape = _parse_poly(f)

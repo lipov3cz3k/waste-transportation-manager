@@ -3,6 +3,7 @@ from collections import defaultdict
 from geopy.distance import vincenty
 import osmium
 import shapely.wkb
+from shapely.geometry import Point as splPoint
 from tqdm import tqdm
 from common.config import local_config
 
@@ -113,7 +114,7 @@ class RouteHandler(osmium.SimpleHandler):
                 split_way._setDirection(self.nodes_map)
                 self.split_ways.append(split_way)
 
-    def get_graph(self, graph):
+    def get_graph(self, graph, shape=None):
         #use that histogram to split all ways, replacing the member set of ways
         if graph is None:
             return
@@ -122,6 +123,13 @@ class RouteHandler(osmium.SimpleHandler):
                 first, last = split_way.getFirstLastNodeId()
                 node_first = self.nodes_map.get(first)
                 node_last = self.nodes_map.get(last)
+
+                if shape:
+                    for point in map(self.nodes_map.get, split_way.getFirstLastNodeId()):
+                        if shape.contains(splPoint(float(point.lon), float(point.lat))):
+                            break
+                    else:
+                        continue
 
                 params = dict(id=split_way.id,
                             length=split_way.length,
@@ -148,7 +156,7 @@ class RouteHandler(osmium.SimpleHandler):
             except osmium.InvalidLocationError as eee:
                 logger.warning("Way %s has invalid start or end node (%s)" % (split_way.id, eee))
 
-    def get_full_graph(self, graph):
+    def get_full_graph(self, graph, shape=None):
         if graph is None:
             return
         for split_way in tqdm(self.split_ways, desc="Generating full graph"):
@@ -156,6 +164,14 @@ class RouteHandler(osmium.SimpleHandler):
                 if len(split_way.nodes_id) <= 1:
                     logger.warning("Way: %s has only one node: %s", split_way.id, split_way.nodes_id)
                     continue
+
+                if shape:
+                    for point in map(self.nodes_map.get, split_way.getFirstLastNodeId()):
+                        if shape.contains(splPoint(float(point.lon), float(point.lat))):
+                            break
+                    else:
+                        continue
+
                 params = dict(id=split_way.id,
                             length=split_way.length,
                             highway=split_way.tags['highway'],
@@ -217,7 +233,11 @@ class CitiesHandler(osmium.SimpleHandler):
                 wkb = self.wkbfab.create_multipolygon(a)
                 c = self.cities.get(a.orig_id(), {})
                 c['polygon'] = shapely.wkb.loads(wkb, hex=True)
-                c['nuts5'] = a.tags['ref']
+                if 'ref' in a.tags:
+                    c['nuts5'] = a.tags['ref']
+                else:
+                    c['nuts5'] = None
+                    logger.info("City %s (%s) does not have NUTS5 id", a.tags['name'], a.orig_id())
                 self.cities[a.orig_id()] = c
                 self.num_areas += 1
 
@@ -228,6 +248,8 @@ class CitiesHandler(osmium.SimpleHandler):
                 continue
             for subarea in district['subareas']:
                 city = self.cities.get(subarea, None)
+                if not city:
+                    continue
                 district['cities'].append(city)
                 city['district']=district
                 if 'admin_centre_id' in city:

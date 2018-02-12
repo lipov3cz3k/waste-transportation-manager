@@ -27,9 +27,15 @@
             "cwd": "",
             "args": [
                 "-v",
-                "load",
-                "442314_2018-01-14-23-08-36"
+                "export",
+                "441223_2018-02-05-00-00-22",
+                "--trackinfo", "d:/WTM/test.xlsx"
             ],
+            // "args": [
+            //     "-v",
+            //     "create",
+            //     "-r", "441223"
+            // ],
             "console": "integratedTerminal",
             "env": {},
             "envFile": "${workspaceFolder}/.env",

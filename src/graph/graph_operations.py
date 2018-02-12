@@ -14,6 +14,8 @@ def trackinfo(graph_file, input_file):
         segments = db_session.query(StreetnetSegments).join(StreetnetOSMRelation) \
                                                             .filter(StreetnetOSMRelation.osm_way_id.in_(ids)) \
                                                             .all()
+        if not segments:
+            return None
         param, method = methods
         tmp = []
         for segment in segments:
