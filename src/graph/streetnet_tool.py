@@ -39,11 +39,15 @@ def get_closest_path(graph, nodes_points, start, end):
     near_edge = graph.edges[(near_start, near_end)]
     return near_edge
 
-def get_closest_node(graph, point):
+def get_closest_node(graph, point, ignoreHighway=None):
     nodes_points = {}
     for (n_id, n_d) in tqdm(graph.nodes(data=True), desc="Optimalizing graph for search", leave=False):
             nodes_points[n_id] = Point(n_d['lon'], n_d['lat'])
     node_candidates = _node_candidates(nodes_points, point)
+
+    if ignoreHighway:
+            nodes = (u for u,v,d in graph.out_edges(node_candidates,data=True) if not d['highway'] in ignoreHighway)
+            node_candidates = list(nodes)
 
     dist = lambda node: point.distance(Point(graph.nodes[node]['lon'], graph.nodes[node]['lat']))
     return min(node_candidates, key=dist)
