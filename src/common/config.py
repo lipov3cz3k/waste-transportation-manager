@@ -14,8 +14,10 @@ class ftp_config:
 class local_config:
     if system() == "Linux":
         root_folder = normpath(join(environ['HOME'], "/www/wtm-data"))
+        osmosis_bin = "osmosis"
     else:
         root_folder = normpath("D:\\WTM")
+        osmosis_bin = 'D:/_projects/waste-transportation-manager/tools/osmosis/bin/osmosis.bat'
 
     folder_data_root = normpath(join(root_folder, "data"))
     folder_log_files = normpath(join(root_folder, "logs"))
@@ -24,7 +26,6 @@ class local_config:
     log_filename = 'wtm'
     dump_filename = 'graph.g'
     path_db_file = normpath(join(folder_database, db_filename))
-    osmosis_bin = 'S:/_projects/waste-transportation-manager/tools/osmosis/bin/osmosis.bat'
     #osmosis_bin = "D:/_projects/waste-transportation-manager/tools/osmosis/bin/osmosis.bat"
     data_count_per_iteration = 500
     location_count_per_iteration = 500 # TODO: use it
