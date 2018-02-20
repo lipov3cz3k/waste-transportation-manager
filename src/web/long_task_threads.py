@@ -58,7 +58,6 @@ class GRAPH_thread(Thread):
         self.is_running = False
         self.graph_factory = GraphFactory()
         self.graph_pool = graph_pool
-        logger.info(self.region_id)
         CheckFolders()
         Thread.__init__(self)
 

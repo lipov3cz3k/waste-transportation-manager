@@ -1,5 +1,6 @@
 from logging import getLogger
 from graph.graph_factory import load
+from statistics import mean
 
 logger = getLogger(__name__)
 
@@ -33,7 +34,8 @@ def trackinfo(graph_file, input_file):
                     'metoda' : 'method',
                     'vysledek' : 'result'}
         allowed_methods = {'min' : min,
-                        'max' : max}
+                           'max' : max,
+                           'avg' : mean}
         for row_index, row in tqdm(enumerate(rows, start=2), desc="loading " + sheet.title, total=sheet.max_row):
             record = {}
             for key, cell in zip(first_row, row):
@@ -47,9 +49,12 @@ def trackinfo(graph_file, input_file):
                 raise ValueError("Specified (%s) math method is not supported" % record['method'])
             cdv_params = (record['parameter'], method)
             response = graph.route_by_NUTS5(record['start'], record['end'])
-            cdv_data = _get_cdv_info(db_session, response.get('paths').get('features')[0].get('properties').get('edges'), cdv_params) 
-            logger.info("Route from %s to %s has parameter %s %s %s", record['start'], record['end'], record['parameter'], record['method'], cdv_data)
-            sheet.cell(row=row_index, column=5).value = cdv_data
+            if response and response.get('succeded', False):
+                cdv_data = _get_cdv_info(db_session, response.get('paths').get('features')[0].get('properties').get('edges'), cdv_params) 
+                logger.info("Route from %s to %s has parameter %s %s %s", record['start'], record['end'], record['parameter'], record['method'], cdv_data)
+                sheet.cell(row=row_index, column=5).value = cdv_data
+            else:
+                logger.warning("Routing was not successful")
 
     init_db()
     graph = load(graph_file)

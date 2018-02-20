@@ -220,17 +220,21 @@ class Graph(ServiceBase):
         return get_closest_node(self.G, p)
 
     def route_by_NUTS5(self, start, end):
-        if not self.cityGraph:
+        if not self.has_city_graph:
+            logger.warning("No city graph, cannot route by nuts5")
             return None
         start_node = self._search_by_nuts5(start)
         end_node = self._search_by_nuts5(end)
         try:
             eval, path = nx.bidirectional_dijkstra(self.fullG, start_node, end_node, 'length')
         except nx.NodeNotFound as e:
+            eval = path = None
             logger.error(e.args[0])
         except nx.NetworkXNoPath as e:
+            eval = path = None
             logger.error(e.args[0])
         except nx.NetworkXError as e:
+            eval = path = None
             logger.error(e.args[0])
         return self.route_response(self.fullG, path, eval)
 
@@ -238,6 +242,8 @@ class Graph(ServiceBase):
         points = []
         edges = []
         length = 0
+        if not path:
+            return {"succeeded" : "false"}
         for n1,n2 in zip(path[0:], path[1:]):
             e = g.edges[(n1,n2)]
             length += e['length']
