@@ -425,8 +425,8 @@ class Graph(ServiceBase):
             dist = lambda node: point.distance(splPoint(self.G.node[node]['lon'], self.G.node[node]['lat']))
             near_node = min(nodes, key=dist)
             return near_node
-        except Exception as e:
-            print(str(e), log_type=LogType.error)
+        except Exception as exc:
+            logger.exception("Search nearby error %s", exc)
             raise e
 
 
