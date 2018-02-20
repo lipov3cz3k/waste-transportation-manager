@@ -14,7 +14,7 @@
         {% for item in graphList %}
         <div class="col-md-4">
             <div id="{{ item.id }}" class="map-graphList"></div>
-            <div><a href="{{ url_for('graphDetail', graphID=item.id) }}">{{ item.timestamp }} (GMT)</a></div>
+            <div><a href="{{ url_for('graphDetail', graphID=item.id) }}">{{ item.datetime }}</a></div>
         </div>
         {% endfor %}
     </div>

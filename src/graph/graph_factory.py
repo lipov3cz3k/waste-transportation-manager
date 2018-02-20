@@ -37,7 +37,7 @@ class GraphFactory(ServiceBase):
         return G
 
 
-def create_save(region=None, bbox=None):
+def create_save(region=None, bbox=None, connect_containers=False):
     graph_factory = GraphFactory()
     if bbox:
         logger.info('Create with bouning box %s', region)
@@ -49,7 +49,10 @@ def create_save(region=None, bbox=None):
         graph = graph_factory.create(region)
     else:
         raise Exception('Region or bounding box are not entered')
+    if connect_containers:
+        graph.connect_with_containers()
     graph.save_to_file()
+    return graph
 
 def load(file):
     logger.info('Load from file %s', file)

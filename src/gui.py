@@ -66,15 +66,21 @@ def run_graph():
                 get_float_coord(request.form.get('latitude-max', None))
             )
 
-            if not longitude[0] or not longitude[1] or not latitude[0] or not latitude[1]:
+            region_id = request.form.get('regionId', None)
+
+            #if (not longitude[0] or not longitude[1] or not latitude[0] or not latitude[1]) or not region_id:
+            if not region_id:
                 if request.referrer:
                     return redirect(request.referrer)
                 else:
                     return redirect(url_for('index'))
-
-            bbox = BoundingBox(longitude[0], latitude[0], longitude[1], latitude[1])
-
-            app.thread = GRAPH_thread(bbox, app.graph_pool, True)
+            
+            if region_id:
+                logger.info(region_id)
+                app.thread = GRAPH_thread(region_id=region_id, graph_pool=app.graph_pool)    
+            else:
+                bbox = BoundingBox(longitude[0], latitude[0], longitude[1], latitude[1])
+                app.thread = GRAPH_thread(bbox=bbox, graph_pool=app.graph_pool, processCitiesMap=True)
             app.thread_name = "GRAPH"
             app.thread.start()
 

@@ -42,13 +42,37 @@
 </div>
 <!-- /.row -->
 <div class="row">
-    <div class="col-md-12">
+    <div class="col-md-10">
         <div id="map" class="map-small"></div>
     </div>
-</div>
+    <div class="col-md-2">
+            <div class="form-group">
+                    <label for="sel1">Vyber region:</label>
+                    <select class="form-control" id="select_region" onchange="updateRegionInput()">
+                      <option value=''>- ruční zadání -</option>
+                      <option value='435541'>Hlavní město Praha</option>
+                      <option value='442397'>Středočeský kraj</option>
+                      <option value='442321'>Jihočeský kraj</option>
+                      <option value='442466'>Plzeňský kraj</option>
+                      <option value='442314'>Karlovarský kraj</option>
+                      <option value='442452'>Ústecký kraj</option>
+                      <option value='442455'>Liberecký kraj</option>
+                      <option value='442463'>Královéhradecký kraj</option>
+                      <option value='442460'>Pardubický kraj</option>
+                      <option value='442459'>Olomoucký kraj</option>
+                      <option value='442461'>Moravskoslezský kraj</option>
+                      <option value='442311'>Jihomoravský kraj</option>
+                      <option value='442449'>Zlínský kraj</option>
+                      <option value='442453'>Kraj Vysočina</option>
+                    </select>
+            </div>
+    </div>
+</div>	
+
+
 <!-- /.row -->
 <div class="row">
-    <div class="col-md-12 form-horizontal hidden">
+    <div class="col-md-12 form-horizontal">
         <div class="form-group">
             <div class="col-sm-6">
                 <input id="longitude-min" name="longitude-min" class="form-control" placeholder="longitude min">
@@ -63,6 +87,11 @@
             </div>
             <div class="col-sm-6">
                 <input id="latitude-min" name="latitude-min" class="form-control" placeholder="latitude min">
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-sm-6">
+                <input id="region-id" name="region-id" class="form-control" placeholder="region id">
             </div>
         </div>
     </div>
@@ -87,7 +116,7 @@
 <!-- /.row -->
 <div class="row">
     <div class="col-md-2 col-md-offset-6">
-        <input type="button" class="btn btn-default" value="Create new graph" onclick="start_graph_task('longitude-min', 'latitude-max', 'longitude-max', 'latitude-min');">
+        <input type="button" class="btn btn-default" value="Create new graph" onclick="start_graph_task('longitude-min', 'latitude-max', 'longitude-max', 'latitude-min', 'region-id');">
     </div>
 </div>
 
@@ -123,6 +152,12 @@
 
         map_{{ loop.index }}.on('click', function(e) {
             setEditableRectangle(bounds_{{ loop.index }});
+            if($('#select_region option[value={{item.id}}]').length !== 0) {
+                $('#select_region').val({{item.id}});
+            }else{
+                $('#select_region').val('');
+            }
+            $('#select_region').change();
         });
     {% endfor %}
 
@@ -147,13 +182,18 @@
         $("#latitude-max").val(ne.lat);
     }
 
+    function updateRegionInput() {
+        var region = $('#select_region').val();
+        $("#region-id").val(region);
+    }
+
     function setEditableRectangle(bounds)
     {
-        rect.editing.disable();
+        //rect.editing.disable();
         map.fitBounds(bounds);
         rect.setBounds(bounds);
         updateBboxInput();
-        rect.editing.enable();
+        //rect.editing.enable();
     }
 
     //selector
@@ -164,15 +204,16 @@
 
 
     // button
-    function start_graph_task(lngMinInput, latMaxInput, lngMaxInput, latMinInput)
+    function start_graph_task(lngMinInput, latMaxInput, lngMaxInput, latMinInput, regionId)
     {
         lngMin = $("#"+lngMinInput).val();
         latMax = $("#"+latMaxInput).val();
         lngMax = $("#"+lngMaxInput).val();
         latMin = $("#"+latMinInput).val();
+        regionIdVal = $("#"+regionId).val();
         $.ajax({
             type: 'POST',
-            data: {'longitude-min': lngMin, 'latitude-max': latMax, 'longitude-max': lngMax, 'latitude-min': latMin, 'submit' : 'start'},
+            data: {'longitude-min': lngMin, 'latitude-max': latMax, 'longitude-max': lngMax, 'latitude-min': latMin, 'regionId' : regionIdVal, 'submit' : 'start'},
             url: '{{ url_for('run_graph') }}',
             success: function() {
             },

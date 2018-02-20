@@ -53,14 +53,12 @@ class DDR_thread(Thread):
         #     return {'action':"none", 'percentage':0}
 
 class GRAPH_thread(Thread):
-    def __init__(self, bbox=None, graph_pool=[], processCitiesMap=False):
+    def __init__(self, region_id=None, bbox=None, graph_pool=[], processCitiesMap=False):
+        self.region_id = region_id
         self.is_running = False
-        if not bbox:
-            bbox = BoundingBox(16.606296, 49.203635, 16.618806, 49.210056)
-        #self.graph_manager = GraphManager(bbox, processCitiesMap)
         self.graph_factory = GraphFactory()
         self.graph_pool = graph_pool
-
+        logger.info(self.region_id)
         CheckFolders()
         Thread.__init__(self)
 
@@ -71,8 +69,8 @@ class GRAPH_thread(Thread):
     def run(self):
         self.is_running = True
         self.graph_factory.run[0] = True
-        logger.info("Running from web ...")
-        graph = self.graph_factory.create(442463)
+        logger.info("Running from web for region %s", self.region_id)
+        graph = self.graph_factory.create(self.region_id)
         if graph:
             graph.save_to_file()
             self.graph_pool.append(graph)

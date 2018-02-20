@@ -76,14 +76,14 @@ class Graph(ServiceBase):
         graph = self.fullG
         if graph is None:
             return
-
+        logger.info("Connecting with containers")
         local_db_session = db_session()
         containers_obj = get_db_container_objects(local_db_session, self.shape.bounds)
 
         street_names = defaultdict(list)
         for u, v, name in tqdm(graph.edges(data='name'), desc="Preloading street names"):
             street_names[name].append((u, v))
-
+        logger.info("street names %s" , street_names)
         for container, point in tqdm(container_location(containers_obj, self.shape.minimum_rotated_rectangle), desc="Connecting with containers", total=len(containers_obj)):
             #logger.info("%s at street %s", container, point[1])
             path = get_closest_path(graph, street_names, point)
@@ -111,7 +111,7 @@ class Graph(ServiceBase):
             
             self.G.edges[direction[0], direction[1]]['containers'].append(container.id)
             logger.info("(%s) %s -> %s (%s)", container.id, *direction, id)
-            
+        self.containers_connected = True
 
     def connect_with_streetnet(self):
         from database import db_session
@@ -273,6 +273,24 @@ class Graph(ServiceBase):
         nx.draw_networkx_edge_labels(self.cityGraph, pos=pos,edge_labels=edge_labels)
 
         plt.show() # display
+
+    def ExportCityDistanceMatrix(self):
+        import numpy as np
+        import csv
+        if not self.cityGraph:
+            logger.error("City graph does not exist.")
+            return None
+        file_path = join(local_config.folder_export_root, '%s' % self.graph_id)
+        matrix = nx.to_dict_of_dicts(self.cityGraph)
+        numpy = nx.to_numpy_matrix(self.cityGraph, weight='length')
+        np.savetxt(file_path+"_city_d.csv", numpy, fmt="%i", delimiter=",")
+
+        with open(file_path+"_city_n.csv", 'w',newline="\n", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(['node','lat', 'lon','name'])
+            for n, d in self.cityGraph.nodes(data=True):
+                writer.writerow([n, d.get('lat'), d.get('lon'), d.get('name'), d.get('nuts5')])
+        return matrix
 
     def createCityDistanceMatrix(self):
         from functools import partial

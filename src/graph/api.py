@@ -4,6 +4,7 @@ from os import listdir
 from os.path import exists, splitext, join, getctime
 from operator import itemgetter
 from graph.map_tool import load_region_shape
+from datetime import datetime
 import json
 
 logger = getLogger(__name__)
@@ -26,6 +27,7 @@ def getGraphList():
                 data = json.load(meta_file)
                 if exists(join(local_config.folder_graphs_root, data.get('graph_file'))):
                     data['timestamp'] = getctime(join(local_config.folder_graphs_root, file))
+                    data['datetime'] = datetime.fromtimestamp(data['timestamp']).strftime('%Y-%m-%d %H:%M:%S')
                     result.append(data)
                 else:
                     pass

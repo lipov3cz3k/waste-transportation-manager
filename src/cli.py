@@ -26,12 +26,14 @@ def arg_parse():
     source_group.add_argument('-b', '--bbox', type=float, nargs=4,
                               metavar=('min_lat', 'min_lon', 'max_lat', 'max_lon'),
                               help='Boundaries of region')
+    subparser_create.add_argument('-c', '--connect-containers', dest='connect_containers',
+                                  action='store_true', help='Connect with containers from database')
 
     # Export
     subparser_export = subparsers.add_parser('export', help='Export from existing graph')
     subparser_export.add_argument('graph_name', help='Name of graph, it should be in WTM/graph dir')
     subparser_export.add_argument('--trackinfo')
-    subparser_export.add_argument('--citygraph')
+    subparser_export.add_argument('--citygraph', action='store_true')
     
     #Import
     subparser_import = subparsers.add_parser('import', help='Import various data to database')
@@ -64,12 +66,13 @@ def main():
     local_config.tqdm_console_disabled = False
 
     if args.action == 'create':
-        create_save(args.region_id, args.bbox)
+        create_save(args.region_id, args.bbox, args.connect_containers)
     elif args.action == 'export':
         if args.trackinfo:
             trackinfo(args.graph_name, args.trackinfo)
         elif args.citygraph:
             g = load(args.graph_name)
+            g.createCityDistanceMatrix()
             g.SaveAndShowCitiesMap()
         else:
             load(args.graph_name)
