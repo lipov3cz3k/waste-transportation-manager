@@ -331,11 +331,18 @@ class Graph(ServiceBase):
 
         n1 = g.nodes[a].get('city_relation')
         n2 = g.nodes[b].get('city_relation')
+
         if n1:
             n1city = cityShapes[n1]
             n1admin_centre = n1city['admin_centre']
-            a_data['lat'] = float(n1admin_centre.lat)
-            a_data['lon'] = float(n1admin_centre.lon)
+            if n1admin_centre is None:
+                logger.warning("City %s has no admin_centre", n1)
+                a_data['lat'] = g.nodes[a]['lat']
+                a_data['lon'] = g.nodes[a]['lon']
+                n1 = None
+            else:
+                a_data['lat'] = float(n1admin_centre.lat)
+                a_data['lon'] = float(n1admin_centre.lon)
             a_data['name'] = n1city.get('name')
             a_data['nuts5'] = n1city.get('nuts5')
         else:
@@ -346,8 +353,14 @@ class Graph(ServiceBase):
         if n2:
             n2city = cityShapes[n2]
             n2admin_centre = n2city['admin_centre']
-            b_data['lat'] = float(n2admin_centre.lat)
-            b_data['lon'] = float(n2admin_centre.lon)
+            if n2admin_centre is None:
+                logger.warning("City %s has no admin_centre", n1)
+                b_data['lat'] = g.nodes[b]['lat']
+                b_data['lon'] = g.nodes[b]['lon']
+                n2 = None
+            else:
+                b_data['lat'] = float(n2admin_centre.lat)
+                b_data['lon'] = float(n2admin_centre.lon)
             b_data['name'] = n2city.get('name')
             b_data['nuts5'] = n2city.get('nuts5')
         else:
