@@ -304,8 +304,12 @@ class Graph(ServiceBase):
 
         for n1, d1 in get_tqdm(self.cityGraph.nodes(data=True), self.SetState, desc="Computing distance between cities", total=self.cityGraph.number_of_nodes()):
             n1closest = self._searchNearby(splPoint(d1['lon'], d1['lat']),['residential','service','living_street','unclassified'])
+            if d1.get('nuts5'):
+                continue
             for n2 in self.cityGraph.neighbors(n1):
                 d2 = self.cityGraph.node[n2]
+                if d2.get('nuts5'):
+                    continue
                 try:
                     n2closest = self._searchNearby(splPoint(d2['lon'], d2['lat']),['residential','service','living_street','unclassified'])
 
