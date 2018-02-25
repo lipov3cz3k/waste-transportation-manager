@@ -316,6 +316,8 @@ class Graph(ServiceBase):
             if d1.get('nuts5'):
                 continue
             n1closest = self._searchNearby(splPoint(d1['lon'], d1['lat']),['residential','service','living_street','unclassified'])
+            if d1.get('nuts5'):
+                continue
             for n2 in self.cityGraph.neighbors(n1):
                 d2 = self.cityGraph.node[n2]
                 if d2.get('nuts5'):
