@@ -288,13 +288,21 @@ class Graph(ServiceBase):
             return None
         file_path = join(local_config.folder_export_root, '%s' % self.graph_id)
         matrix = nx.to_dict_of_dicts(self.cityGraph)
-        numpy = nx.to_numpy_matrix(self.cityGraph, weight='length')
-        np.savetxt(file_path+"_city_d.csv", numpy, fmt="%i", delimiter=",")
-
-        with open(file_path+"_city_n.csv", 'w',newline="\n", encoding="utf-8") as f:
+        a_matrix = nx.to_numpy_matrix(self.cityGraph, weight='length')
+        np.savetxt(file_path+"_city_a.csv", a_matrix, fmt="%i", delimiter=",")
+        with open("%s_city_a_order.csv" % file_path, 'w',newline="\n", encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(['node','lat', 'lon','name'])
             for n, d in self.cityGraph.nodes(data=True):
+                writer.writerow([n, d.get('lat'), d.get('lon'), d.get('name'), d.get('nuts5')])
+
+        d_matrix, order = nx.attr_matrix(self.cityGraph, edge_attr="length")
+        np.savetxt("%s_city_d.csv" % file_path, d_matrix, fmt="%i", delimiter=",")
+        with open("%s_city_d_order.csv" % file_path, 'w',newline="\n", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(['node','lat', 'lon','name'])
+            for n in order:
+                d = self.cityGraph.nodes[n]
                 writer.writerow([n, d.get('lat'), d.get('lon'), d.get('name'), d.get('nuts5')])
         return matrix
 
@@ -302,10 +310,16 @@ class Graph(ServiceBase):
         from functools import partial
         from shapely.geometry import Point as splPoint
 
+        for a,b in tqdm(self.cityGraph.edges()):
+            self.cityGraph.edges[a, b].update(dict(length = -1))
         for n1, d1 in get_tqdm(self.cityGraph.nodes(data=True), self.SetState, desc="Computing distance between cities", total=self.cityGraph.number_of_nodes()):
+            if d1.get('nuts5'):
+                continue
             n1closest = self._searchNearby(splPoint(d1['lon'], d1['lat']),['residential','service','living_street','unclassified'])
             for n2 in self.cityGraph.neighbors(n1):
                 d2 = self.cityGraph.node[n2]
+                if d2.get('nuts5'):
+                    continue
                 try:
                     n2closest = self._searchNearby(splPoint(d2['lon'], d2['lat']),['residential','service','living_street','unclassified'])
 
