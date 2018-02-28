@@ -335,18 +335,15 @@ class Graph(ServiceBase):
 
         n1 = g.nodes[a].get('city_relation')
         n2 = g.nodes[b].get('city_relation')
+        if n1 == n2 and n1 != None:
+            #print(d['id'] + ' is in city ' + n1 + ' -> ignore')
+            return None
 
         if n1:
             n1city = cityShapes[n1]
             n1admin_centre = n1city['admin_centre']
-            if n1admin_centre is None:
-                logger.warning("City %s has no admin_centre", n1)
-                a_data['lat'] = g.nodes[a]['lat']
-                a_data['lon'] = g.nodes[a]['lon']
-                n1 = None
-            else:
-                a_data['lat'] = float(n1admin_centre.lat)
-                a_data['lon'] = float(n1admin_centre.lon)
+            a_data['lat'] = float(n1admin_centre.lat)
+            a_data['lon'] = float(n1admin_centre.lon)
             a_data['name'] = n1city.get('name')
             a_data['nuts5'] = n1city.get('nuts5')
         else:
@@ -357,14 +354,8 @@ class Graph(ServiceBase):
         if n2:
             n2city = cityShapes[n2]
             n2admin_centre = n2city['admin_centre']
-            if n2admin_centre is None:
-                logger.warning("City %s has no admin_centre", n1)
-                b_data['lat'] = g.nodes[b]['lat']
-                b_data['lon'] = g.nodes[b]['lon']
-                n2 = None
-            else:
-                b_data['lat'] = float(n2admin_centre.lat)
-                b_data['lon'] = float(n2admin_centre.lon)
+            b_data['lat'] = float(n2admin_centre.lat)
+            b_data['lon'] = float(n2admin_centre.lon)
             b_data['name'] = n2city.get('name')
             b_data['nuts5'] = n2city.get('nuts5')
         else:
@@ -373,21 +364,18 @@ class Graph(ServiceBase):
             b_data['name'] = '-'
             b_data['nuts5'] = None
 
-        if n1 == n2 and n1 != None:
-            #print(d['id'] + ' is in city ' + n1 + ' -> ignore')
-            return None
-        elif n1 != n2 and (n1 != None and n2 != None):
+        if n1 != n2 and (n1 != None and n2 != None):
             #print(d['id'] + ' is in city ' + n1 + ' and ' + n2 + ' -> leave')
             return (n1admin_centre.id, n2admin_centre.id, d['length'], a_data, b_data)
         elif n1 == None and n2 == None:
-            logger.debug("%s is not in any city -> leave", d['id'])
+            logger.info("%s is not in any city -> leave", d['id'])
             return (a, b, d['length'], a_data, b_data)
         else:
             if n1 == None:
-                logger.debug("%s is partly in city %s -> leave", d['id'], n2)
+                logger.info("%s is partly in city %s -> leave", d['id'], n2)
                 return (a, n2admin_centre.id, d['length'], a_data, b_data)
             elif n2 == None:
-                logger.debug("%s is partly in city %s -> leave", d['id'], n1)
+                logger.info("%s is partly in city %s -> leave", d['id'], n1)
                 return (n1admin_centre.id, b, d['length'], a_data, b_data)
         return None
 

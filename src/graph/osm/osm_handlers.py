@@ -10,12 +10,12 @@ from common.config import local_config
 logger = getLogger(__name__)
 
 class Node:
-    def __init__(self, id, lat, lon, tags={}):
+    def __init__(self, id, lat, lon, tags={}, city_relation = None):
         self.id = id
         self.lon = lon
         self.lat = lat
         self.tags = tags
-        self.city_relation = None
+        self.city_relation = city_relation
 
 class Way:
     def __init__(self, id, nodes_id=[], tags={}):
@@ -251,16 +251,28 @@ class CitiesHandler(osmium.SimpleHandler):
                 if not city:
                     continue
                 district['cities'].append(city)
-                city['district']=district
+                city.update({'district' : district})
                 if 'admin_centre_id' in city:
                     try:
                         admin_node = self.places.get(city["admin_centre_id"])
-                        city["admin_centre"] = Node(city["admin_centre_id"], admin_node.lat, admin_node.lon)
-                        city["admin_centre"].city_relation = city
+                        city.update({'admin_centre' : Node(city["admin_centre_id"], 
+                                                           admin_node.lat, 
+                                                           admin_node.lon, 
+                                                           city_relation = city)})
+                        self.cities[subarea] = city
                     except osmium.NotFoundError:
                         logger.info("Admin centre of %s (%s) was not resolved" % (city['name'], city["admin_centre_id"]))
-                        city["admin_centre"] = None
+                        #city["admin_centre"] = None
+                        self.cities.pop(subarea, None)
                 else:
                     logger.info("Admin centre of %s is not defined" % (city['name']))
-                    city["admin_centre"] = None
+                    #city["admin_centre"] = None
+                    self.cities.pop(subarea, None)
+            cities_to_remove = []
+        for city_id, city_value in self.cities.items():
+            if 'admin_centre' not in city_value:
+                cities_to_remove.append(city_id)
+        logger.info("Removing cities withoud admin_centre %s", cities_to_remove)
+        for k in cities_to_remove:
+            self.cities.pop(k, None)
         self.places.clear()
