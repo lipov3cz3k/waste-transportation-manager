@@ -68,7 +68,6 @@ class Graph(ServiceBase):
         self.cityGraph = self._supergraph(ch.cities, self.G, self._inCity)
         #self.SaveAndShowCitiesMap(cityGraph)
 
-
     def connect_with_containers(self):
         from database import db_session
         from graph.container_tool import get_db_container_objects, container_location, get_closest_path, get_direction_for_point
@@ -313,31 +312,31 @@ class Graph(ServiceBase):
         for a,b in tqdm(self.cityGraph.edges()):
             self.cityGraph.edges[a, b].update(dict(length = -1))
         for n1, d1 in get_tqdm(self.cityGraph.nodes(data=True), self.SetState, desc="Computing distance between cities", total=self.cityGraph.number_of_nodes()):
-            if d1.get('nuts5'):
+            if not d1.get('nuts5'):
                 continue
             n1closest = self._searchNearby(splPoint(d1['lon'], d1['lat']),['residential','service','living_street','unclassified'])
-            if d1.get('nuts5'):
+            if not d1.get('nuts5'):
                 continue
             for n2 in self.cityGraph.neighbors(n1):
                 d2 = self.cityGraph.node[n2]
-                if d2.get('nuts5'):
+                if not d2.get('nuts5'):
                     continue
                 try:
                     n2closest = self._searchNearby(splPoint(d2['lon'], d2['lat']),['residential','service','living_street','unclassified'])
 
                     if not n1closest:
                         logger.error("Cannot find closest street to admin_centre %s (%s)!!" % (d1['name'],n1))
-                        self.cityGraph.edges[(n1,n2)]['length'] = -1
+                        self.cityGraph.edges[(n1,n2)]['length'] = -2
                     elif not n2closest:
                         logger.error("Cannot find closest street to admin_centre %s (%s)!!" % (d2['name'],n2))
-                        self.cityGraph.edges[(n1,n2)]['length'] = -1
+                        self.cityGraph.edges[(n1,n2)]['length'] = -3
                     else:
                         route = self._route(n1closest, n2closest)
                         self.cityGraph.edges[(n1,n2)]['length'] = route['paths']['features'][0]['properties']['length']
 
                 except Exception as e:
                     logger.error("Exception cannot compute distance between cities %s (%s) and %s (%s): %s" % (d1['name'],n1,d2['name'],n2,str(e)))
-                    self.cityGraph.edges[(n1,n2)]['length'] = -1
+                    self.cityGraph.edges[(n1,n2)]['length'] = -4
         self.ExportCityDistanceMatrix() 
 
     def _inCity(self,cityShapes,g,a,b,d):
@@ -433,7 +432,7 @@ class Graph(ServiceBase):
     def _searchNearby(self, point, ignoreHighway=None):
         from graph.bounding_box import get_bounding_box
         from shapely.geometry import Point as splPoint
-        bbox = get_bounding_box(point.y,  point.x, 0.5)
+        bbox = get_bounding_box(point.y,  point.x, 5)
 
         nodes = (n for n,d in self.G.nodes(data=True) if d['lat'] > bbox.min_latitude and \
                                                               d['lat'] < bbox.max_latitude and \
