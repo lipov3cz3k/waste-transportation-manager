@@ -6,7 +6,7 @@ logger = getLogger(__name__)
 
 
 def get_db_streetnet_segment_objects(db_session, bounds):
-    min_latitude, max_latitude, min_longitude, max_longitude = bounds
+    min_longitude, max_longitude, min_latitude, max_latitude = bounds
     segments_obj = db_session.query(StreetnetSegments).filter((StreetnetSegments.start_latitude > min_latitude) | (StreetnetSegments.end_latitude > min_latitude)) \
                                                         .filter((StreetnetSegments.start_latitude < max_latitude) | (StreetnetSegments.end_latitude < max_latitude)) \
                                                         .filter((StreetnetSegments.start_longitude > min_longitude) | (StreetnetSegments.end_longitude > min_longitude)) \
@@ -16,10 +16,16 @@ def get_db_streetnet_segment_objects(db_session, bounds):
 
 def _node_candidates(graph, point):
     result = []
-    boundary = point.buffer(0.0005)
-    for (n_id, n_d) in tqdm(graph.items(), leave=False):
-        if boundary.contains(n_d):
-           result.append( n_id )
+    max_iter = 10
+    i = 1
+    presnost = 0.0005
+    while not result or i == max_iter:
+        boundary = point.buffer(presnost)
+        for (n_id, n_d) in tqdm(graph.items(), leave=False):
+            if boundary.contains(n_d):
+                result.append( n_id )
+        i +=1
+        presnost *= 10
     return result
 
 
@@ -44,10 +50,10 @@ def get_closest_node(graph, point, ignoreHighway=None):
     for (n_id, n_d) in tqdm(graph.nodes(data=True), desc="Optimalizing graph for search", leave=False):
             nodes_points[n_id] = Point(n_d['lon'], n_d['lat'])
     node_candidates = _node_candidates(nodes_points, point)
-
     if ignoreHighway:
             nodes = (u for u,v,d in graph.out_edges(node_candidates,data=True) if not d['highway'] in ignoreHighway)
             node_candidates = list(nodes)
 
+    logger.debug("Node candidates for %s: %s", point, node_candidates)
     dist = lambda node: point.distance(Point(graph.nodes[node]['lon'], graph.nodes[node]['lat']))
     return min(node_candidates, key=dist)

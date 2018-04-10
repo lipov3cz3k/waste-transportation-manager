@@ -124,6 +124,7 @@ class Graph(ServiceBase):
         # pro vsechny useky streetnet najdi nejblizsi osm way
         local_db_session = db_session()
         segment_objs = get_db_streetnet_segment_objects(local_db_session, self.shape.bounds)
+        logger.info("Connect with streetnet len: %s, bounds: %s", len(segment_objs), self.shape.bounds)
         nodes_points = {}
         data = []
         for (n_id, n_d) in tqdm(graph.nodes(data=True), desc="Optimalizing graph for search", leave=False):
