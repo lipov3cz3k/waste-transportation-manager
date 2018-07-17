@@ -18,6 +18,7 @@ spustíme hledání (`python cli.py export ID_GRAFU --trackinfo CESTA_K_EXCELU`)
 
 
 ====Postup vytvoření nového grafu=====
+
 `python cli.py create ID_OBLASTI`
 
 ID OBLASTÍ
@@ -39,4 +40,5 @@ ID OBLASTÍ
 442453 Kraj Vysočina
 `
 =====Postup exportu grafu měst======
+
 `python cli.py export ID_GRAFU --citygraph`
