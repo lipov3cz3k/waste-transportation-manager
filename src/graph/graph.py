@@ -51,12 +51,12 @@ class Graph(ServiceBase):
         check_shape = False
         init_db()
         logger.info("Constructing graph from %s bounds: %s", source_pbf, shape.bounds)
-        if check_shape:
-            rh.set_in_shape(shape)
         self.shape = shape
         rh = RouteHandler()
         rh.apply_file(source_pbf, locations=True)
         rh.split()
+        if check_shape:
+            rh.set_in_shape(shape)
         rh.get_graph(self.G, check_shape)
         logger.info("Reduced graph: %s edges, %s nodes", self.G.number_of_edges(), self.G.number_of_nodes())
         self.fullG = nx.DiGraph()
@@ -69,6 +69,7 @@ class Graph(ServiceBase):
         ch.connect_regions()
 
         self.cityGraph = self._supergraph(ch.cities, self.G, self._inCity)
+        logger.info("City graph: %s edges, %s nodes", self.cityGraph.number_of_edges(), self.cityGraph.number_of_nodes())
         #self.SaveAndShowCitiesMap()
 
     def connect_with_containers(self):
@@ -394,19 +395,30 @@ class Graph(ServiceBase):
                 return (n1admin_centre.id, b, d['length'], a_data, b_data)
         return None
 
+    def set_city_relation(self, cityShapes, g1):
+        from rtree import index
+        from shapely.geometry import Point as splPoint
+        idx = index.Index()
+        for k, city in cityShapes.items():
+            if 'polygon' in city:
+                idx.insert(k, city['polygon'].bounds)
+
+        for n, d in get_tqdm(g1.nodes(data=True), self.SetState, desc="Filling city relation", total=g1.number_of_nodes()):
+            node = splPoint(float(d['lon']), float(d['lat']))
+            for k in idx.intersection(node.bounds):
+                city = cityShapes[k]
+                if 'polygon' in city and city['polygon'].contains(node):
+                    g1.nodes[n].update({'city_relation' : k})
+                    break
+
     def _supergraph(self, cityShapes, g1, keyfunc, allow_selfloops=True):
         from shapely.geometry import Point as splPoint
         g2 = nx.DiGraph()
         #nodelist=list(set(sum([(u,v) for u,v,d in self.G.edges_iter(data=True) if d['highway']=='track'], ())))
         #xx = len(nodelist)
         #yy = self.G.nodes()
+        self.set_city_relation(cityShapes, g1)
 
-        for n, d in get_tqdm(g1.nodes(data=True), self.SetState, desc="Filling city relation", total=g1.number_of_nodes()):
-            node = splPoint(float(d['lon']), float(d['lat']))
-            for k, city in cityShapes.items():
-                if 'polygon' in city and city['polygon'].contains(node):
-                    g1.nodes[n].update({'city_relation' : k})
-                    break
         for (a,b,d) in get_tqdm(g1.edges(data=True), self.SetState, desc="Creating city graph", total=g1.number_of_edges()):
             # We don't want track category in our supergraph
             if d['highway'] in local_config.excluded_highway_cat:
@@ -431,6 +443,25 @@ class Graph(ServiceBase):
                 #            g2.node[u2]['original_nodes'].add(u)
                 #        except:
                 #            g2.node[u2]['original_nodes'] = set([u])
+
+        # Connect crossroad out of the city
+        nodes_to_remove = []
+        nodes_to_connect = []
+        for (center,d) in get_tqdm(g2.nodes(data=True), self.SetState, desc="Removing crossroad out of the city", total=g2.number_of_nodes()):
+            if d.get('nuts5'):
+                continue
+            for n1 in nx.all_neighbors(g2, center):
+                for n2 in nx.all_neighbors(g2, center):
+                    if n1 == n2 or g2.has_edge(n1, n2):
+                        continue
+                    nodes_to_connect.append((n1,n2))
+            nodes_to_remove.append(center)
+        logger.info("Removing %s nodes and adding %s edges", len(nodes_to_remove), len(nodes_to_connect))
+        # for n1, n2 in nodes_to_connect:
+        #     g2.add_edge(n1,n2)
+        for n in nodes_to_remove:
+            g2.remove_node(n)
+
         return g2
 
     def _searchNearby(self, point, ignoreHighway=None):
