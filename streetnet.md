@@ -21,6 +21,7 @@ spustíme hledání (`python cli.py export ID_GRAFU --trackinfo CESTA_K_EXCELU`)
 `python cli.py create ID_OBLASTI`
 
 ID OBLASTÍ
+`
 51684 ČR
 435541 Hlavní město Praha
 442397 Středočeský kraj
@@ -36,6 +37,6 @@ ID OBLASTÍ
 442311 Jihomoravský kraj
 442449 Zlínský kraj
 442453 Kraj Vysočina
-
+`
 =====Postup exportu grafu měst======
 `python cli.py export ID_GRAFU --citygraph`
