@@ -25,17 +25,17 @@
             "pythonPath": "${config:python.pythonPath}",
             "program": "${workspaceFolder}/cli.py",
             "cwd": "",
-            "args": [
-                "-v",
-                "export",
-                "441223_2018-02-20-07-16-46",
-                "--trackinfo", "d:/WTM/test.xlsx"
-            ],
             // "args": [
             //     "-v",
-            //     "create",
-            //     "-r", "441223"
+            //     "export",
+            //     "442314_2018-02-22-17-16-22",
+            //     "--trackinfo", "D:/WTM/test.xlsx"
             // ],
+            "args": [
+                "-v",
+                "create",
+                "-r", "442311"
+            ],
             "console": "integratedTerminal",
             "env": {},
             "envFile": "${workspaceFolder}/.env",

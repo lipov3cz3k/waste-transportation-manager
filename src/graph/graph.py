@@ -48,16 +48,19 @@ class Graph(ServiceBase):
 
     def construct_graph(self, source_pbf, shape):
         from database import init_db, db_session
+        check_shape = False
         init_db()
         logger.info("Constructing graph from %s bounds: %s", source_pbf, shape.bounds)
+        if check_shape:
+            rh.set_in_shape(shape)
         self.shape = shape
         rh = RouteHandler()
         rh.apply_file(source_pbf, locations=True)
         rh.split()
-        rh.get_graph(self.G, shape)
+        rh.get_graph(self.G, check_shape)
         logger.info("Reduced graph: %s edges, %s nodes", self.G.number_of_edges(), self.G.number_of_nodes())
         self.fullG = nx.DiGraph()
-        rh.get_full_graph(self.fullG, shape)
+        rh.get_full_graph(self.fullG, check_shape)
         logger.info("Full graph: %s edges, %s nodes", self.fullG.number_of_edges(), self.fullG.number_of_nodes())
 
     def construct_cities_graph(self, source_pbf):
@@ -66,7 +69,7 @@ class Graph(ServiceBase):
         ch.connect_regions()
 
         self.cityGraph = self._supergraph(ch.cities, self.G, self._inCity)
-        #self.SaveAndShowCitiesMap(cityGraph)
+        #self.SaveAndShowCitiesMap()
 
     def connect_with_containers(self):
         from database import db_session

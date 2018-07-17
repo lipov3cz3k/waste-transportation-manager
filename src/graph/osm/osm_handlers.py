@@ -26,6 +26,7 @@ class Way:
         self.length = 0
         self.nodes = None
         self.forward = None
+        self.inside_shape = None
 
     def getFirstLastNodeId(self):
         return (self.nodes_id[0], self.nodes_id[-1])
@@ -114,22 +115,25 @@ class RouteHandler(osmium.SimpleHandler):
                 split_way._setDirection(self.nodes_map)
                 self.split_ways.append(split_way)
 
-    def get_graph(self, graph, shape=None):
+    def set_in_shape(self, shape):
+        for split_way in tqdm(self.split_ways, desc="Setting shape attribute"):
+            for point in map(self.nodes_map.get, split_way.getFirstLastNodeId()):
+                split_way.inside_shape = shape.contains(splPoint(float(point.lon), float(point.lat)))
+                if split_way.inside_shape:
+                    break
+
+
+    def get_graph(self, graph, check_shape=True):
         #use that histogram to split all ways, replacing the member set of ways
         if graph is None:
             return
         for split_way in tqdm(self.split_ways, desc="Generating simplified graph"):
+            if check_shape and not split_way.inside_shape:
+                continue
             try:
                 first, last = split_way.getFirstLastNodeId()
                 node_first = self.nodes_map.get(first)
                 node_last = self.nodes_map.get(last)
-
-                if shape:
-                    for point in map(self.nodes_map.get, split_way.getFirstLastNodeId()):
-                        if shape.contains(splPoint(float(point.lon), float(point.lat))):
-                            break
-                    else:
-                        continue
 
                 params = dict(id=split_way.id,
                             length=split_way.length,
@@ -156,21 +160,16 @@ class RouteHandler(osmium.SimpleHandler):
             except osmium.InvalidLocationError as eee:
                 logger.warning("Way %s has invalid start or end node (%s)" % (split_way.id, eee))
 
-    def get_full_graph(self, graph, shape=None):
+    def get_full_graph(self, graph, check_shape=True):
         if graph is None:
             return
         for split_way in tqdm(self.split_ways, desc="Generating full graph"):
+            if check_shape and not split_way.inside_shape:
+                continue
             try:
                 if len(split_way.nodes_id) <= 1:
                     logger.warning("Way: %s has only one node: %s", split_way.id, split_way.nodes_id)
                     continue
-
-                if shape:
-                    for point in map(self.nodes_map.get, split_way.getFirstLastNodeId()):
-                        if shape.contains(splPoint(float(point.lon), float(point.lat))):
-                            break
-                    else:
-                        continue
 
                 params = dict(id=split_way.id,
                             length=split_way.length,
