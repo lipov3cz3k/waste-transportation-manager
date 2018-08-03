@@ -11,4 +11,4 @@ This repository contains source files for waste management project
 2.2 Libraries: Shapely, Rtree should be installed manually 
     go to waste-transportation-manager/tools/ or download from http://www.lfd.uci.edu/~gohlke/pythonlibs/#shapely ... this package contains GEOS lib
     command: pip install LIB_PATH (e.g. "pip install X:\waste-transportation-manager-orp_export\tools\shapely\Shapely-1.6.4.post1-cp36-cp36m-win_amd64.whl")
-3. Start application (python cly.py or gui.py)
+3. Start application (python cly.py or gui.py), browser: http://127.0.0.1:5000
