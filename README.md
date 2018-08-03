@@ -5,7 +5,7 @@ This repository contains source files for waste management project
 
 # Installation #
 
-1. Set proper FTP login in file src/common/config.py
+1. Set: proper FTP login, path for exporting (D:\WTM) etc. in file src/common/config.py
 2. Install python (https://www.python.org/downloads/release/), tick checkbox - Add Python to the PATH
 2.1 Install all supporting libraries from (/src/requirements.txt) by command: pip install LIB_NAME (e.g. "pip install Flask" next..)
 2.2 Libraries: Shapely, Rtree should be installed manually 
