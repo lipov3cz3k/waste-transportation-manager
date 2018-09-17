@@ -22,6 +22,7 @@ def init_db():
     import models.waste
     import models.tracks
     import models.path
+    import models.cdv
     Base.metadata.create_all(bind=engine)
 
     # recreate index of EVI - use only on DB where index doesn't exist

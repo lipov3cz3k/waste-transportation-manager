@@ -1,0 +1,10 @@
+.git
+.gitignore
+.vscode
+
+*.code-workspace
+*.sln
+
+data/
+jsdi-api/
+queries/

@@ -23,7 +23,7 @@ vytvořené konzolové okno je třeba nechat spuštěné, rozhraní pak bude k d
 ve webovém prohlížeči na adrese 127.0.0.1:5000
 
 Konzolové rozhraní je spustitelné příkazem:
-python main.py
+python cli.py
 po spuštění konzolové verze bez zadání parametrů je vypsána nápověda.
 
 Pro testovací účely je přibalena také vzorová databáze incidentů,

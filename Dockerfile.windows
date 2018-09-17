@@ -1,0 +1,21 @@
+# Use an official Python runtime as a parent image
+FROM python:3.5-windowsservercore
+
+# Install chocolatey
+RUN cmd @powershell -NoProfile -ExecutionPolicy Bypass -Command "$env:ChocolateyUseWindowsCompression='false'; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1')) >$null 2>&1"
+
+# Install Visual C++ Build Tools, as per: https://chocolatey.org/packages/visualcpp-build-tools
+RUN choco install visualcpp-build-tools -version 14.0.25420.1 -y
+
+WORKDIR /www/wtm
+COPY ./src/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY ./src .
+
+# Make port 80 available to the world outside this container
+EXPOSE 5000
+
+ENTRYPOINT ["python"]
+# Run app.py when the container launches
+CMD ["gui.py"]

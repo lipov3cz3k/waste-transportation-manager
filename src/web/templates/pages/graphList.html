@@ -14,7 +14,7 @@
         {% for item in graphList %}
         <div class="col-md-4">
             <div id="{{ item.id }}" class="map-graphList"></div>
-            <div><a href="{{ url_for('graphDetail', graphID=item.id) }}">{{ item.timestamp }} (GMT)</a></div>
+            <div><a href="{{ url_for('graphDetail', graphID=item.id) }}">{{ item.datetime }}</a></div>
         </div>
         {% endfor %}
     </div>
@@ -35,7 +35,7 @@
     }
     {% for item in graphList %}
     // MAP {{ loop.index }}
-    var bounds_{{ loop.index }} = [[{{ item.coords[3] }}, {{ item.coords[0] }}], [{{ item.coords[1] }}, {{ item.coords[2] }}]];
+    var bounds_{{ loop.index }} = [[{{ item.bounds[3] }}, {{ item.bounds[0] }}], [{{ item.bounds[1] }}, {{ item.bounds[2] }}]];
     var map_{{ loop.index }} = L.map('{{ item.id }}', map_options);
     map_{{ loop.index }}.fitBounds(bounds_{{ loop.index }});
 

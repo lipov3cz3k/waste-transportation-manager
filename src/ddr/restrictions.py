@@ -1,6 +1,9 @@
+from logging import getLogger
 from openpyxl import load_workbook
-from common.utils import LogType, print, get_tqdm
+from common.utils import get_tqdm
 from geojson import Point, Feature, FeatureCollection, LineString
+
+logger = getLogger(__name__)
 
 def LoadFromFile(file):
     workbook = load_workbook(file, read_only = True)
@@ -9,10 +12,10 @@ def LoadFromFile(file):
         try:          
             data = _ParseSheet(sheet)
         except KeyboardInterrupt:
-            print("KeyboardInterrupt", LogType.error)
+            logger.warning("KeyboardInterrupt")
             raise KeyboardInterrupt
         except e:
-            print("Exception reading source data: %s" % str(e), LogType.error)
+            logger.error("Exception reading source data: %s", str(e))
             return
 
     return data

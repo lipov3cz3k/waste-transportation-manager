@@ -13,17 +13,20 @@ class ftp_config:
 
 class local_config:
     if system() == "Linux":
-        root_folder = normpath(join(environ['HOME'], "/mnt/d/WTM"))
+        root_folder = normpath(join(environ['HOME'], "/www/wtm-data"))
+        osmosis_bin = "osmosis"
     else:
         root_folder = normpath("D:\\WTM")
+        osmosis_bin = 's:/_projects/waste-transportation-manager/tools/osmosis/bin/osmosis.bat'
 
     folder_data_root = normpath(join(root_folder, "data"))
     folder_log_files = normpath(join(root_folder, "logs"))
     folder_database = normpath(join(root_folder, "db"))
     db_filename = 'data.db'
-    log_filename = 'trace.log'
+    log_filename = 'wtm'
     dump_filename = 'graph.g'
     path_db_file = normpath(join(folder_database, db_filename))
+    #osmosis_bin = "D:/_projects/waste-transportation-manager/tools/osmosis/bin/osmosis.bat"
     data_count_per_iteration = 500
     location_count_per_iteration = 500 # TODO: use it
     sleep_between_iteration = 1000 * 1 * 60 * 10 # 10 minutes
@@ -34,11 +37,12 @@ class local_config:
     folder_export_root = normpath(join(root_folder, "export"))
     folder_paths_root = normpath(join(root_folder, "paths"))
     folder_restrictions_root = normpath(join(root_folder, "restrictions"))
+    city_map_file = normpath(join(folder_osm_data_root, "jihomoravsky.city" ))
     allowed_tags_node = ['highway','place','name']
     allowed_tags_way = ['oneway', 'highway', 'name', 'ref']
-    allowed_place_tags = ['city','town','village']
+    allowed_place_tags = ['city','town','village', 'hamlet']
     allowed_relation_tags = ['name', 'admin_level']
-    allowed_members = ['way', 'node']
+    allowed_members = ['way', 'node', 'relation']
     allowed_highway_cat = ['motorway','trunk','primary','secondary','tertiary','road','residential','service','motorway_link','trunk_link','primary_link','secondary_link','teriary_link','living_street','unclassified','track']
     excluded_highway_cat = ['track']
     not_allowed_evi = [TMCUpdateClass.parking]
