@@ -4,6 +4,7 @@ from pickle import dump as pickle_dump, load as pickle_load
 from os.path import join, isfile, exists
 from geojson import Point, Feature, FeatureCollection, LineString
 from tqdm import tqdm
+import csv
 import json
 
 from common.service_base import ServiceBase
@@ -202,6 +203,51 @@ class Graph(ServiceBase):
 # LoadPath
 # LoadAndFillFrequecy
 
+
+############# Export functions ################
+    def ExportSimple(self):
+        import numpy as np
+        file_path = join(local_config.folder_export_root, '%s' % self.graph_id)
+
+
+        #return nx.adjacency_matrix(self.G, weight='length')
+        # nodelist=list(set(sum([(u,v) for u,v,d in self.G.edges_iter(data=True) if not d['highway'] in local_config.excluded_highway_cat], ())))
+        matrix = nx.to_numpy_matrix(self.G, weight='length')
+        np.savetxt(file_path+"_d.csv", matrix, fmt="%i", delimiter=",")
+        
+        with open(file_path+"_n.csv", 'w',newline="\n", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(['node','lat', 'lon','traffic_lights'])
+            for n, d in self.G.nodes(data=True):
+                writer.writerow([n, d.get('lat'), d.get('lon'), 'T' if d.get('traffic_lights') else 'F'])
+        return self.G.nodes(data=True)
+
+    def ExportConainers(self):
+        from database import db_session
+        from models.waste import Container
+        file_path = join(local_config.folder_export_root, '%s' % self.graph_id)
+
+        waste_codes_obj = db_session.query(Container.waste_code).group_by(Container.waste_code).all()
+        for waste_code in waste_codes_obj:
+            with open(file_path+"_containers_"+str(waste_code[0])+".csv", 'w',newline="\n", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                writer.writerow(['edge','n1', 'n2','length','highway','contaniners'])
+                for n1, n2, e in self.G.edges(data=True):
+                    # We don't want track category in our supergraph
+                    if e['highway'] in local_config.excluded_highway_cat:
+                        continue
+                    containers = [d for d in e['containers'] if d.get('waste_code') == waste_code[0]]
+                    if not containers:
+                        continue
+                    writer.writerow([e['id'], n1, n2, e['length'], e['highway'], containers])
+        return self.G.nodes(data=True)
+
+    def ExportTracksWithPaths(self):
+        file_path = join(local_config.folder_export_root, '%s' % self.graph_id)
+        result = self.GetTracksWithPaths()
+        with open(file_path+"_tracks.txt", 'w',newline="\n", encoding="utf-8") as f:
+            _print(result, file=f)
+            f.flush()
 # ExportSimple
 # ExportConainers
 # ExportTracksWithPaths
