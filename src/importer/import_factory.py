@@ -1,10 +1,10 @@
 from logging import getLogger
 from importer.streetnet import StreetNet
-from importer.waste import Cheb, Jihlava, Stavanger
+from importer.waste import Cheb, Jihlava, Stavanger, Plzen
 LOGGER = getLogger(__name__)
 
 def _guessCity(importFile):
-    supported_cities = ['cheb', 'jihlava','stavanger']
+    supported_cities = ['cheb', 'jihlava','stavanger','plzen']
     indices = [s for i, s in enumerate(supported_cities) if s in importFile.name.lower()]
     if indices:
         return indices[0]
@@ -38,6 +38,8 @@ def container_import(importFile=None, sourceCity=None):
         importer = Jihlava()
     elif sourceCity.lower() == 'stavanger':
         importer = Stavanger()
+    elif sourceCity.lower() == 'plzen':
+        importer = Plzen()
     else:
         raise Exception('Unsupported city importer')
     _run(importer, importFile)

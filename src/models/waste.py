@@ -197,4 +197,28 @@ class Stavanger(UniqueMixin, Container) :
     def unique_filter(cls, query, **kwargs):
         return query.filter(Stavanger.object_id == kwargs['data']['object_id'])
 stavanger_object_id_index = Index('Stavanger_object_id_index', Stavanger.object_id)
-    
+
+class Plzen(UniqueMixin, Container) :
+    __tablename__ = 'Plzen'
+    id = Column(Integer, ForeignKey('Container.id'), primary_key=True)
+    object_id = Column(Integer, unique=True)
+
+    __mapper_args__ = {'polymorphic_identity':'Plzen'}
+
+    def __init__(self, **kwargs):
+        data = kwargs['data']
+        if data == None :
+            return
+        super().__init__(**kwargs)
+
+        self.object_id = data.get('object_id')
+
+    @classmethod
+    def unique_hash(cls, **kwargs):
+        return kwargs['data']['object_id']
+
+    @classmethod
+    def unique_filter(cls, query, **kwargs):
+        return query.filter(Plzen.object_id == kwargs['data']['object_id'])
+
+Plzen_object_id_index = Index('Plzen_object_id_index', Plzen.object_id)

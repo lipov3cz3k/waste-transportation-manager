@@ -300,3 +300,83 @@ class Stavanger(Importer):
 
                 data.append(Stavanger.as_unique(self.db_session, db_session=self.db_session, data=record))
         return data
+
+class Plzen(Importer):
+    def __init__(self):
+        super().__init__()
+        self.source = "Plzen"
+
+    def Import(self, file):
+        super().Import()
+
+        self.workbook = load_workbook(file, read_only = True)
+
+        #load values from xls
+        for sheet in self.workbook:
+            try:
+                data = self._ParseSheet(sheet)
+            except KeyboardInterrupt:
+                self.RemoveDBSession()
+                logger.error("KeyboardInterrupt")
+                raise KeyboardInterrupt
+            except e:
+                self.RemoveDBSession()
+                logger.error("Exception reading source data: %s" % str(e))
+                return
+            #save to database
+            self.SaveAllRecordsToDatabase(data)
+            data.clear()
+
+        #get location
+        self.LoadOSMLocation()
+
+    def _ParseSheet(self, sheet):
+        from models.waste import Plzen
+        normalize = {'ID_CONTAINER' : 'object_id',
+                     'TrashType' : 'waste_name',
+                     'Volume' : 'capacity',
+                     'Latitude' : 'latitude',
+                     'Longitude' : 'longitude',
+                     'Interval' : 'interval',
+                     'CollectionPlaceName' : 'address'
+                }
+
+        waste_codes = {'Paper' : 200101,
+                       'MixedWaste': 200000,}
+
+        data = []
+        rows = sheet.rows
+        first_row = [cell.value for cell in next(rows)]
+        for row in get_tqdm(rows, self.SetState, desc="loading " + sheet.title, total=sheet.max_row):
+            record = { 'waste_type': sheet.title }
+            for key, cell in zip(first_row, row):
+                if cell.data_type == 's':
+                    record[normalize.get(key, key)] = cell.value.strip()
+                else:
+                    record[normalize.get(key, key)] = cell.value
+
+            # upraveni adresy
+            adresa = record.get('address').strip('/ ').rsplit(' ', 1)
+            if len(adresa) > 1 and adresa[1][0].isdigit():
+                    record['street'], record['house_number'] = adresa
+            else:
+                record['street'] = record.get('address')
+                record['house_number'] = ''
+            record.pop('address', None)
+
+            record['waste_code'] = waste_codes.get(record.get('waste_name', ''), 0)
+            record['city'] = 'Plzen'
+            record['country'] = 'Czech republic'
+
+            record['name'] = None
+            record['waste_type'] = None
+            record['quantity'] = None
+            record['quantity_unit'] = None
+            record['days_orig'] = record['days_even'] = record['days_odd'] = None
+            record['start'] = None
+            record['end'] = None
+            record['interval'] = None
+            record['note'] = None
+
+            data.append(Plzen.as_unique(self.db_session, db_session=self.db_session, data=record))
+        return data
