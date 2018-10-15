@@ -100,6 +100,7 @@ class Graph(ServiceBase):
             simple_paths = [(x, y) for x,y,d in self.G.edges(data='id') if d==id]
             if not simple_paths:
                 logger.error("Cannot find edge id %s in simplified graph (%s)", id, path)
+                continue
             simple_path = simple_paths[0]
             a_node = self.G.nodes[simple_path[0]]
             b_node = self.G.nodes[simple_path[1]]
@@ -176,9 +177,68 @@ class Graph(ServiceBase):
         return self.cityGraph != None
 
     #### API: Containers
-
     def get_edges_with_containers(self):
-        logger.warning("Not Implemented")
+        edges = []
+        for n1, n2, e in self.G.edges(data=True):
+            containers = e.get('containers')
+            if len(containers) >= 1:
+                start = (float(self.G.node[n1]['lon']), float(self.G.node[n1]['lat']))
+                end = (float(self.G.node[n2]['lon']), float(self.G.node[n2]['lat']))
+                f = Feature(geometry=LineString([start, end]), properties={'n1' : n1, 'n2' : n2})
+                edges.append(f)
+        return FeatureCollection(edges)
+
+    #GetContainersGeoJSON
+    def get_containers_geojson(self, n1=None, n2=None):
+        from database import db_session
+        from models.waste import Container
+
+        result = {}
+        if n1 and n2:
+            e = self.G[n1][n2]
+            containers = e.get('containers')
+            for container_id in containers:
+                container = db_session.query(Container).filter(Container.id == container_id).one()
+                result.setdefault(container.waste_code,[]).append(Feature(id=container.id, geometry=Point((float(container.address.longitude), float(container.address.latitude))), properties=None))
+            # oposit direction
+            if n1 in self.G[n2]:
+                e = self.G[n2][n1]
+                containers = e.get('containers')
+                for container in containers:
+                    result.setdefault(container.waste_code,[]).append(Feature(id=container.id, geometry=Point((float(container.address.longitude), float(container.address.latitude))), properties=None))
+        else:
+            for n1, n2, e in self.G.edges(data=True):
+                containers = e.get('containers')
+                for container_id in containers:
+                    container = db_session.query(Container).filter(Container.id == container_id).one()
+                    
+                    result.setdefault(container.waste_code,[]).append(Feature(id=container.id, geometry=Point((float(container.address.longitude), float(container.address.latitude))), properties=None))
+        for key, value in result.items():
+            result[key] = FeatureCollection(value)  
+        return result
+
+    #GetContainerDetails
+    def get_container_details(self):
+        pass
+        # from database import db_session
+        # from models.waste import Container
+
+        # containers_details = []
+        # containers = db_session.query(Container).filter(Container.id == id).all()
+        # for container in containers:
+        #     containers_details.append({ 'id' : container.id, 
+        #                                 'container_type' : container.container_type,
+        #                                 'waste_type' : container.waste_type,
+        #                                 'waste_name' : container.waste_name,
+        #                                 'interval' : container.interval,
+        #                                 'days' : container.days_orig,
+        #                                 'city' : container.address.city,
+        #                                 'street' : container.address.street,
+        #                                 'house_number' : container.address.house_number
+        #                                 })
+
+        # db_session.remove()
+        # return {'containers' : containers_details}
 
     #### Api: Import
 
@@ -236,7 +296,12 @@ class Graph(ServiceBase):
                     # We don't want track category in our supergraph
                     if e['highway'] in local_config.excluded_highway_cat:
                         continue
-                    containers = [d for d in e['containers'] if d.get('waste_code') == waste_code[0]]
+                    containers = []
+                    for container_id in e['containers']:
+                        container = db_session.query(Container).filter(Container.id == container_id).one()
+                        if container.waste_code == waste_code[0]:
+                            containers.append(container.id)
+                    # containers = [d for d in e['containers'] if d.get('waste_code') == waste_code[0]]
                     if not containers:
                         continue
                     writer.writerow([e['id'], n1, n2, e['length'], e['highway'], containers])

@@ -69,6 +69,9 @@ class Container(Base) :
 
         self.note = data['note']
 
+    def __str__(self):
+        return self.id
+
 class Cheb(UniqueMixin, Container) :
     __tablename__ = 'Cheb'
     id = Column(Integer, ForeignKey('Container.id'), primary_key=True)

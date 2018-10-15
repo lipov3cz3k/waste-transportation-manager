@@ -170,7 +170,7 @@ def graphGetContainers(graphID, n1, n2):
     if request.method == 'POST':
         n1 = request.form['n1']
         n2 =  request.form['n2']
-    return jsonify(graph.GetContainersGeoJSON(n1, n2))
+    return jsonify(graph.get_containers_geojson(n1, n2))
 
 @app.route('/graph/<graphID>/container/details', methods=['POST'])
 def graphGetContainerDetails(graphID):
