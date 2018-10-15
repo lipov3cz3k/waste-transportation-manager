@@ -34,8 +34,7 @@ class Importer(ServiceBase):
         from models.location import Address
 
         addresses_obj = self.db_session.query(Address).filter(Address.location == None) \
-                                                      .filter((Address.country == 'CZ_XXX') | (Address.country == 'Norway')) \
-                                                       .all()
+                                                      .all()
         return addresses_obj
 
     def _GetLocationsForAddresses(self, addresses_array):
