@@ -375,7 +375,6 @@ class Plzen(Importer):
             record['days_orig'] = record['days_even'] = record['days_odd'] = None
             record['start'] = None
             record['end'] = None
-            record['interval'] = None
             record['note'] = None
 
             data.append(Plzen.as_unique(self.db_session, db_session=self.db_session, data=record))

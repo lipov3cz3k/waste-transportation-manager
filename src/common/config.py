@@ -17,7 +17,7 @@ class local_config:
         osmosis_bin = "osmosis"
     else:
         root_folder = normpath("D:\\WTM")
-        osmosis_bin = 's:/_projects/waste-transportation-manager/tools/osmosis/bin/osmosis.bat'
+        osmosis_bin = '../tools/osmosis/bin/osmosis.bat'
 
     folder_data_root = normpath(join(root_folder, "data"))
     folder_log_files = normpath(join(root_folder, "logs"))

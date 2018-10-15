@@ -1,6 +1,7 @@
 import subprocess
 import re
-from os.path import normpath, join, exists
+import sys
+from os.path import normpath, join, exists, abspath
 from urllib.request import urlretrieve
 from shapely.geometry import MultiPolygon, Polygon
 
@@ -31,8 +32,9 @@ def _download_region_poly(region_id, data_path):
 
 def _apply_poly_to_pbf(inputFile, outputFile, polyFile):
     progress_re = re.compile(r"INFO:.*(?P<type>Node|Way) (?P<id>\d+), (?P<ops>\d+.\d+)")
+    osmosis_bin = join(abspath(sys.path[0]), local_config.osmosis_bin)
 
-    for line in _execute([local_config.osmosis_bin,
+    for line in _execute([osmosis_bin,
                           "--read-pbf-fast", inputFile,
                           "--bounding-polygon", "file=%s"%polyFile, "completeRelations=no", "completeWays=yes",
                           "--tee", "outPipe.0=w", "outPipe.1=r",
