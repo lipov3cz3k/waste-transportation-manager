@@ -342,7 +342,7 @@ class Plzen(Importer):
                 }
 
         waste_codes = {'Paper' : 200101,
-                       'MixedWaste': 200000,}
+                       'MixedWaste': 200301,}
 
         data = []
         rows = sheet.rows
