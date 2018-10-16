@@ -1,5 +1,6 @@
-#Správce svozu odpadu#
-###Adresářová struktura###
+# Správce svozu odpadu #
+
+### Adresářová struktura ###
 ```
 /src	- zdrojový kód navržené aplikace
 /jsdi-api		- skript pro ukládání dopravních informací přes rozhraní DDR
@@ -9,7 +10,7 @@ info.cz.md - tento soubor
 README.md		- informace o spuštění aplikace
 ```
 
-##Instalace##
+## Instalace ##
 * Nainstalovat python3.6
 (https://www.python.org/downloads/release/python-366/)
 * Nainstalovat wheel balíčky z tools
@@ -24,21 +25,21 @@ pip install -r src/requirements.txt
 Konfigurace aplikace se provádí v souboru common/config.py.
 
 
-##Grafické rozhraní##
+## Grafické rozhraní ##
 ```
 python gui.py
 ```
 Vytvořené konzolové okno je třeba nechat spuštěné, rozhraní pak bude k dispozici
 ve webovém prohlížeči na adrese 127.0.0.1:5000
 
-##Konzolové rozhraní##
+## Konzolové rozhraní ##
 ```
 python cli.py
 ```
 Po spuštění bez parametrů je vypsána nápověda
 
 
-##Import přihlášených odběrných míst/kontejnerů do databáze##
+## Import přihlášených odběrných míst/kontejnerů do databáze ##
 Načte z externího souboru všechny záznamy do databáze a pokusí se lokalizovat jednotlivé adresy
 v OpenStreetMap - získá unikátní OSM ID každého záznamu
 
@@ -49,7 +50,7 @@ viz https://operations.osmfoundation.org/policies/nominatim/
 
 
 
-###Podporovaná města###
+### Podporovaná města ###
 #### Plzeň - Excel ####
 - jako jednoznačný identifikátor je brán sloupeček ID_CONTAINER
 - první řádek obsahuje tuto hlavičku (může být různá pořadí)

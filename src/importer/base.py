@@ -44,7 +44,7 @@ class Importer(ServiceBase):
         from models.location import OSMLocation
         logger.info("Getting locations for Addresses <%d> (use Nominatim)" % len(addresses_array))
 
-        geolocator = Nominatim()
+        geolocator = Nominatim(user_agent="wtm")
         for addr_obj in get_tqdm(addresses_array, self.SetState, desc="getting locations", total=None):
             #print("getting new by nominatim ...", LogType.trace, only_Message=True)
             successful = False
