@@ -25,16 +25,18 @@ class Importer(ServiceBase):
         self.db_session.add_all(records)
         self.db_session.commit()
 
-    def LoadOSMLocation(self):
+    def LoadOSMLocation(self, city_filter=None):
         logger.info("Start reversing Addresses.")
-        addresses_without_location = self._GetAddressesWithoutLocation()
+        addresses_without_location = self._GetAddressesWithoutLocation(city_filter=city_filter)
         self._GetLocationsForAddresses(addresses_without_location)
 
-    def _GetAddressesWithoutLocation(self):
+    def _GetAddressesWithoutLocation(self, city_filter=None):
         from models.location import Address
 
-        addresses_obj = self.db_session.query(Address).filter(Address.location == None) \
-                                                      .all()
+        addresses_obj = self.db_session.query(Address).filter(Address.location == None)
+        if city_filter is not None:
+            addresses_obj= addresses_obj.filter(Address.city.like(city_filter))
+        addresses_obj = addresses_obj.all()
         return addresses_obj
 
     def _GetLocationsForAddresses(self, addresses_array):

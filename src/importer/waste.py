@@ -328,7 +328,7 @@ class Plzen(Importer):
             data.clear()
 
         #get location
-        self.LoadOSMLocation()
+        self.LoadOSMLocation(city_filter=self.source)
 
     def _ParseSheet(self, sheet):
         from models.waste import Plzen
@@ -365,7 +365,7 @@ class Plzen(Importer):
             record.pop('address', None)
 
             record['waste_code'] = waste_codes.get(record.get('waste_name', ''), 0)
-            record['city'] = 'Plzen'
+            record['city'] = self.source
             record['country'] = 'Czech republic'
 
             record['name'] = None
