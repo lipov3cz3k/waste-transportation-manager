@@ -338,7 +338,8 @@ class Plzen(Importer):
                      'Latitude' : 'latitude',
                      'Longitude' : 'longitude',
                      'Interval' : 'interval',
-                     'CollectionPlaceName' : 'address'
+                     'CollectionPlaceName' : 'address',
+                     'Variant' : 'variant'
                 }
 
         waste_codes = {'Paper' : 200101,
@@ -376,6 +377,7 @@ class Plzen(Importer):
             record['start'] = None
             record['end'] = None
             record['note'] = None
+            record['variant'] = record.get('variant', None)
 
             data.append(Plzen.as_unique(self.db_session, db_session=self.db_session, data=record))
         return data

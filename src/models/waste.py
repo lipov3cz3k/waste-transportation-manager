@@ -31,6 +31,7 @@ class Container(Base) :
     days_orig = Column(Text)
     note = Column(Text)
     details = Column(Text)
+    variant = Column(Text)
 
     __mapper_args__ = {
         'polymorphic_on':type,
@@ -68,11 +69,12 @@ class Container(Base) :
         self.days_orig = data['days_orig']
 
         self.note = data['note']
+        self.variant = data['variant']
 
     def __str__(self):
         return self.id
 
-    def get_properties():
+    def get_properties(self):
         return dict(id=self.id,
                     container_type=self.type,
                     waste_code=self.waste_code,
@@ -214,7 +216,8 @@ stavanger_object_id_index = Index('Stavanger_object_id_index', Stavanger.object_
 class Plzen(UniqueMixin, Container) :
     __tablename__ = 'Plzen'
     id = Column(Integer, ForeignKey('Container.id'), primary_key=True)
-    object_id = Column(Integer, unique=True)
+    object_id = Column(Integer)
+    hash = Column(Integer, unique=True, nullable=False)
 
     __mapper_args__ = {'polymorphic_identity':'Plzen'}
 
@@ -225,13 +228,14 @@ class Plzen(UniqueMixin, Container) :
         super().__init__(**kwargs)
 
         self.object_id = data.get('object_id')
+        self.hash = "%s%s" % (data.get('object_id'), data.get('variant'))
 
     @classmethod
     def unique_hash(cls, **kwargs):
-        return kwargs['data']['object_id']
+        return "%s%s" % (kwargs['data']['object_id'], kwargs['data']['variant'])
 
     @classmethod
     def unique_filter(cls, query, **kwargs):
-        return query.filter(Plzen.object_id == kwargs['data']['object_id'])
+        return query.filter(Plzen.object_id == "%s%s" % (kwargs['data']['object_id'], kwargs['data']['variant']))
 
 Plzen_object_id_index = Index('Plzen_object_id_index', Plzen.object_id)
