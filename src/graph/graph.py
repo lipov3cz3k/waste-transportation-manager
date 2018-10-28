@@ -87,7 +87,7 @@ class Graph(ServiceBase):
         street_names = defaultdict(list)
         for u, v, name in tqdm(graph.edges(data='name'), desc="Preloading street names"):
             street_names[name].append((u, v))
-        logger.info("street names %s" , street_names)
+        #logger.info("street names %s" , street_names)
         for container, point in tqdm(container_location(containers_obj, self.shape.minimum_rotated_rectangle), desc="Connecting with containers", total=len(containers_obj)):
             #logger.info("%s at street %s", container, point[1])
             path = get_closest_path(graph, street_names, point)
@@ -194,25 +194,26 @@ class Graph(ServiceBase):
         from models.waste import Container
 
         result = {}
-        if n1 and n2:
-            e = self.G[n1][n2]
-            containers = e.get('containers')
+        def _append_containers(edge):
+            containers = edge.get('containers')
             for container_id in containers:
                 container = db_session.query(Container).filter(Container.id == container_id).one()
-                result.setdefault(container.waste_code,[]).append(Feature(id=container.id, geometry=Point((float(container.address.longitude), float(container.address.latitude))), properties=None))
-            # oposit direction
+                result.setdefault(container.waste_code,[]).append(Feature(id=container.id, 
+                                                                          geometry=Point((float(container.address.longitude), 
+                                                                                          float(container.address.latitude))),
+                                                                          properties=container.get_properties()))
+
+        if n1 and n2:
+            e = self.G[n1][n2]
+            _append_containers(e)
+           # oposit direction
             if n1 in self.G[n2]:
                 e = self.G[n2][n1]
-                containers = e.get('containers')
-                for container in containers:
-                    result.setdefault(container.waste_code,[]).append(Feature(id=container.id, geometry=Point((float(container.address.longitude), float(container.address.latitude))), properties=None))
+                _append_containers(e)
         else:
             for n1, n2, e in self.G.edges(data=True):
-                containers = e.get('containers')
-                for container_id in containers:
-                    container = db_session.query(Container).filter(Container.id == container_id).one()
-                    
-                    result.setdefault(container.waste_code,[]).append(Feature(id=container.id, geometry=Point((float(container.address.longitude), float(container.address.latitude))), properties=None))
+                e.get('containers')
+                _append_containers(e)
         for key, value in result.items():
             result[key] = FeatureCollection(value)  
         return result

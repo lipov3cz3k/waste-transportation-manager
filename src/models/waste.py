@@ -72,6 +72,16 @@ class Container(Base) :
     def __str__(self):
         return self.id
 
+    def get_properties():
+        return dict(id=self.id,
+                    container_type=self.type,
+                    waste_code=self.waste_code,
+                    latitude=self.address.latitude,
+                    longitude=self.address.longitude,
+                    quantity=self.quantity,
+                    capacity=self.capacity,
+                    interval=self.interval)
+
 class Cheb(UniqueMixin, Container) :
     __tablename__ = 'Cheb'
     id = Column(Integer, ForeignKey('Container.id'), primary_key=True)
