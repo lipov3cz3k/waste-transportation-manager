@@ -22,6 +22,12 @@ pip install tools/rtree/Rtree-0.8.3-cp36-cp36m-win_amd64.whl
 ```
 pip install -r src/requirements.txt
 ```
+* Nainstalovat Java JRE 64bit
+(https://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html)
+
+* Stáhnout OSM mapu ČR ve formátu pbf do adresáře `WTM/osm_data`
+(http://download.geofabrik.de/)
+
 Konfigurace aplikace se provádí v souboru common/config.py.
 
 
@@ -86,3 +92,26 @@ python cli.py import --containers D:\cesta_k_souboru\plzen.xlsx --city plzen
 Pro testovací účely je přibalena také vzorová databáze incidentů,
 nakopírujte tedy soubor /DB/data.db do lokálního adresáře aplikace 
 (defaultně tedy do c:\ProgramData\WTM\db\ , lze změnit v konfiguraci)
+
+
+## Identifikátory oblastí ##
+ID ČR https://www.openstreetmap.org/relation/51684
+V levém sloupečku se dá proklikat do různých územních oblastí
+`Relace Severozápad (435516) jako subarea`
+`Relace Ústecký kraj (442452) jako subarea`
+`Relace okres Ústí nad Labem (442324) jako subarea`
+...
+
+lze kontrolovat na adrese např.
+(https://www.openstreetmap.org/relation/438344)
+
+Uzly lze kontrolovat na adrese např.
+(https://www.openstreetmap.org/node/1601694732)
+
+Adresa pro kontrolu hran např.
+(https://www.openstreetmap.org/way/83484996)
+
+
+## Úprava v kódu ##
+
+### vytoření importeru ###
