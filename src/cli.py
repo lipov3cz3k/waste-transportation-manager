@@ -34,7 +34,7 @@ def arg_parse():
     subparser_export.add_argument('graph_name', help='Name of graph, it should be in WTM/graph dir')
     subparser_export.add_argument('--trackinfo')
     subparser_export.add_argument('--citygraph', action='store_true')
-    
+
     #Import
     subparser_import = subparsers.add_parser('import', help='Import various data to database')
     subparser_import.add_argument('--streetnet', type=argparse.FileType('rb'), help='Import StreetNet xsls data')
@@ -44,6 +44,12 @@ def arg_parse():
     # parser.add_argument("-t", "--tracks",
     #                     action="store_true", dest="processTracks", default=False,
     #                     help="Map tracks from db to the graph and compute shortest path")
+
+    subparser_route = subparsers.add_parser('route', help='API for WTM')
+    subparser_route.add_argument('graph_name')
+    subparser_route.add_argument('start_node')
+    subparser_route.add_argument('end_node')
+    subparser_route.add_argument('--restricted-node', dest='restricted_node', type=int, nargs=2, metavar=('startId', 'endId'))
 
     args = parser.parse_args()
     mask = logging.INFO if args.verbose else logging.WARNING
@@ -81,6 +87,10 @@ def main():
             streetnet_import(args.streetnet)
         if args.containers:
             container_import(args.containers, args.city)
+    elif args.action == 'route':
+        g = load(args.graph_name)
+        path = g.route_by_nodeId(args.start_node, args.end_node, args.restricted_node)
+        print(path)
 
 if __name__ == '__main__':
     main()

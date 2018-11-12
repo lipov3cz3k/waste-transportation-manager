@@ -18,7 +18,7 @@ class GraphFactory(ServiceBase):
         logger.info('Create region %s', region)
         # prepare sourece
         region_source_data = get_region_pbf("czech-republic-latest.osm.pbf", region)
- 
+
         shape = get_region_shape(region)
         # create graph
         graph_id = "%s_%s" % (region, strftime("%Y-%m-%d-%H-%M-%S", gmtime()))
@@ -60,7 +60,7 @@ def load(file):
     graph_factory = GraphFactory()
     graph_factory.run[0] = True
     graph = graph_factory.load_from_file(file)
-    graph.connect_with_streetnet()
+    # graph.connect_with_streetnet()
     #graph.connect_with_containers()
     #graph.SaveAndShowCitiesMap()
     #graph.createCityDistanceMatrix()
