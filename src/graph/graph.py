@@ -96,7 +96,7 @@ class Graph(ServiceBase):
 
             # switch to simplified graph
             id = graph.edges[path]['id']
-            
+
             simple_paths = [(x, y) for x,y,d in self.G.edges(data='id') if d==id]
             if not simple_paths:
                 logger.error("Cannot find edge id %s in simplified graph (%s)", id, path)
@@ -113,7 +113,7 @@ class Graph(ServiceBase):
                 if not self.G.has_edge(*direction):
                     logger.error("Cannot connect (%s) %s -> %s - even reversed not exists, wtf?", container.id, *direction)
                     continue
-            
+
             self.G.edges[direction[0], direction[1]]['containers'].append(container.id)
             logger.info("(%s) %s -> %s (%s)", container.id, *direction, id)
         self.containers_connected = True
@@ -198,8 +198,8 @@ class Graph(ServiceBase):
             containers = edge.get('containers')
             for container_id in containers:
                 container = db_session.query(Container).filter(Container.id == container_id).one()
-                result.setdefault(container.waste_code,[]).append(Feature(id=container.id, 
-                                                                          geometry=Point((float(container.address.longitude), 
+                result.setdefault(container.waste_code,[]).append(Feature(id=container.id,
+                                                                          geometry=Point((float(container.address.longitude),
                                                                                           float(container.address.latitude))),
                                                                           properties=container.get_properties()))
 
@@ -215,7 +215,7 @@ class Graph(ServiceBase):
                 e.get('containers')
                 _append_containers(e)
         for key, value in result.items():
-            result[key] = FeatureCollection(value)  
+            result[key] = FeatureCollection(value)
         return result
 
     #GetContainerDetails
@@ -227,7 +227,7 @@ class Graph(ServiceBase):
         # containers_details = []
         # containers = db_session.query(Container).filter(Container.id == id).all()
         # for container in containers:
-        #     containers_details.append({ 'id' : container.id, 
+        #     containers_details.append({ 'id' : container.id,
         #                                 'container_type' : container.container_type,
         #                                 'waste_type' : container.waste_type,
         #                                 'waste_name' : container.waste_name,
@@ -251,7 +251,7 @@ class Graph(ServiceBase):
             for path in source:
                 points = []
                 for n in path.get('path'):
-                    n = str(n)
+                    n = int(n)
                     points.append(((float(self.G.nodes[n]['lon']), float(self.G.nodes[n]['lat']))))
                 paths_pool[path.get('id')] = Feature(geometry=LineString(points), style={'color':path.get('color', '#00FF00')})
             fc = FeatureCollection([ v for v in paths_pool.values() ])
@@ -275,7 +275,7 @@ class Graph(ServiceBase):
         # nodelist=list(set(sum([(u,v) for u,v,d in self.G.edges_iter(data=True) if not d['highway'] in local_config.excluded_highway_cat], ())))
         matrix = nx.to_numpy_matrix(self.G, weight='length')
         np.savetxt(file_path+"_d.csv", matrix, fmt="%i", delimiter=",")
-        
+
         with open(file_path+"_n.csv", 'w',newline="\n", encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(['node','lat', 'lon','traffic_lights'])
@@ -354,6 +354,20 @@ class Graph(ServiceBase):
             logger.error(e.args[0])
         return self.route_response(self.fullG, path, eval)
 
+    def route_by_nodeId(self, start_node, end_node):
+        try:
+            eval, path = nx.bidirectional_dijkstra(self.G, int(start_node), int(end_node), 'length')
+        except nx.NodeNotFound as e:
+            eval = path = None
+            logger.error(e.args[0])
+        except nx.NetworkXNoPath as e:
+            eval = path = None
+            logger.error(e.args[0])
+        except nx.NetworkXError as e:
+            eval = path = None
+            logger.error(e.args[0])
+        return self.route_response(self.G, path, eval)
+
     def route_response(self, g, path, eval):
         points = []
         edges = []
@@ -364,11 +378,11 @@ class Graph(ServiceBase):
             e = g.edges[(n1,n2)]
             length += e['length']
             edges.append({'id' : e['id'], 'length': e['length'], 'highway' :  e['highway']})
-        
+
         for n in path:
             points.append(((float(g.nodes[n]['lon']), float(g.nodes[n]['lat']))))
         f = Feature(geometry=LineString(points), properties={"length" : length, "eval": eval, "ids" : path, "edges" : edges})
-        fc = FeatureCollection([f])    
+        fc = FeatureCollection([f])
         return {"succeded" : "true", "paths" : fc}
 
 
@@ -454,7 +468,7 @@ class Graph(ServiceBase):
                 except Exception as e:
                     logger.error("Exception cannot compute distance between cities %s (%s) and %s (%s): %s" % (d1['name'],n1,d2['name'],n2,str(e)))
                     self.cityGraph.edges[(n1,n2)]['length'] = -1
-        self.ExportCityDistanceMatrix() 
+        self.ExportCityDistanceMatrix()
 
     def _inCity(self,cityShapes,g,a,b,d):
         a_data = {}
@@ -488,7 +502,7 @@ class Graph(ServiceBase):
             b_data['nuts5'] = n2city.get('nuts5')
         else:
             b_data['lat'] = g.nodes[b]['lat']
-            b_data['lon'] = g.nodes[b]['lon'] 
+            b_data['lon'] = g.nodes[b]['lon']
             b_data['name'] = '-'
             b_data['nuts5'] = None
 
@@ -610,7 +624,7 @@ class Graph(ServiceBase):
         number_of_experiments = 1
         paths_pool = {}
         for i in range(number_of_experiments):
-                
+
             # Compute path
             try:
                 eval, path = nx.bidirectional_dijkstra(self.G, startNode, endNode, 'length')

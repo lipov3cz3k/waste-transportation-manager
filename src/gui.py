@@ -74,10 +74,10 @@ def run_graph():
                     return redirect(request.referrer)
                 else:
                     return redirect(url_for('index'))
-            
+
             if region_id:
                 logger.info(region_id)
-                app.thread = GRAPH_thread(region_id=region_id, graph_pool=app.graph_pool)    
+                app.thread = GRAPH_thread(region_id=region_id, graph_pool=app.graph_pool)
             else:
                 bbox = BoundingBox(longitude[0], latitude[0], longitude[1], latitude[1])
                 app.thread = GRAPH_thread(bbox=bbox, graph_pool=app.graph_pool, processCitiesMap=True)
@@ -253,15 +253,10 @@ def graphGetSortestPath(graphID, startId, endId):
         if request.form['submit'] == 'start':
             startId = request.form['start']
             endId = request.form['end']
-            routingType = int(request.form['routingType'])
-            season = request.form['season']
-            dayTime = request.form['dayTime']
-    else:
-        routingType = season = dayTime = None;
 
 
     graph = loadGraph(app.graph_pool, graphID)
-    path = graph.Route(startId, endId, routingType, season, dayTime)
+    path = graph.route_by_nodeId(startId, endId)
     return jsonify(**path)
 
 @app.route('/graph/<graphID>/restrictions', methods=['POST', 'GET'])
@@ -306,7 +301,7 @@ def settings():
 @app.route('/update')
 def gitUpdate():
     from os import system
-    result = system("git pull")  
+    result = system("git pull")
     return str(result);
 
 
