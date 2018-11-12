@@ -354,7 +354,7 @@ class Graph(ServiceBase):
             logger.error(e.args[0])
         return self.route_response(self.fullG, path, eval)
 
-    def route_by_nodeId(self, start_node, end_node, restricted_edge=None):
+    def route_by_nodeId(self, start_node, end_node, restricted_edge=None, simple_output=False):
         original_length = None
         if restricted_edge:
             original_length = self.G.edges[tuple(restricted_edge)]['length']
@@ -374,7 +374,10 @@ class Graph(ServiceBase):
         finally:
             if restricted_edge:
                 self.G.edges[tuple(restricted_edge)]['length'] = original_length
-        return self.route_response(self.G, path, eval)
+        if simple_output:
+            return (eval, path)
+        else:
+            return self.route_response(self.G, path, eval)
 
     def route_response(self, g, path, eval):
         points = []
