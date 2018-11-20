@@ -48,6 +48,7 @@ def arg_parse():
     subparser_route = subparsers.add_parser('route', help='API for WTM')
     subparser_route.add_argument('graph_name')
     subparser_route.add_argument('route_input', type=argparse.FileType('r'))
+    subparser_route.add_argument('--route-output', dest='route_output', type=argparse.FileType('w'))
 
     args = parser.parse_args()
     mask = logging.INFO if args.verbose else logging.WARNING
@@ -95,7 +96,10 @@ def main():
                 restricted_start, restricted_end = input[1].split(",")
                 restricted = (int(restricted_start), int(restricted_end))
             path = g.route_by_nodeId(startId, endId, restricted, simple_output=True)
-            print(path)
+            if args.route_output:
+                print(path, file= args.route_output)
+            else:
+                print(path)
 
 if __name__ == '__main__':
     main()
