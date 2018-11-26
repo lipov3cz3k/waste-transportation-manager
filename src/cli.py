@@ -91,10 +91,12 @@ def main():
         for line in args.route_input.readlines():
             input = line.split(";")
             startId, endId = input[0].split(",")
-            restricted = None
+            restricted = {}
             if len(input) > 1:
-                restricted_start, restricted_end = input[1].split(",")
-                restricted = (int(restricted_start), int(restricted_end))
+                del input[0]
+                for idx, x in enumerate(input):
+                    restricted_start, restricted_end = input[idx].split(",")
+                    restricted[int(restricted_start)] = int(restricted_end)
             path = g.route_by_nodeId(startId, endId, restricted, simple_output=True)
             if args.route_output:
                 print(path, file= args.route_output)

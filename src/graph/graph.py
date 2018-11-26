@@ -354,17 +354,23 @@ class Graph(ServiceBase):
             logger.error(e.args[0])
         return self.route_response(self.fullG, path, eval)
 
-    def route_by_nodeId(self, start_node, end_node, restricted_edge=None, simple_output=False, penal = 99999):
-        original_length = None
-        if restricted_edge:
-            if self.G.has_edge(*restricted_edge):
-                original_length = self.G.edges[tuple(restricted_edge)]['length']
-                self.G.edges[tuple(restricted_edge)]['length'] = penal
+    def route_by_nodeId(self, start_node, end_node, restricted_edges=None, simple_output=False, penal = 99999):
+        original_length = {}
+        if restricted_edges:
+            for x in restricted_edges:
+                if self.G.has_edge(x, restricted_edges[x]):
+                    restricted = (x, restricted_edges[x])
+                    original_length[restricted] = self.G.edges[restricted]['length']
+                    self.G.edges[restricted]['length'] = penal
 
         try:
             eval, path = nx.bidirectional_dijkstra(self.G, int(start_node), int(end_node), 'length')
             if (eval >= penal):
-                eval = eval - penal + original_length
+                for x in restricted_edges:
+                    restricted = (x, restricted_edges[x])
+                    if restricted in zip(path,path[1:]):
+                        print("it happened")
+                        eval = eval - penal + original_length[restricted]
         except nx.NodeNotFound as e:
             eval = path = None
             logger.error(e.args[0])
@@ -375,9 +381,11 @@ class Graph(ServiceBase):
             eval = path = None
             logger.error(e.args[0])
         finally:
-            if restricted_edge:
-                if self.G.has_edge(*restricted_edge):
-                    self.G.edges[tuple(restricted_edge)]['length'] = original_length
+            if restricted_edges:
+                for x in restricted_edges:
+                    if self.G.has_edge(x, restricted_edges[x]):
+                        restricted = (x, restricted_edges[x])
+                        self.G.edges[restricted]['length'] = original_length[restricted]
         if simple_output:
             return (eval, path)
         else:
