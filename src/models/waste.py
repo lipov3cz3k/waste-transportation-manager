@@ -239,3 +239,31 @@ class Plzen(UniqueMixin, Container) :
         return query.filter(Plzen.object_id == "%s%s" % (kwargs['data']['object_id'], kwargs['data']['variant']))
 
 Plzen_object_id_index = Index('Plzen_object_id_index', Plzen.object_id)
+
+class Tabor(UniqueMixin, Container) :
+    __tablename__ = 'Tabor'
+    id = Column(Integer, ForeignKey('Container.id'), primary_key=True)
+    object_id = Column(Integer)
+    hash = Column(Integer, unique=True, nullable=False)
+
+    __mapper_args__ = {'polymorphic_identity':'Tabor'}
+
+    def __init__(self, **kwargs):
+        data = kwargs['data']
+        if data == None :
+            return
+        super().__init__(**kwargs)
+
+        self.object_id = data.get('object_id')
+        self.hash = "%s%s" % (data.get('object_id'), data.get('variant'))
+
+    @classmethod
+    def unique_hash(cls, **kwargs):
+        return "%s%s" % (kwargs['data']['object_id'], kwargs['data']['variant'])
+
+    @classmethod
+    def unique_filter(cls, query, **kwargs):
+        return query.filter(Tabor.object_id == "%s%s" % (kwargs['data']['object_id'], kwargs['data']['variant']))
+
+Tabor_object_id_index = Index('Tabor_object_id_index', Tabor.object_id)
+

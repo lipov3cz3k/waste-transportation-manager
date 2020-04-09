@@ -381,3 +381,90 @@ class Plzen(Importer):
 
             data.append(Plzen.as_unique(self.db_session, db_session=self.db_session, data=record))
         return data
+
+
+class Tabor(Importer):
+    def __init__(self):
+        super().__init__()
+        self.source = "Tabor"
+
+    def Import(self, file):
+        super().Import()
+
+        self.workbook = load_workbook(file, read_only = True)
+
+        #load values from xls
+        for sheet in self.workbook:
+            try:
+                data = self._ParseSheet(sheet)
+            except KeyboardInterrupt:
+                self.RemoveDBSession()
+                logger.error("KeyboardInterrupt")
+                raise KeyboardInterrupt
+            except e:
+                self.RemoveDBSession()
+                logger.error("Exception reading source data: %s" % str(e))
+                return
+            #save to database
+            self.SaveAllRecordsToDatabase(data)
+            data.clear()
+
+        #get location
+        self.LoadOSMLocation(city_filter=self.source)
+
+    def _ParseSheet(self, sheet):
+        from models.waste import Tabor
+        normalize = {'ID_CONTAINER' : 'object_id',
+                     'TrashType' : 'waste_name',
+                     'Volume' : 'capacity',
+                     'Latitude' : 'latitude',
+                     'Longitude' : 'longitude',
+                     'Interval' : 'interval',
+                     'CollectionPlaceName' : 'address',
+                     'Variant' : 'variant',
+                     'quantity': 'quantity'
+                }
+        
+        waste_codes = {'Paper' : 200101,
+                       'MMW': 200301,
+                       'Bio': 200201,
+                       'Glass': 200102,
+                       'Plastic': 200139,}
+        data = []
+        rows = sheet.rows
+        first_row = [cell.value for cell in next(rows)]
+        for row in get_tqdm(rows, self.SetState, desc="loading " + sheet.title, total=sheet.max_row):
+            record = { 'waste_type': sheet.title }
+            for key, cell in zip(first_row, row):
+                if cell.data_type == 's':
+                    record[normalize.get(key, key)] = cell.value.strip()
+                else:
+                    record[normalize.get(key, key)] = cell.value
+
+            # upraveni adresy
+            adresa = record.get('address').rsplit(' ', 1)
+            if len(adresa) > 1 and adresa[1][0].isdigit():
+                    record['street'], record['house_number'] = adresa
+            else:
+                record['street'] = record.get('address')
+                record['house_number'] = ''
+            record.pop('address', None)
+            #record['street'] = None
+            #record['house_number'] = ''
+
+            record['waste_code'] = waste_codes.get(record.get('waste_name', ''), 0)
+            record['city'] = self.source
+            record['country'] = 'Czech republic'
+
+            record['name'] = None
+            record['waste_type'] = None
+            record['quantity'] = record.get('quantity', None)
+            record['quantity_unit'] = None
+            record['days_orig'] = record['days_even'] = record['days_odd'] = None
+            record['start'] = None
+            record['end'] = None
+            record['note'] = None
+            record['variant'] = record.get('variant', None)
+
+            data.append(Tabor.as_unique(self.db_session, db_session=self.db_session, data=record))
+        return data
