@@ -218,6 +218,8 @@ class Plzen(UniqueMixin, Container) :
     id = Column(Integer, ForeignKey('Container.id'), primary_key=True)
     object_id = Column(Integer)
     hash = Column(Integer, unique=True, nullable=False)
+    collection_place = Column(Integer)
+    district = Column(Integer)
 
     __mapper_args__ = {'polymorphic_identity':'Plzen'}
 
@@ -229,6 +231,8 @@ class Plzen(UniqueMixin, Container) :
 
         self.object_id = data.get('object_id')
         self.hash = "%s%s" % (data.get('object_id'), data.get('variant'))
+        self.collection_place = data.get('collection_place')
+        self.district = data.get('district')
 
     @classmethod
     def unique_hash(cls, **kwargs):

@@ -339,11 +339,18 @@ class Plzen(Importer):
                      'Longitude' : 'longitude',
                      'Interval' : 'interval',
                      'CollectionPlaceName' : 'address',
-                     'Variant' : 'variant'
+                     'Variant' : 'variant',
+                     'Count': 'quantity',
+                     'ID_COLLECTION_PLACE': 'collection_place',
+                     'ID_DISTRICT': 'district'
                 }
 
-        waste_codes = {'Paper' : 200101,
-                       'MixedWaste': 200301,}
+        waste_codes = {'MixedWaste': 200301,
+                       'Paper' : 200101,
+                       'BioWaste': 200201,
+                       'Glass': 200102,
+                       'Plastics': 200139
+                       }
 
         data = []
         rows = sheet.rows
@@ -371,13 +378,15 @@ class Plzen(Importer):
 
             record['name'] = None
             record['waste_type'] = None
-            record['quantity'] = None
+            record['quantity'] = record.get('quantity', None)
             record['quantity_unit'] = None
             record['days_orig'] = record['days_even'] = record['days_odd'] = None
             record['start'] = None
             record['end'] = None
             record['note'] = None
             record['variant'] = record.get('variant', None)
+            record['collection_place'] = record.get('collection_place', None)
+            record['district'] = record.get('district', None)
 
             data.append(Plzen.as_unique(self.db_session, db_session=self.db_session, data=record))
         return data
