@@ -43,9 +43,9 @@ def container_location(containers_obj, bounary):
         yield container, (point, street)
 
 
-def _edge_candidates(graph, point):
+def _edge_candidates(graph, point, threshold):
     result = []
-    boundary = point.buffer(0.0005)
+    boundary = point.buffer(threshold)
     for (u, v, d) in tqdm(graph.edges(data=True), leave=False):
         if boundary.contains(Point(graph.nodes[u]['lon'], graph.nodes[u]['lat'])) or \
            boundary.contains(Point(graph.nodes[v]['lon'], graph.nodes[v]['lat'])):
@@ -59,12 +59,16 @@ def _geometry(graph, path):
 
 def get_closest_path(graph, street_names, point):
     #bbox = point[0].buffer(0.01, cap_style=3)
+    threshold = 0.0005
     path_candidates = street_names.get(point[1], [])
     if not path_candidates or not point[1]:
         logger.warning("Nemam kandidaty pro %s na ulici %s", point[0], point[1])
         #TODO zkus hledat pres vsechny
-        path_candidates = _edge_candidates(graph, point[0])
-
+        path_candidates = _edge_candidates(graph, point[0], threshold)
+    #if path_candidates still empty then extend threshold for searching points
+    while not path_candidates:
+        threshold *= 2
+        path_candidates = _edge_candidates(graph, point[0], threshold)
     
     dist = lambda path: point[0].distance(_geometry(graph, path))
     near_way = min(path_candidates, key=dist)    
