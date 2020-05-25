@@ -51,10 +51,10 @@ def arg_parse():
     subparser_route.add_argument('--route-output', dest='route_output', type=argparse.FileType('w'))
 
     args = parser.parse_args()
-    mask = logging.INFO if args.verbose else logging.WARNING
+    mask = logging.DEBUG if args.verbose else logging.WARNING
     logging.getLogger().setLevel(mask)
     logging.debug(args)
-
+    logging.getLogger("geopy").setLevel(mask)
     return args
 
 def main():
