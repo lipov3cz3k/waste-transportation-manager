@@ -375,7 +375,7 @@ class Graph(ServiceBase):
             eval = path = None
             logger.error(e.args[0])
         except nx.NetworkXNoPath as e:
-            eval = path = None
+            eval , path = self.noPathExistProcedure(start_node, end_node, restricted_edges)
             logger.error(e.args[0])
         except nx.NetworkXError as e:
             eval = path = None
@@ -390,6 +390,18 @@ class Graph(ServiceBase):
             return (eval, path)
         else:
             return self.route_response(self.G, path, eval)
+
+    def noPathExistProcedure(self, start_node, end_node, restricted_edges = None):
+        eval , path = self.route_by_nodeId(int(end_node), int(start_node), restricted_edges, simple_output=True)
+        # if len(path)>1:
+        #     new_start_node = path[len(path)-2]
+        #     eval , path = self.route_by_nodeId(int(new_start_node), int(end_node), restricted_edges, simple_output=True)
+        #     eval_rev , path_rev = self.route_by_nodeId(int(new_start_node), int(start_node), restricted_edges, simple_output=True)
+        #     eval += eval_rev
+        #     path_rev = (Reverse(path_rev))
+        #     path = (path_rev + path)
+        #    return (eval, path) 
+        return (eval, (Reverse(path)))
 
     def route_response(self, g, path, eval):
         points = []
@@ -678,3 +690,8 @@ class Graph(ServiceBase):
             path.properties['weight'] = ((path.properties['count'] * 5) / number_of_experiments) + 5
         fc = FeatureCollection([ v for v in paths_pool.values() ])
         return {"succeded" : "true", "paths" : fc, "number_of_experiments" : number_of_experiments}
+
+# Reversing a list using reversed() 
+def Reverse(tuples): 
+    tuples = tuples[::-1]
+    return tuples
